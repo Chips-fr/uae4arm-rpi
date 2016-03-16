@@ -32,7 +32,7 @@ else ifeq ($(platform), crosspi)
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	PLATFORM_DEFINES += -I ../usr/include -DLSB_FIRST -DALIGN_DWORD  -DWITH_LOGGING
+	PLATFORM_DEFINES += -I ../usr/include -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -40,6 +40,25 @@ else ifeq ($(platform), crosspi)
    	CC = arm-linux-gnueabihf-gcc
    	CXX = arm-linux-gnueabihf-g++ 
 LDFLAGS += -lz -lpthread
+else ifeq ($(platform), crossand)
+   	TARGET := $(TARGET_NAME)_libretro.so
+   	fpic = -fPIC
+   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc  
+	PLATFORM_DEFINES +=  -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon
+ #-march=armv7-a -mfloat-abi=hard -mhard-float  
+#-mfpu=neon
+# -mfpu=neon-vfpv4 -mfloat-abi=hard
+
+	PLATFORM_DEFINES +=  -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
+	HAVE_NEON = 1
+	USE_PICASSO96 = 1
+	CFLAGS += $(PLATFORM_DEFINES)
+	CXXFLAGS += $(PLATFORM_DEFINES)
+   CC = arm-linux-androideabi-gcc
+   CXX =arm-linux-androideabi-g++ 
+   AR = @arm-linux-androideabi-ar
+   LD = @arm-linux-androideabi-g++ 
+LDFLAGS += -lz -llog
 # use for raspberry pi
 else ifeq ($(platform), rpi) 
 	   TARGET := $(TARGET_NAME)_libretro.so
@@ -100,7 +119,7 @@ endif
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
 else
-   CFLAGS += -O2
+   CFLAGS += -O3 -fomit-frame-pointer -finline -fno-builtin
 endif
 
 DEFINES += 
@@ -119,8 +138,8 @@ ifeq ($(HAVE_NEON), 1)
 endif
 
 DEFINES += -D__LIBRETRO__ $(DEFS)
-
-CFLAGS += $(DEFINES) -DRETRO=1 -DINLINE="inline" -std=gnu99 $(CPU_FLAGS) -funsigned-char
+#-std=gnu99 
+CFLAGS += $(DEFINES) -DRETRO=1 -DINLINE="inline" $(CPU_FLAGS) -fexceptions -fpermissive
 
 include Makefile.common
 
@@ -150,7 +169,7 @@ $(TARGET): $(OBJECTS)
 endif
 
 $(EMU)/od-retro/neon_helper.o: $(EMU)/od-retro/neon_helper.s
-	$(CXX) $(CPU_FLAGS) -Wall -o $(EMU)/od-retro/neon_helper.o -c $(EMU)/od-retro/neon_helper.s
+	$(CXX) $(CPU_FLAGS) $(PLATFORM_DEFINES) -Wall -o $(EMU)/od-retro/neon_helper.o -c $(EMU)/od-retro/neon_helper.s
 	echo $(OBJS)
 
 %.o: %.cpp
@@ -160,7 +179,7 @@ $(EMU)/od-retro/neon_helper.o: $(EMU)/od-retro/neon_helper.s
 	$(CC) $(fpic) $(CFLAGS) $(PLATFLAGS) $(INCDIRS) -c -o $@ $<
 
 %.o: %.S
-	$(CC_AS) $(CFLAGS) -c $^ -o $@
+	$(CC_AS) $(CFLAGS)  $(PLATFLAGS) -c $^ -o $@
 
 clean:
 	rm -f $(OBJECTS) $(TARGET) 

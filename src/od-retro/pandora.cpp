@@ -657,14 +657,19 @@ int skel_main (int argc, char *argv[])
 
   // Get startup path
 	getcwd(start_path_data, MAX_DPATH);
-sprintf(start_path_data,"/home/pi/retro\0");
-LOGI("sdp(%s)\n",start_path_data);
+
+//FIXME use sysdir path
+#if defined(ANDROID) || defined(__ANDROID__)
+sprintf(start_path_data,"/mnt/sdcard/uae4arm\0");
+#else
+sprintf(start_path_data,"~/uae4arm\0");
+#endif
+LOGI("spd(%s)\n",start_path_data);
 
 	loadAdfDir();
-LOGI("ici=0\n");
+
   snprintf(savestate_fname, MAX_PATH, "%s/saves/default.ads", start_path_data);
 	logging_init ();
-  LOGI("ici=1\n");
   memset(&action, 0, sizeof(action));
   action.sa_sigaction = signal_segv;
   action.sa_flags = SA_SIGINFO;
@@ -679,7 +684,6 @@ LOGI("ici=0\n");
     abort();
   }
 
-LOGI("ici=2\n");
   alloc_AmigaMem();
   RescanROMs();
 co_switch(mainThread);

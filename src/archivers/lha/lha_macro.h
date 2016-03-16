@@ -8,7 +8,9 @@
 /* ------------------------------------------------------------------------ */
 
 /* external variables */
+#if !defined(ANDROID) && !defined(__ANDROID__)
 extern int      errno;
+#endif
 
 /* used by qsort() for alphabetic-sort */
 #define STRING_COMPARE(a,b)		strcmp((a),(b))

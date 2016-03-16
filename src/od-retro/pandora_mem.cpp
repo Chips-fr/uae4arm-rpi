@@ -9,7 +9,9 @@
 #include "memory.h"
 #include <sys/mman.h>
 
-
+#if defined(ANDROID) || defined(__ANDROID__)
+#include <unistd.h>
+#endif
 
 uae_u8* natmem_offset = 0;
 uae_u32 natmem_size;
@@ -78,11 +80,21 @@ void alloc_AmigaMem(void)
 		natmem_size = 16 * 1024 * 1024;
 
 	write_log("Total physical RAM %lluM. Attempting to reserve: %uM.\n", total >> 20, natmem_size >> 20);
+
+#if !defined(ANDROID) && !defined(__ANDROID__)
 	natmem_offset = (uae_u8*)valloc (natmem_size);
+#else
+	natmem_offset = (uae_u8*)memalign(getpagesize(),  (natmem_size));
+#endif
 
 	if (!natmem_offset) {
 		for (;;) {
+#if !defined(ANDROID) && !defined(__ANDROID__)
 			natmem_offset = (uae_u8*)valloc (natmem_size);
+#else
+			natmem_offset = (uae_u8*)memalign(getpagesize(),  (natmem_size));
+#endif
+
 			if (natmem_offset)
 				break;
 			natmem_size -= 16 * 1024 * 1024;

@@ -210,6 +210,14 @@ unix_to_generic_filename(register char  *name, register int len)
 #endif
 #endif
 
+#if defined(ANDROID) || defined(__ANDROID__)
+#undef TIMELOCAL
+#undef TZSET
+#undef FTIME
+#undef MKTIME
+#define GETTIMEOFDAY
+#endif 
+
 #ifdef FTIME
 #include <sys/timeb.h>
 #endif
