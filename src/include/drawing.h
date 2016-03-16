@@ -4,7 +4,11 @@
  * Copyright 1996-1998 Bernd Schmidt
  */
 
+#if defined(__LIBRETRO__)
+#include "od-retro/inputmode.h"
+#else
 #include "od-pandora/inputmode.h"
+#endif
 
 #define MAX_PLANES 8
 

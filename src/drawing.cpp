@@ -74,7 +74,21 @@ int direct_rgb;
    coordinates have a lower resolution (i.e. we're shrinking the image).  */
 static int res_shift;
 
+#if defined(__LIBRETRO__)
+#include "libretro-core.h"
+extern int retrow,retroh;
+typedef struct sdl_surface {
+	int w;
+	int h;
+	int pitch;
+	unsigned char *pixels;
+}SDL_Surface ;
+
+SDL_Surface *prSDLScreen;
+
+#else
 extern SDL_Surface *prSDLScreen;
+#endif
 
 /* Lookup tables for dual playfields.  The dblpf_*1 versions are for the case
    that playfield 1 has the priority, dbplpf_*2 are used if playfield 2 has
@@ -2045,11 +2059,13 @@ void vsync_handle_redraw (int long_frame, int lof_changed)
 
 		if (framecnt == 0)
 		{
+#if !defined(__LIBRETRO__)
 			#ifdef RASPBERRY
 			if (wait_for_vsync == 1)
 				uae_sem_wait (&vsync_wait_sem);
 			wait_for_vsync = 1;
 			#endif
+#endif
 			finish_drawing_frame ();
 		}
 #ifdef PICASSO96
@@ -2180,6 +2196,15 @@ void reset_drawing (void)
 
 void drawing_init (void)
 {
+
+#if defined(__LIBRETRO__)
+prSDLScreen = (SDL_Surface*)malloc( sizeof(*prSDLScreen) );
+    prSDLScreen->w = retrow;
+    prSDLScreen->h = retroh;
+    prSDLScreen->pitch = retrow*2;
+    prSDLScreen->pixels =(unsigned char*)Retro_Screen;
+#endif
+
     gen_pfield_tables();
 
 #ifdef PICASSO96

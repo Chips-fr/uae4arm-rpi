@@ -14,7 +14,11 @@
 #include "uae.h"
 #include "gensound.h"
 #include "audio.h"
+#if defined(__LIBRETRO__)
+#include "sd-retro/sound.h"
+#else
 #include "sd-pandora/sound.h"
+#endif
 #include "events.h"
 #include "memory.h"
 #include "custom.h"
@@ -39,9 +43,13 @@
 #include "jit/compemu.h"
 #endif
 
-#ifdef USE_SDL
+#if defined(USE_SDL) || defined(__LIBRETRO__)
 #include "SDL.h"
 #endif
+#if defined(__LIBRETRO__)
+extern int pauseg;
+#endif
+
 long int version = 256*65536L*UAEMAJOR + 65536L*UAEMINOR + UAESUBREV;
 
 struct uae_prefs currprefs, changed_prefs; 
@@ -390,6 +398,9 @@ void do_start_program (void)
   if (quit_program >= 0)
 	  quit_program = 2;
 	m68k_go (1);
+#if defined(__LIBRETRO__)
+pauseg=-1;
+#endif
 }
 
 void do_leave_program (void)

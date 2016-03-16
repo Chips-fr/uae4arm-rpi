@@ -26,7 +26,11 @@
 #include "filesys.h"
 #include "fsdb.h"
 #include "disk.h"
+#if defined(__LIBRETRO__)
+#include "sd-retro/sound.h"
+#else
 #include "sd-pandora/sound.h"
+#endif
 
 static int config_newfilesystem;
 static struct strlist *temp_lines;

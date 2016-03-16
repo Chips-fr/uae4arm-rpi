@@ -50,7 +50,12 @@ extern uae_u32 allocated_z3fastmem, max_z3fastmem;
 extern void wait_cpu_cycle (void);
 
 #undef DIRECT_MEMFUNCS_SUCCESSFUL
+
+#if defined(__LIBRETRO__)
+#include "md-retro/maccess.h"
+#else
 #include "md-pandora/maccess.h"
+#endif
 
 #define chipmem_start 0x00000000
 #define bogomem_start 0x00C00000

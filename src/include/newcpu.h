@@ -31,7 +31,13 @@
   */
 
 #include "readcpu.h"
+
+#if defined(__LIBRETRO__)
+#include "md-retro/m68k.h"
+#else
 #include "md-pandora/m68k.h"
+#endif
+
 #include "events.h"
 
 #ifndef SET_CFLG

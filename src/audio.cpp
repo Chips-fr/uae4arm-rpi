@@ -22,7 +22,11 @@
 #include "autoconf.h"
 #include "gensound.h"
 #include "audio.h"
+#if defined(__LIBRETRO__)
+#include "sd-retro/sound.h"
+#else
 #include "sd-pandora/sound.h"
+#endif
 #include "events.h"
 #include "savestate.h"
 #include "gui.h"

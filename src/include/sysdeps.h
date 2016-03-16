@@ -20,7 +20,9 @@
 #include <errno.h>
 #include <assert.h>
 #include <limits.h>
-
+#if defined (__LIBRETRO__)
+#include <SDL.h>
+#endif
 #ifdef _GCCRES_
 #undef _GCCRES_
 #endif

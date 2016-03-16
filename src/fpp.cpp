@@ -21,7 +21,13 @@
 #include "events.h"
 #include "newcpu.h"
 #include "ersatz.h"
+
+#if defined(__LIBRETRO__)
+#include "md-retro/md-fpp.h"
+#else
 #include "md-pandora/md-fpp.h"
+#endif
+
 #include "savestate.h"
 
 #define DEBUG_FPP 0

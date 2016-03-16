@@ -23,7 +23,8 @@ typedef SDL_sem *uae_sem_t;
 #define uae_sem_getvalue(PSEM) SDL_SemValue (*PSEM)
 
 #include "commpipe.h"
-extern void uae_set_thread_priority (int);
+//extern void uae_set_thread_priority (int);
+#define uae_set_thread_priority(pri)
 
 typedef SDL_Thread *uae_thread_id;
 #define BAD_THREAD NULL
