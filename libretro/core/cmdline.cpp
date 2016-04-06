@@ -41,6 +41,7 @@ int pre_main(const char *argv)
    if(Only1Arg)
 
    {  
+	char tmpstr[512];
 
 	  Add_Option("uaearm");
 	//  Add_Option("-cpctype"); //FIXME:first not taken in account so some padding
@@ -71,7 +72,36 @@ int pre_main(const char *argv)
 	  		Add_Option("-drivea");
 	  }
 */
-      Add_Option(RPATH/*ARGUV[0]*/);
+	if (strlen(RPATH) >= strlen("uae")){
+		if(!strcasecmp(&RPATH[strlen(RPATH)-strlen("uae")], "uae"))
+		{
+			Add_Option("-f"); 
+			Add_Option(RPATH);
+		}
+		else if(!strcasecmp(&RPATH[strlen(RPATH)-strlen("adf")], "adf"))
+		{
+			Add_Option("-s");
+			sprintf(tmpstr,"floppy0=%s\0",RPATH);
+			Add_Option(tmpstr);
+		}
+		else if(!strcasecmp(&RPATH[strlen(RPATH)-strlen("hdf")], "hdf"))
+		{
+			Add_Option("-s");
+			sprintf(tmpstr,"hardfile=rw,32,1,2,512,%s\0",RPATH);
+			Add_Option(tmpstr);
+		}
+		else
+		{
+			Add_Option("-s");
+			sprintf(tmpstr,"floppy0=%s\0",RPATH);
+			Add_Option(tmpstr);
+			//Add_Option(RPATH/*ARGUV[0]*/)
+
+		}
+
+	}
+
+      //Add_Option(RPATH/*ARGUV[0]*/);
 
    }
    else

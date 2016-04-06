@@ -200,8 +200,8 @@ void enter_options(void) {}
 #endif
 
 int STATUTON=-1;
-#define RETRO_DEVICE_AMSTRAD_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
-#define RETRO_DEVICE_AMSTRAD_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
+#define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
+#define RETRO_DEVICE_AMIGA_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
 
 void enter_gui(void)
 {
@@ -259,7 +259,7 @@ int RSTOPON=-1;
 int CTRLON=-1;
 
 //extern unsigned short int bmp[400*300];
-extern unsigned amstrad_devices[ 2 ];
+extern unsigned amiga_devices[ 2 ];
 
 extern void vkbd_key(int key,int pressed);
 
@@ -665,7 +665,7 @@ if(pauseg==0){ // if emulation running
       //if(SHOWKEY==-1)retro_joy0_test(MXjoy[0]);
 
 
-if(amstrad_devices[0]==RETRO_DEVICE_AMSTRAD_JOYSTICK){
+if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
    //shortcut for joy mode only
 
    i=1;//show vkbd toggle
@@ -758,7 +758,7 @@ if(amstrad_devices[0]==RETRO_DEVICE_AMSTRAD_JOYSTICK){
 		pauseg=1;
    }
 
-}//if amstrad_devices=joy
+}//if amiga_devices=joy
 
 
 }// if pauseg=0

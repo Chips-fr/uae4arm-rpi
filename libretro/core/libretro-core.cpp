@@ -16,10 +16,10 @@ int retrow=1024;
 int retroh=1024;
 unsigned short int bmp[400*300];
 
-#define RETRO_DEVICE_AMSTRAD_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
-#define RETRO_DEVICE_AMSTRAD_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
+#define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
+#define RETRO_DEVICE_AMIGA_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
 
-unsigned amstrad_devices[ 2 ];
+unsigned amiga_devices[ 2 ];
 
 int autorun=0;
 
@@ -61,12 +61,12 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
 
   static const struct retro_controller_description p1_controllers[] = {
-    { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-    { "Amstrad Keyboard", RETRO_DEVICE_AMSTRAD_KEYBOARD },
+    { "AMIGA Joystick", RETRO_DEVICE_AMIGA_JOYSTICK },
+    { "AMIGA Keyboard", RETRO_DEVICE_AMIGA_KEYBOARD },
   };
   static const struct retro_controller_description p2_controllers[] = {
-    { "Amstrad Joystick", RETRO_DEVICE_AMSTRAD_JOYSTICK },
-    { "Amstrad Keyboard", RETRO_DEVICE_AMSTRAD_KEYBOARD },
+    { "AMIGA Joystick", RETRO_DEVICE_AMIGA_JOYSTICK },
+    { "AMIGA Keyboard", RETRO_DEVICE_AMIGA_KEYBOARD },
   };
 
 
@@ -504,7 +504,7 @@ void retro_set_controller_port_device( unsigned port, unsigned device )
 {
   if ( port < 2 )
   {
-    amstrad_devices[ port ] = device;
+    amiga_devices[ port ] = device;
 
 LOGI(" (%d)=%d \n",port,device);
   }

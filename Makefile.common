@@ -166,11 +166,6 @@ OBJS += \
 #	$(EMU)/od-retro/gui/main_window.o \
 #	$(EMU)/od-retro/gui/Navigation.o
 
-
-CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ -DARM_ASM -D__NEON_OPT
-#-mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp -D__arm__ -DARM_ASM -D__NEON_OPT
-#-marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon
-
 #SOURCES_C += $(EMU)/machdep/support.c \
 #				 $(EMU)/osdep/gui.c \
 #				 $(EMU)/osdep/retroglue.c \

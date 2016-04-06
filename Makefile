@@ -16,7 +16,7 @@ else ifneq ($(findstring arm,$(shell uname -a)),)
 endif
 endif
 
-TARGET_NAME := puae
+TARGET_NAME := uae4arm
 
 CORE_DIR  := .
 ROOT_DIR  := .
@@ -32,6 +32,8 @@ else ifeq ($(platform), crosspi)
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__ -DARM_ASM -D__NEON_OPT
+
 	PLATFORM_DEFINES += -I ../usr/include -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
@@ -45,6 +47,8 @@ else ifeq ($(platform), crossand)
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc  
 	PLATFORM_DEFINES +=  -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon
+        CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ -DARM_ASM -D__NEON_OPT
+
  #-march=armv7-a -mfloat-abi=hard -mhard-float  
 #-mfpu=neon
 # -mfpu=neon-vfpv4 -mfloat-abi=hard
@@ -59,6 +63,21 @@ else ifeq ($(platform), crossand)
    AR = @arm-linux-androideabi-ar
    LD = @arm-linux-androideabi-g++ 
 LDFLAGS += -lz -llog
+else ifeq ($(platform), rpi2)
+    	TARGET := $(TARGET_NAME)_libretro.so
+   	fpic = -fPIC
+   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
+	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__ -DARM_ASM -D__NEON_OPT
+
+	PLATFORM_DEFINES +=   -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
+	HAVE_NEON = 1
+	USE_PICASSO96 = 1
+	CFLAGS += $(PLATFORM_DEFINES)
+	CXXFLAGS += $(PLATFORM_DEFINES)
+   	CC = gcc
+   	CXX = g++ 
+LDFLAGS += -lz -lpthread
 # use for raspberry pi
 else ifeq ($(platform), rpi) 
 	   TARGET := $(TARGET_NAME)_libretro.so

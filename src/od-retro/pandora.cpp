@@ -650,6 +650,7 @@ return;
 
 extern cothread_t mainThread;
 extern cothread_t emuThread;
+extern char RETRO_DIR[512];
 
 int skel_main (int argc, char *argv[])
 {
@@ -662,7 +663,7 @@ int skel_main (int argc, char *argv[])
 #if defined(ANDROID) || defined(__ANDROID__)
 sprintf(start_path_data,"/mnt/sdcard/uae4arm\0");
 #else
-sprintf(start_path_data,"~/uae4arm\0");
+sprintf(start_path_data,"%s/uae4arm\0",RETRO_DIR);
 #endif
 LOGI("spd(%s)\n",start_path_data);
 
