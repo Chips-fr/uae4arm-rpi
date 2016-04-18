@@ -63,10 +63,10 @@ void read_joystick(int nr, unsigned int *dir, int *button)
 	{
 		// get joystick direction via dPad or joystick
 		int hat=SDL_JoystickGetHat(joy,0);
-		if ((hat & SDL_HAT_RIGHT) || dpadRight || SDL_JoystickGetAxis(joy, 0) > 0) right=1;
-		if ((hat & SDL_HAT_LEFT)  || dpadLeft  || SDL_JoystickGetAxis(joy, 0) < 0) left=1;
-		if ((hat & SDL_HAT_UP)    || dpadUp    || SDL_JoystickGetAxis(joy, 1) < 0) top=1;
-		if ((hat & SDL_HAT_DOWN)  || dpadDown  || SDL_JoystickGetAxis(joy, 1) > 0) bot=1;
+		if ((hat & SDL_HAT_RIGHT) || dpadRight || SDL_JoystickGetAxis(joy, 0) > 4000) right=1;
+		if ((hat & SDL_HAT_LEFT)  || dpadLeft  || SDL_JoystickGetAxis(joy, 0) < -4000) left=1;
+		if ((hat & SDL_HAT_UP)    || dpadUp    || SDL_JoystickGetAxis(joy, 1) < -4000) top=1;
+		if ((hat & SDL_HAT_DOWN)  || dpadDown  || SDL_JoystickGetAxis(joy, 1) > 4000) bot=1;
 		if (currprefs.pandora_joyConf)
 		{
 			if ((buttonX && currprefs.pandora_jump > -1) || SDL_JoystickGetButton(joy, currprefs.pandora_jump))
