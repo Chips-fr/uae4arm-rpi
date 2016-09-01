@@ -1,3 +1,11 @@
+# Changes in forked version
+- New target platform: Pi 3
+- Optimizations for Pi 3 added
+- Pi 3 is now the default target if no Platform is specified
+- Added fixes for keyboard LEDs
+- Code formatting and cleanup
+- Merged improvements from Android port
+
 # uae4arm-rpi
 Port of uae4arm on Raspberry Pi
 
@@ -30,23 +38,23 @@ How to compile on Raspbian Jessie:
 
    Install following packages:
 
-      sudo apt-get install libsdl1.2-dev
-      sudo apt-get install libguichan-dev
-      sudo apt-get install libsdl-ttf2.0-dev
-      sudo apt-get install libsdl-gfx1.2-dev
-      sudo apt-get install libxml2-dev
-      sudo apt-get install libflac-dev
-      sudo apt-get install libmpg123-dev
+      sudo apt-get install libsdl-dev libguichan-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libxml2-dev libflac-dev libmpg123-dev
 
-   Then for Raspberry Pi 2:  
+   Then for Raspberry Pi 3:  
 
       make
 
-   Or for Raspberry Pi 1:  
+   For Raspberry Pi 2:
+
+      make PLATFORM=rpi2
+
+   For Raspberry Pi 1:  
 
       make PLATFORM=rpi1
+   
+   For Generic SDL:  
 
-
+      make PLATFORM=generic-sdl
 
 How to compile on Raspbian Whezzy:  
 
