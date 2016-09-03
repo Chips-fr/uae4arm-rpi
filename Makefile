@@ -14,17 +14,18 @@ else ifeq ($(PLATFORM),rpi1)
 	CPU_FLAGS += -mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard
 	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND
 	LDFLAGS += -lbcm_host
-	HAVE_DISPMANX = 1
 	DEFS += -DRASPBERRY
+	HAVE_DISPMANX = 1
+	USE_PICASSO96 = 1
 else ifeq ($(PLATFORM),generic-sdl)
 	# On Raspberry Pi uncomment below line or remove ARMV6T2 define.
-	#CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	MORE_CFLAGS += -DARMV6T2
 	HAVE_SDL_DISPLAY = 1
 else ifeq ($(PLATFORM),gles)
 	# For Raspberry Pi uncomment the two below lines
-	#LDFLAGS += -lbcm_host
-	#CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	LDFLAGS += -lbcm_host
+	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	MORE_CFLAGS += -DARMV6T2
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
@@ -249,7 +250,10 @@ endif
 
 ifeq ($(HAVE_NEON), 1)
 	OBJS += src/od-pandora/neon_helper.o
+else
+	OBJS += src/od-pandora/arm_helper.o
 endif
+
 
 OBJS += src/newcpu.o
 OBJS += src/readcpu.o
@@ -265,6 +269,11 @@ OBJS += src/jit/compemu_support.o
 
 src/od-pandora/neon_helper.o: src/od-pandora/neon_helper.s
 	$(CXX) $(CPU_FLAGS) -Wall -o src/od-pandora/neon_helper.o -c src/od-pandora/neon_helper.s
+
+src/od-pandora/arm_helper.o: src/od-pandora/arm_helper.s
+	$(CXX) $(CPU_FLAGS) -Wall -o src/od-pandora/arm_helper.o -c src/od-pandora/arm_helper.s
+
+
 
 src/trace.o: src/trace.c
 	$(CC) $(MORE_CFLAGS) -c src/trace.c -o src/trace.o

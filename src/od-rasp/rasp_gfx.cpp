@@ -678,7 +678,8 @@ int picasso_palette (void)
     int r = picasso96_state.CLUT[i].Red;
     int g = picasso96_state.CLUT[i].Green;
     int b = picasso96_state.CLUT[i].Blue;
-  	uae_u32 v = CONVERT_RGB(r << 16 | g << 8 | b);
+    int value = (r << 16 | g << 8 | b);
+    uae_u32 v = CONVERT_RGB(value);
 	  if (v !=  picasso_vidinfo.clut[i]) {
 	     picasso_vidinfo.clut[i] = v;
 	     changed = 1;

@@ -2879,15 +2879,15 @@ static void statusline (uae_u8 *dst)
 
 static void copyall (uae_u8 *src, uae_u8 *dst)
 {
-  if (picasso96_state.RGBFormat == RGBFB_R5G6B5)
-    copy_screen_16bit_swap(dst, src, picasso96_state.Width * picasso96_state.Height * 2);
-  else if(picasso96_state.RGBFormat == RGBFB_CLUT)
-  {
-    int pixels = picasso96_state.Width * picasso96_state.Height;
-    copy_screen_8bit(dst, src, pixels, picasso_vidinfo.clut);
-  }
-  else
-    copy_screen_32bit_to_16bit_neon(dst, src, picasso96_state.Width * picasso96_state.Height * 4);
+    if (picasso96_state.RGBFormat == RGBFB_R5G6B5)
+        copy_screen_16bit_swap(dst, src, picasso96_state.Width * picasso96_state.Height * 2);
+    else if (picasso96_state.RGBFormat == RGBFB_CLUT)
+    {
+        int pixels = picasso96_state.Width * picasso96_state.Height;
+        copy_screen_8bit(dst, src, pixels, picasso_vidinfo.clut);
+    }
+    else
+        copy_screen_32bit_to_16bit(dst, src, picasso96_state.Width * picasso96_state.Height * 4);
 }
 
 static void flushpixels (void)
