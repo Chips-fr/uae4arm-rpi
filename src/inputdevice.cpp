@@ -319,35 +319,44 @@ static bool write_config_head (struct zfile *f, int idnum, int devnum, TCHAR *na
 
 static bool write_slot (TCHAR *p, struct uae_input_device *uid, int i, int j)
 {
-	bool ok = false;
-	if (i < 0 || j < 0) {
-		_tcscpy (p, _T("NULL"));
-		return false;
-	}
-	uae_u64 flags = uid->flags[i][j];
-	if (uid->custom[i][j] && _tcslen (uid->custom[i][j]) > 0) {
-		_stprintf (p, _T("'%s'.%d"), uid->custom[i][j], flags & ID_FLAG_SAVE_MASK_CONFIG);
-		ok = true;
-	} else if (uid->eventid[i][j] > 0) {
-		_stprintf (p, _T("%s.%d"), events[uid->eventid[i][j]].confname, flags & ID_FLAG_SAVE_MASK_CONFIG);
-		ok = true;
-	} else {
-		_tcscpy (p, _T("NULL"));
-	}
-	if (ok && (flags & ID_FLAG_SAVE_MASK_QUALIFIERS)) {
-		TCHAR *p2 = p + _tcslen (p);
-		*p2++ = '.';
-		for (int i = 0; i < MAX_INPUT_QUALIFIERS * 2; i++) {
-			if ((ID_FLAG_QUALIFIER1 << i) & flags) {
-				if (i & 1)
-					_stprintf (p2, _T("%c"), 'a' + i / 2);
-				else
-					_stprintf (p2, _T("%c"), 'A' + i / 2);
-				p2++;
-			}
-		}
-	}
-	return ok;
+    bool ok = false;
+    if (i < 0 || j < 0)
+    {
+        _tcscpy (p, _T("NULL"));
+        return false;
+    }
+    uae_u64 flags = uid->flags[i][j];
+    if (uid->custom[i][j] && _tcslen (uid->custom[i][j]) > 0)
+    {
+        _stprintf (p, _T("'%s'.%llu"), uid->custom[i][j], flags & ID_FLAG_SAVE_MASK_CONFIG);
+        ok = true;
+    }
+    else if (uid->eventid[i][j] > 0)
+    {
+        _stprintf (p, _T("%s.%llu"), events[uid->eventid[i][j]].confname, flags & ID_FLAG_SAVE_MASK_CONFIG);
+        ok = true;
+    }
+    else
+    {
+        _tcscpy (p, _T("NULL"));
+    }
+    if (ok && (flags & ID_FLAG_SAVE_MASK_QUALIFIERS))
+    {
+        TCHAR *p2 = p + _tcslen (p);
+        *p2++ = '.';
+        for (int i = 0; i < MAX_INPUT_QUALIFIERS * 2; i++)
+        {
+            if ((ID_FLAG_QUALIFIER1 << i) & flags)
+            {
+                if (i & 1)
+                    _stprintf (p2, _T("%c"), 'a' + i / 2);
+                else
+                    _stprintf (p2, _T("%c"), 'A' + i / 2);
+                p2++;
+            }
+        }
+    }
+    return ok;
 }
 
 static void kbrlabel (TCHAR *s)
