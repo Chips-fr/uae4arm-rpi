@@ -787,6 +787,8 @@ void picasso_InitResolutions (void)
   DisplayModes = Displays[0].DisplayModes;
 }
 
+#endif
+
 bool vsync_switchmode (int hz)
 {
 	int changed_height = changed_prefs.gfx_size.height;
@@ -849,6 +851,8 @@ bool target_graphics_buffer_update (void)
 
   return true;
 }
+
+#ifdef PICASSO96
 
 
 void gfx_set_picasso_state (int on)

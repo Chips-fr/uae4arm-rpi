@@ -263,8 +263,8 @@ OBJS += src/jit/compstbl.o
 OBJS += src/jit/compemu_fpp.o
 OBJS += src/jit/compemu_support.o
 
-src/osdep/neon_helper.o: src/osdep/neon_helper.s
-	$(CXX) $(CPU_FLAGS) -Wall -o src/osdep/neon_helper.o -c src/osdep/neon_helper.s
+src/od-pandora/neon_helper.o: src/od-pandora/neon_helper.s
+	$(CXX) $(CPU_FLAGS) -Wall -o src/od-pandora/neon_helper.o -c src/od-pandora/neon_helper.s
 
 src/trace.o: src/trace.c
 	$(CC) $(MORE_CFLAGS) -c src/trace.c -o src/trace.o
