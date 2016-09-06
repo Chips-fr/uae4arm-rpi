@@ -4,23 +4,20 @@ endif
 
 ifeq ($(PLATFORM),rpi3)
 	CPU_FLAGS += -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard
-	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2
 	LDFLAGS += -lbcm_host
-	DEFS += -DRASPBERRY
 	HAVE_NEON = 1
 	HAVE_DISPMANX = 1
 else ifeq ($(PLATFORM),rpi2)
 	CPU_FLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 
 	LDFLAGS += -lbcm_host
-	DEFS += -DRASPBERRY
 	HAVE_NEON = 1
 	HAVE_DISPMANX = 1
 else ifeq ($(PLATFORM),rpi1)
 	CPU_FLAGS += -mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard
-	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND
 	LDFLAGS += -lbcm_host
-	DEFS += -DRASPBERRY
 	HAVE_DISPMANX = 1
 else ifeq ($(PLATFORM),generic-sdl)
 	# On Raspberry Pi uncomment below line or remove ARMV6T2 define.
@@ -50,7 +47,7 @@ all: $(PROG)
 
 PANDORA=1
 #GEN_PROFILE=1
-USE_PROFILE=1
+#USE_PROFILE=1
 
 DEFAULT_CFLAGS = $(CFLAGS) -I/usr/include/SDL -D_GNU_SOURCE=1 -D_REENTRANT
 
@@ -70,9 +67,12 @@ endif
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 MORE_CFLAGS += -Isrc -Isrc/od-pandora -Isrc/td-sdl -Isrc/include 
 MORE_CFLAGS += -Wno-unused -Wno-format -Wno-write-strings -Wno-multichar
-MORE_CFLAGS += -fuse-ld=gold -fdiagnostics-color=auto
+#MORE_CFLAGS += -fuse-ld=gold
+MORE_CFLAGS += -fdiagnostics-color=auto
 MORE_CFLAGS += -mstructure-size-boundary=32
 MORE_CFLAGS += -falign-functions=32
+
+TRACE_CFLAGS = 
 
 ifndef DEBUG
 MORE_CFLAGS += -Ofast -pipe -fsingle-precision-constant
@@ -93,7 +93,7 @@ ifdef USE_PROFILE
 MORE_CFLAGS += -fprofile-use -fbranch-probabilities -fvpt -funroll-loops -fpeel-loops -ftracer -ftree-loop-distribute-patterns
 endif
 
-MY_CFLAGS  = $(MORE_CFLAGS) $(DEFAULT_CFLAGS)
+MY_CFLAGS  = $(CPU_FLAGS) $(MORE_CFLAGS) $(DEFAULT_CFLAGS)
 
 OBJS =	\
 	src/akiko.o \
@@ -225,6 +225,10 @@ ifdef PANDORA
 OBJS += src/od-pandora/gui/sdltruetypefont.o
 endif
 
+ifdef DEBUG
+OBJS += src/trace.o
+endif
+
 ifeq ($(HAVE_DISPMANX), 1)
 OBJS += src/od-rasp/rasp_gfx.o
 endif
@@ -266,7 +270,7 @@ src/od-pandora/arm_helper.o: src/od-pandora/arm_helper.s
 	$(CXX) $(CPU_FLAGS) -faling-functions=32 -Wall -o src/od-pandora/arm_helper.o -c src/od-pandora/arm_helper.s
 
 src/trace.o: src/trace.c
-	$(CC) $(MORE_CFLAGS) -c src/trace.c -o src/trace.o
+	$(CC) $(MORE_CFLAGS) -std=c11 -c src/trace.c -o src/trace.o
 
 .cpp.o:
 	$(CXX) $(MY_CFLAGS) $(TRACE_CFLAGS) -c $< -o $@
@@ -274,12 +278,12 @@ src/trace.o: src/trace.c
 .cpp.s:
 	$(CXX) $(MY_CFLAGS) -S -c $< -o $@
 
-$(PROG): $(OBJS) src/trace.o
+$(PROG): $(OBJS)
 ifndef DEBUG
 	$(CXX) $(MY_CFLAGS) -o $(PROG) $(OBJS) $(MY_LDFLAGS)
 	$(STRIP) $(PROG)
 else
-	$(CXX) $(MY_CFLAGS) -o $(PROG) $(OBJS) src/trace.o $(MY_LDFLAGS)
+	$(CXX) $(MY_CFLAGS) -o $(PROG) $(OBJS) $(MY_LDFLAGS)
 endif
 
 ASMS = \
