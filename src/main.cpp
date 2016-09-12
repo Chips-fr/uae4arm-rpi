@@ -684,6 +684,7 @@ static int real_main2 (int argc, TCHAR **argv)
 	    }
 		  currprefs.produce_sound = 0;
     }
+		gui_flicker_led(LED_POWER, 0, 1);
 		start_program ();
 	}
   return 0;

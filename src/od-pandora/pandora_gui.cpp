@@ -746,7 +746,6 @@ void gui_disk_image_change (int unitnum, const char *name, bool writeprotected)
 void gui_led (int led, int on)
 {
 #ifdef RASPBERRY
-   #define LED_DFs   -2         // Define for any DF* access
 
    unsigned long kbd_led_status;
 
@@ -770,7 +769,7 @@ void gui_led (int led, int on)
    }
 
    // Handle power, hd/cd led status
-   if (led == LED_POWER || led == LED_HD)
+//	if (led == LED_POWER || led == LED_HD || led == LED_CD)
    {
      if (currprefs.kbd_led_num == led)
      {
@@ -795,8 +794,19 @@ void gui_flicker_led (int led, int unitnum, int status)
       gui_data.hd = 0;
       break;
       
-    case LED_POWER:
-      break;
+	case LED_POWER:
+		if (status == 0)
+			gui_led(LED_POWER, 0);
+		else
+			gui_led(LED_POWER, 1);
+		break;
+	
+	case LED_CD:
+		if (status == 0)
+			gui_led(LED_CD, 0);
+		else
+			gui_led(LED_CD, 1);
+		break;
 
   case LED_HD:
       if (status == 0) {
