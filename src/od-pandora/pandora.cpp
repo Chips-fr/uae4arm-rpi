@@ -876,7 +876,9 @@ int main (int argc, char *argv[])
 
   //keyboard_settrans();
   real_main (argc, argv);
-  
+  // restore keyboard LEDs to normal state
+  ioctl(0, KDSETLED, 0xFF);
+
   ClearAvailableROMList();
   romlist_clear();
   free_keyring();
