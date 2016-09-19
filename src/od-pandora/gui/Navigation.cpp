@@ -301,6 +301,11 @@ bool HandleNavigation(int direction)
                 else
                   activeName = searchFor;
               }
+              else
+              {
+                bFoundEnabled = true;
+                break;
+              }
             }
             break;
           }
