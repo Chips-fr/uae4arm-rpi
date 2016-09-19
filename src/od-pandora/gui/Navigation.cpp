@@ -201,11 +201,13 @@ static NavigationMap navMap[] =
   { "cboRight",       "cboLeft",        "Input",          "cboDown",        "cboPort0" },
 
 // PanelMisc
-  { "StatusLine",     "Miscellaneous",  "Miscellaneous",  "BSDSocket",      "HideIdle" },
-  { "HideIdle",       "Miscellaneous",  "Miscellaneous",  "StatusLine",     "ShowGUI" },
-  { "ShowGUI",        "Miscellaneous",  "Miscellaneous",  "HideIdle",      "BSDSocket" },
-  { "BSDSocket",      "Miscellaneous",  "Miscellaneous",  "ShowGUI",      "StatusLine" },
-  
+    { "StatusLine",     "Miscellaneous",  "Miscellaneous",  "BSDSocket",      "HideIdle" },
+    { "HideIdle",       "Miscellaneous",  "Miscellaneous",  "StatusLine",     "ShowGUI" },
+    { "ShowGUI",        "Miscellaneous",  "Miscellaneous",  "HideIdle",      "BSDSocket" },
+    { "BSDSocket",      "Miscellaneous",  "Miscellaneous",  "ShowGUI",       "numlock" },
+	{ "numlock",		"Miscellaneous",	"scrolllock",	"",					""},
+	{ "scrolllock",		"numlock",			"",				"",					""},
+
 // PanelSavestate
   { "State0",         "Savestates",     "Savestates",     "LoadState",      "State1" },
   { "State1",         "Savestates",     "Savestates",     "State0",         "State2" },
