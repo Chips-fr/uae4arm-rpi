@@ -581,6 +581,9 @@ void moveVertical(int value)
 		changed_prefs.pandora_vertical_offset = 16;
 }
 
+
+extern char keyboard_type;
+
 void gui_handle_events (void)
 {
   int i;
@@ -589,9 +592,16 @@ void gui_handle_events (void)
 	int triggerL = keystate[SDLK_RSHIFT];
 	int triggerR = keystate[SDLK_RCTRL];
 
-
-	if(keystate[SDLK_LCTRL] && keystate[SDLK_LSUPER] && (keystate[SDLK_RSUPER] ||keystate[SDLK_MENU]))
-		uae_reset(0,1);
+	// Strangely in FBCON left window is seen as left alt ??
+	if (keyboard_type == 2) // KEYCODE_FBCON
+	{
+		if(keystate[SDLK_LCTRL] && (keystate[SDLK_LSUPER] || keystate[SDLK_LALT]) && (keystate[SDLK_RSUPER] ||keystate[SDLK_MENU]))
+			uae_reset(0,1);
+	} else
+	{
+		if(keystate[SDLK_LCTRL] && keystate[SDLK_LSUPER] && (keystate[SDLK_RSUPER] ||keystate[SDLK_MENU]))
+			uae_reset(0,1);
+	}
 
 	// L + R
 	if(triggerL && triggerR)
