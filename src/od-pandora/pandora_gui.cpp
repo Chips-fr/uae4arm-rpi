@@ -593,8 +593,8 @@ void gui_handle_events (void)
   int i;
 
 	Uint8 *keystate = SDL_GetKeyState(NULL);
-	int triggerL = keystate[SDLK_RSHIFT];
-	int triggerR = keystate[SDLK_RCTRL];
+	int triggerL = keystate[VK_L];
+	int triggerR = keystate[VK_R];
 
 	// Strangely in FBCON left window is seen as left alt ??
 	if (keyboard_type == 2) // KEYCODE_FBCON
@@ -611,10 +611,10 @@ void gui_handle_events (void)
 	if(triggerL && triggerR)
 	{
 		//up
-		if(keystate[SDLK_UP])
+		if(keystate[VK_UP])
 			moveVertical(1);
 		//down
-		else if(keystate[SDLK_DOWN])
+		else if(keystate[VK_DOWN])
 			moveVertical(-1);
 
 		//1

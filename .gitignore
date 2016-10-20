@@ -2,3 +2,4 @@
 conf/*.uae
 conf/*.conf
 kickstarts/*.rom
+/.project

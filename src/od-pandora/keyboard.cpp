@@ -296,7 +296,7 @@ static struct uae_input_device_kbr_default keytrans_amiga[] = {
   { SDLK_BACKSPACE, INPUTEVENT_KEY_BACKSPACE },
 	{ SDLK_TAB, INPUTEVENT_KEY_TAB },
 	{ SDLK_RETURN, INPUTEVENT_KEY_RETURN },
-	{ SDLK_ESCAPE, INPUTEVENT_KEY_ESC },
+	{ VK_ESCAPE, INPUTEVENT_KEY_ESC },
 	{ SDLK_SPACE, INPUTEVENT_KEY_SPACE },
 	{ SDLK_QUOTE, INPUTEVENT_KEY_SINGLEQUOTE },
 	{ SDLK_COMMA, INPUTEVENT_KEY_COMMA },
@@ -371,56 +371,56 @@ int translate_pandora_keys(int symbol, int *modifier)
 #endif
   switch(symbol)
   {
-    case SDLK_UP:
+    case VK_UP:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + dPad -> cursor keys
         *modifier = KMOD_NONE;
         return AK_UP;
       }
       break;
       
-    case SDLK_DOWN:
+    case VK_DOWN:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + dPad -> cursor keys
         *modifier = KMOD_NONE;
         return AK_DN;
       }
       break;
 
-    case SDLK_LEFT:
+    case VK_LEFT:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + dPad -> cursor keys
         *modifier = KMOD_NONE;
         return AK_LF;
       }
       break;
 
-    case SDLK_RIGHT:
+    case VK_RIGHT:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + dPad -> cursor keys
         *modifier = KMOD_NONE;
         return AK_RT;
       }
       break;
 
-    case SDLK_HOME:
+    case VK_A:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + button A -> CTRL
         *modifier = KMOD_NONE;
         return AK_CTRL;
       }
       break;
 
-    case SDLK_END:
+    case VK_B:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + button B -> left ALT
         *modifier = KMOD_NONE;
         return AK_LALT;
       }
       break;
 
-    case SDLK_PAGEDOWN:
+    case VK_X:
       if(*modifier == KMOD_RCTRL) { // Right shoulder + button X -> HELP
         *modifier = KMOD_NONE;
         return AK_HELP;
       }
       break;
 
-    case SDLK_PAGEUP: // button Y -> Space
+    case VK_Y: // button Y -> Space
       *modifier = KMOD_NONE;
       return AK_SPC;
 
