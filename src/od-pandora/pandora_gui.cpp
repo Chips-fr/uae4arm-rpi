@@ -590,11 +590,7 @@ extern char keyboard_type;
 
 void gui_handle_events (void)
 {
-  int i;
-
 	Uint8 *keystate = SDL_GetKeyState(NULL);
-	int triggerL = keystate[VK_L];
-	int triggerR = keystate[VK_R];
 
 	// Strangely in FBCON left window is seen as left alt ??
 	if (keyboard_type == 2) // KEYCODE_FBCON
@@ -605,137 +601,6 @@ void gui_handle_events (void)
 	{
 		if(keystate[SDLK_LCTRL] && keystate[SDLK_LSUPER] && (keystate[SDLK_RSUPER] ||keystate[SDLK_MENU]))
 			uae_reset(0,1);
-	}
-
-	// L + R
-	if(triggerL && triggerR)
-	{
-		//up
-		if(keystate[VK_UP])
-			moveVertical(1);
-		//down
-		else if(keystate[VK_DOWN])
-			moveVertical(-1);
-
-		//1
-		else if(keystate[SDLK_1])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[0];
-			update_display(&changed_prefs);
-		}
-		//2
-		else if(keystate[SDLK_2])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[1];
-			update_display(&changed_prefs);
-		}
-		//3
-		else if(keystate[SDLK_3])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[2];
-			update_display(&changed_prefs);
-		}
-		//4
-		else if(keystate[SDLK_4])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[3];
-			update_display(&changed_prefs);
-		}
-		//5
-		else if(keystate[SDLK_5])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[4];
-			update_display(&changed_prefs);
-		}
-		//6
-		else if(keystate[SDLK_6])
-		{
-			changed_prefs.gfx_size.height = amigaheight_values[5];
-			update_display(&changed_prefs);
-		}
-		//9
-		else if(keystate[SDLK_9])
-		{
-			for(i=0; i<AMIGAHEIGHT_COUNT; ++i)
-			{
-			  if(currprefs.gfx_size.height == amigaheight_values[i])
-		    {
-		      if(i > 0)
-		        changed_prefs.gfx_size.height = amigaheight_values[i - 1];
-		      else
-		        changed_prefs.gfx_size.height = amigaheight_values[AMIGAHEIGHT_COUNT - 1];
-		      break;
-		    }
-			}
-			update_display(&changed_prefs);
-		}
-		//0
-		else if(keystate[SDLK_0])
-		{
-			for(i=0; i<AMIGAHEIGHT_COUNT; ++i)
-			{
-			  if(currprefs.gfx_size.height == amigaheight_values[i])
-		    {
-		      if(i < AMIGAHEIGHT_COUNT - 1)
-		        changed_prefs.gfx_size.height = amigaheight_values[i + 1];
-		      else
-		        changed_prefs.gfx_size.height = amigaheight_values[0];
-		      break;
-		    }
-			}
-			update_display(&changed_prefs);
-		}
-		else if(keystate[SDLK_w])
-		{
-			// Change width
-			for(i=0; i<AMIGAWIDTH_COUNT; ++i)
-			{
-			  if(currprefs.gfx_size.width == amigawidth_values[i])
-		    {
-		      if(i < AMIGAWIDTH_COUNT - 1)
-		        changed_prefs.gfx_size.width = amigawidth_values[i + 1];
-		      else
-		        changed_prefs.gfx_size.width = amigawidth_values[0];
-		      break;
-		    }
-			}
-			update_display(&changed_prefs);
-		}
-		// r
-		else if(keystate[SDLK_r])
-		{
-		  // Change resolution (lores/hires)
-		  if(currprefs.gfx_size.width > 600)
-		    changed_prefs.gfx_size.width = currprefs.gfx_size.width / 2;
-		  else
-		    changed_prefs.gfx_size.width = currprefs.gfx_size.width * 2;
-			update_display(&changed_prefs);
-		}
-	}
-
-	else if(triggerL)
-	{
-		if(keystate[SDLK_c])
-		  currprefs.pandora_customControls = !currprefs.pandora_customControls;
-
-		else if(keystate[SDLK_d])
-			changed_prefs.leds_on_screen = !currprefs.leds_on_screen;
-
-		else if(keystate[SDLK_f])
-			changed_prefs.gfx_framerate ? changed_prefs.gfx_framerate = 0 : changed_prefs.gfx_framerate = 1;
-
-  	else if(keystate[SDLK_s])
-  		savestate_state = STATE_DOSAVE;
-
-	  else if(keystate[SDLK_l])
-  	{
-  		FILE *f=fopen(savestate_fname, "rb");
-  		if(f)
-  		{
-  			fclose(f);
-  			savestate_state = STATE_DORESTORE;
-  		}
-  	}
 	}
 }
 
@@ -798,6 +663,7 @@ void gui_flicker_led (int led, int unitnum, int status)
    gui_led(led, status);
 #endif
 }
+
 
 void gui_filename (int num, const char *name)
 {
@@ -877,17 +743,19 @@ void FilterFiles(std::vector<std::string> *files, const char *filter[])
 bool DevicenameExists(const char *name)
 {
   int i;
-  struct uaedev_config_info *uci;
-    
+  struct uaedev_config_data *uci;
+  struct uaedev_config_info *ci;
+  
   for(i=0; i<MAX_HD_DEVICES; ++i)
   {
     uci = &changed_prefs.mountconfig[i];
-
-    if(uci->devname && uci->devname[0])
+    ci = &uci->ci;
+    
+    if(ci->devname && ci->devname[0])
     {
-      if(!strcmp(uci->devname, name))
+      if(!strcmp(ci->devname, name))
         return true;
-      if(uci->volname != 0 && !strcmp(uci->volname, name))
+      if(ci->volname != 0 && !strcmp(ci->volname, name))
         return true;
     }
   }
@@ -911,13 +779,13 @@ void CreateDefaultDevicename(char *name)
 
 int tweakbootpri (int bp, int ab, int dnm)
 {
-    if (dnm)
-	return -129;
-    if (!ab)
-	return -128;
-    if (bp < -127)
-	bp = -127;
-    return bp;
+  if (dnm)
+  	return BOOTPRI_NOAUTOMOUNT;
+  if (!ab)
+  	return BOOTPRI_NOAUTOBOOT;
+  if (bp < -127)
+  	bp = -127;
+  return bp;
 }
 
 

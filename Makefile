@@ -50,7 +50,7 @@ PANDORA=1
 SDL_CFLAGS = `sdl-config --cflags`
 
 DEFS +=  `xml2-config --cflags`
-DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DGP2X -DPANDORA
+DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DPANDORA
 DEFS += -DWITH_INGAME_WARNING
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
 DEFS += -DUSE_SDL
@@ -65,7 +65,7 @@ endif
 
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 
-MORE_CFLAGS += -Isrc -Isrc/od-pandora -Isrc/gp2x -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/gp2x/menu -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
+MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
 MORE_CFLAGS += -fexceptions -fpermissive
 
 LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl
@@ -89,10 +89,10 @@ CXXFLAGS += $(SDL_CFLAGS) $(CPU_FLAGS) $(DEFS) $(MORE_CFLAGS)
 
 
 ifdef GEN_PROFILE
-MORE_CFLAGS += -fprofile-generate=/media/MAINSD/pandora/test -fprofile-arcs
+MORE_CFLAGS += -fprofile-generate=/media/MAINSD/pandora/test -fprofile-arcs -fvpt
 endif
 ifdef USE_PROFILE
-MORE_CFLAGS += -fprofile-use -fbranch-probabilities -fvpt -funroll-loops -fpeel-loops -ftracer -ftree-loop-distribute-patterns
+MORE_CFLAGS += -fprofile-use -fbranch-probabilities -fvpt
 endif
 
 
@@ -123,6 +123,7 @@ OBJS =	\
 	src/fsdb.o \
 	src/fsdb_unix.o \
 	src/fsusage.o \
+	src/gfxboard.o \
 	src/gfxutil.o \
 	src/hardfile.o \
 	src/inputdevice.o \
@@ -256,6 +257,7 @@ endif
 
 
 OBJS += src/newcpu.o
+OBJS += src/newcpu_common.o
 OBJS += src/readcpu.o
 OBJS += src/cpudefs.o
 OBJS += src/cpustbl.o

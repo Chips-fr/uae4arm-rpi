@@ -68,7 +68,7 @@ void pause_sound (void) { }
 
 void resume_sound (void) { }
 
-void update_sound (int) { }
+void update_sound (float) { }
 
 void reset_sound (void) { }
 
@@ -88,30 +88,13 @@ void restart_sound_buffer(void) { }
 static int have_sound = 0;
 static int lastfreq;
 
-void update_sound (int freq, int lof)
+void update_sound (float clk)
 {
-  float lines = maxvpos_nom;
-	float hpos = maxhpos;
   float evtime;
-
-  if (freq < 0)
-  	freq = lastfreq;
-  lastfreq = freq;
-
-  if (currprefs.ntscmode || screen_is_picasso) {
-        hpos += 0.5;
-        lines += 0.5;
-  } else {
-    if (lof < 0)
-          lines += 0.5;
-    else if(lof > 0)
-          lines += 1.0;
-  }
-
-  evtime = hpos * lines * freq * CYCLE_UNIT / (float)currprefs.sound_freq;
+  
+  evtime = clk * CYCLE_UNIT / (float)currprefs.sound_freq;
 	scaled_sample_evtime = (int)evtime;
 }
-
 
 static int s_oldrate = 0, s_oldbits = 0, s_oldstereo = 0;
 static int sound_thread_active = 0, sound_thread_exit = 0;

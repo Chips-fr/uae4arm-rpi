@@ -17,7 +17,14 @@ extern xcolnr xcolors[4096];
 extern int graphics_setup (void);
 extern int graphics_init (bool);
 extern void graphics_leave (void);
-extern void handle_events (void);
+
+extern void gui_handle_events (void);
+STATIC_INLINE void handle_events (void)
+{
+  // Still needed for keyboard reset. Need to move this in keyboard management (events RESET do exist).
+  gui_handle_events ();
+}
+
 extern int handle_msgpump (void);
 extern void setup_brkhandler (void);
 extern bool vsync_switchmode (int);
@@ -49,6 +56,8 @@ extern unsigned int doMask (int p, int bits, int shift);
 extern unsigned int doMask256 (int p, int bits, int shift);
 extern void alloc_colors64k (int, int, int, int, int, int, int);
 extern void alloc_colors_picasso (int rw, int gw, int bw, int rs, int gs, int bs, int rgbfmt);
+
+extern int max_uae_width, max_uae_height;
 
 struct vidbuf_description
 {
