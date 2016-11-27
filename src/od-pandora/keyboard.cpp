@@ -117,7 +117,7 @@ static struct uae_input_device_kbr_default keytrans_amiga_x11[] = {
 	{  87,  INPUTEVENT_KEY_NP_1},
 	{  88,  INPUTEVENT_KEY_NP_2},
 	{  89,  INPUTEVENT_KEY_NP_3},
-	{  104, INPUTEVENT_KEY_ENTER},   // The ENT from keypad..
+	{  104, INPUTEVENT_KEY_ENTER},         // The ENT from keypad..
 
 	{  90,  INPUTEVENT_KEY_NP_0},
 	{  91,  INPUTEVENT_KEY_NP_PERIOD},
@@ -128,13 +128,16 @@ static struct uae_input_device_kbr_default keytrans_amiga_x11[] = {
 	{ 114,  INPUTEVENT_KEY_CURSOR_RIGHT},
 
 
-	{ 115,  INPUTEVENT_KEY_HELP},  // Help mapped to End key.
+	{ 110,  INPUTEVENT_KEY_NP_LPAREN},     // Map home   to left  parent (as fsuae)
+	{ 112,  INPUTEVENT_KEY_NP_RPAREN},     // Map pageup to right parent (as fsuae)
+
+	{ 115,  INPUTEVENT_KEY_HELP},          // Help mapped to End key (as fsuae)
 
 	{ 119,  INPUTEVENT_KEY_DEL},
 
-	{  133,  INPUTEVENT_KEY_AMIGA_LEFT},   // Left amiga mapped to left Windows
-	{  134,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to right windows key.
-	{  135,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to Menu key.
+	{ 133,  INPUTEVENT_KEY_AMIGA_LEFT},   // Left amiga mapped to left Windows
+	{ 134,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to right windows key.
+	{ 135,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to Menu key.
 	{ -1, 0 }
   };
 
@@ -240,7 +243,7 @@ static struct uae_input_device_kbr_default keytrans_amiga_fbcon[] = {
 	{  87 -8 ,  INPUTEVENT_KEY_NP_1},
 	{  88 -8 ,  INPUTEVENT_KEY_NP_2},
 	{  89 -8 ,  INPUTEVENT_KEY_NP_3},
-	{  104 -8 , INPUTEVENT_KEY_ENTER},   // The ENT from keypad..
+	{  104 -8, INPUTEVENT_KEY_ENTER},         // The ENT from keypad..
 
 	{  90 -8 ,  INPUTEVENT_KEY_NP_0},
 	{  91 -8 ,  INPUTEVENT_KEY_PERIOD},
@@ -250,13 +253,17 @@ static struct uae_input_device_kbr_default keytrans_amiga_fbcon[] = {
 	{ 116 -8,  INPUTEVENT_KEY_CURSOR_DOWN},
 	{ 114 -8,  INPUTEVENT_KEY_CURSOR_RIGHT},
 
-	{ 115 -8,  INPUTEVENT_KEY_HELP},  // Help mapped to End key.
+
+	{ 110 -8,  INPUTEVENT_KEY_NP_LPAREN},     // Map home   to left  parent (as fsuae)
+	{ 112 -8,  INPUTEVENT_KEY_NP_RPAREN},     // Map pageup to right parent (as fsuae)
+
+	{ 115 -8,  INPUTEVENT_KEY_HELP},          // Help mapped to End key (as fsuae)
 
 	{ 119 -8,  INPUTEVENT_KEY_DEL},
 
-	{  133 -8 ,  INPUTEVENT_KEY_AMIGA_LEFT},   // Left amiga mapped to left Windows
-	{  134 -8 ,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to right windows key.
-	{  135 -8 ,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to Menu key.
+	{ 133 -8,  INPUTEVENT_KEY_AMIGA_LEFT},   // Left amiga mapped to left Windows
+	{ 134 -8,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to right windows key.
+	{ 135 -8,  INPUTEVENT_KEY_AMIGA_RIGHT},  // Right amiga mapped to Menu key.
 	{ -1, 0 }
   };
 
