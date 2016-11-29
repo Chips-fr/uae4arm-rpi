@@ -28,12 +28,15 @@
 #include <android/log.h>
 #endif
 
+// "consumer" means the actual SDL sound output, as opposed to 
+#define SOUND_CONSUMER_BUFFER_LENGTH (SNDBUFFER_LEN * SOUND_BUFFERS_COUNT / 4)
+
 extern unsigned long next_sample_evtime;
 
 int produce_sound=0;
 int changed_produce_sound=0;
 
-#define SOUND_USE_SEMAPHORES
+// #define SOUND_USE_SEMAPHORES
 uae_u16 sndbuffer[SOUND_BUFFERS_COUNT][(SNDBUFFER_LEN+32)*DEFAULT_SOUND_CHANNELS];
 unsigned n_callback_sndbuff, n_render_sndbuff;
 uae_u16 *sndbufpt = sndbuffer[0];
@@ -101,20 +104,20 @@ static int sound_thread_active = 0, sound_thread_exit = 0;
 static sem_t sound_sem, callback_sem;
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-static int cnt = 0;
+static int rdcnt = 0;
 
 static int wrcnt = 0;
 
-static void sound_thread_mixer(void *ud, Uint8 *stream, int len)
+static void sound_copy_produced_block(void *ud, Uint8 *stream, int len)
 {
-	if (sound_thread_exit) return;
-	int sem_val;
-	sound_thread_active = 1;
-
-
 #ifdef SOUND_USE_SEMAPHORES
 	sem_wait(&sound_sem);
 #endif
+/*	if (rdcnt >= wrcnt) {
+		printf("PANIIK!!!\n");
+		if (rdcnt > wrcnt) printf("EXTRA PANIIK!!!\n");
+	} */
+
 	//printf("Sound callback %i\n", cnt);
 
 	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound callback cnt %d buf %d\n", cnt, cnt%SOUND_BUFFERS_COUNT);
@@ -123,23 +126,61 @@ static void sound_thread_mixer(void *ud, Uint8 *stream, int len)
 
 			if(cdaudio_active && currprefs.sound_freq == 44100 && cdrdcnt < cdwrcnt)
 			{
-				for(int i=0; i<SNDBUFFER_LEN * 2; ++i)
-				sndbuffer[cnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
-				cdrdcnt++;
-			}
+				printf("cd audio what !? not supported yet\n");
 
-			memcpy(stream, sndbuffer[cnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN*4, len));
+				for(int i=0; i<SNDBUFFER_LEN * 2; ++i)
+				sndbuffer[rdcnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
+				cdrdcnt++; 
+			}
+	
+			memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN*4, len));
 		}
 	else
-	  	memcpy(stream, sndbuffer[cnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN * 2, len));
+	  	memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN * 2, len));
 
 
 	//cdrdcnt = cdwrcnt;
-	cnt++;
+
+	// how many smaller "producer buffers" do we have ready to be played?
+/*	float sound_production_buffer_fill_ratio = (float)(wrcnt - rdcnt)/(float)(SOUND_BUFFERS_COUNT);
+
+	if (sound_production_buffer_fill_ratio > 0.6f)
+	// over 60 % full? means, we're producing sound faster than we're consuming it
+		rdcnt += 2; // skip a producer-buffer to let sound output catch with emulation
+        else if (sound_production_buffer_fill_ratio > 0.48f)
+		rdcnt++; */
+	if (wrcnt - rdcnt >= (SOUND_BUFFERS_COUNT/2))
+		rdcnt++;
+
+	// if less than half of the production buffers are full, it means that more sound has been
+	// output (by SDL) than the emulation has produced. We solve this by simply not 
+ 	// moving the "read head", until the emulation side has got enough headway.
+
 #ifdef SOUND_USE_SEMAPHORES
 	sem_post(&callback_sem);
 #endif
 
+}
+
+static void sound_thread_mixer(void *ud, Uint8 *stream, int len)
+{
+	static int call_count = 0;
+	if (sound_thread_exit) return;
+	sound_thread_active = 1;
+
+	int sample_size = currprefs.sound_stereo ? 4 : 2;
+
+	while (len > 0) {
+		int l = MIN(SNDBUFFER_LEN * sample_size, len);
+		sound_copy_produced_block(ud, stream, l);
+		stream += l;
+		len -= l;
+	}
+	
+//	if (call_count % 10 == 0)
+//		printf("wrcnt - rdcnt: %d\n", wrcnt - rdcnt);
+
+	call_count++;
 }
 
 static void init_soundbuffer_usage(void)
@@ -148,7 +189,7 @@ static void init_soundbuffer_usage(void)
   render_sndbuff = sndbuffer[0];
   finish_sndbuff = sndbuffer[0] + SNDBUFFER_LEN * 2;
   //output_cnt = 0;
-  cnt = 0;
+  rdcnt = 0;
   wrcnt = 0;
   
   cdbufpt = cdaudio_buffer[0];
@@ -189,7 +230,8 @@ static int pandora_start_sound(int rate, int bits, int stereo)
 	as.freq = rate;
 	as.format = (bits == 8 ? AUDIO_S8 : AUDIO_S16);
 	as.channels = (stereo ? 2 : 1);
-	as.samples = SNDBUFFER_LEN;
+	as.samples = SOUND_CONSUMER_BUFFER_LENGTH;
+//	as.samples = SNDBUFFER_LEN;
 	as.callback = sound_thread_mixer;
 
 	if (SDL_OpenAudio(&as, NULL))
@@ -234,7 +276,7 @@ void finish_sound_buffer (void)
 
 	//printf("Sound finish %i\n", wrcnt);
 
-
+	// "GET NEXT PRODUCER BUFFER FOR WRITING"
 	wrcnt++;
 	sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
 
@@ -248,7 +290,10 @@ void finish_sound_buffer (void)
 	sem_post(&sound_sem);
 	sem_wait(&callback_sem);
 #endif
-
+/*	while ((wrcnt % SOUND_BUFFERS_COUNT) == (rdcnt % SOUND_BUFFERS_COUNT))
+	{
+		
+	} */
 #ifdef DEBUG_SOUND
 	dbg(" sound.c : ! finish_sound_buffer");
 #endif

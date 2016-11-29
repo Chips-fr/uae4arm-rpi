@@ -138,13 +138,21 @@ static void open_screen(struct uae_prefs *p)
   }
 
 
+  if(Dummy_prSDLScreen)
+  { // y.f. 2016-10-13 : free the previous screen surface every time, 
+    // so we can have fullscreen while running and windowed while in config window.
+   // Apparently, something somewhere is resetting the screen.
+	SDL_FreeSurface(Dummy_prSDLScreen);
+	Dummy_prSDLScreen = NULL;
+  }
 
   if(Dummy_prSDLScreen == NULL )
   {
     const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
     printf("DispmanX: Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
-    //Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
-    Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
+//    Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
+//    Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16, SDL_OPENGL | SDL_HWSURFACE );
+     Dummy_prSDLScreen = SDL_SetVideoMode(1200,720,16,SDL_FULLSCREEN);
   }
 
   SDL_ShowCursor(SDL_DISABLE);
@@ -658,8 +666,10 @@ void picasso_InitResolutions (void)
   Displays[0].disabled = 0;
   Displays[0].rect.left = 0;
   Displays[0].rect.top = 0;
-  Displays[0].rect.right = 800;
-  Displays[0].rect.bottom = 640;
+  Displays[0].rect.right = 1280;
+  Displays[0].rect.bottom = 720;
+//  Displays[0].rect.right = 800;
+//  Displays[0].rect.bottom = 640;
   sprintf (tmp, "%s (%d*%d)", "Display", Displays[0].rect.right, Displays[0].rect.bottom);
   Displays[0].name = my_strdup(tmp);
   Displays[0].name2 = my_strdup("Display");

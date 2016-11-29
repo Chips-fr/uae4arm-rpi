@@ -1,5 +1,6 @@
 ifeq ($(PLATFORM),)
-	PLATFORM = rpi2
+	PLATFORM = gles
+#	PLATFORM = rpi2
 endif
 
 ifeq ($(PLATFORM),rpi2)
@@ -24,8 +25,8 @@ else ifeq ($(PLATFORM),generic-sdl)
 	HAVE_SDL_DISPLAY = 1
 else ifeq ($(PLATFORM),gles)
 	# For Raspberry Pi uncomment the two below lines
-	#LDFLAGS += -lbcm_host
-	#CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	LDFLAGS += -lbcm_host
+	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	MORE_CFLAGS += -DARMV6T2
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
@@ -233,6 +234,7 @@ endif
 
 ifeq ($(HAVE_GLES_DISPLAY), 1)
 OBJS += src/od-gles/gl.o
+OBJS += src/od-gles/shader_stuff.o
 OBJS += src/od-gles/gl_platform.o
 OBJS += src/od-gles/gles_gfx.o
 MORE_CFLAGS += -I/opt/vc/include/
