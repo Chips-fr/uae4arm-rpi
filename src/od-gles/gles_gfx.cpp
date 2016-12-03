@@ -142,7 +142,7 @@ static void open_screen(struct uae_prefs *p)
   if(Dummy_prSDLScreen == NULL )
   {
     const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
-    printf("DispmanX: Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
+    printf("Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
     //Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
     Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
   }
@@ -281,7 +281,7 @@ void flush_screen ()
   else
     adjust_idletime(next_synctime - start);
   
-  if(last_synctime - next_synctime > time_per_frame - 5000)
+  if(last_synctime - next_synctime > time_per_frame - (long)5000)
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);

@@ -374,7 +374,7 @@ void flush_screen ()
   else
     adjust_idletime(next_synctime - start);
   
-  if (last_synctime - next_synctime > time_per_frame - 5000)
+  if (last_synctime - next_synctime > time_per_frame - (long)5000)
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);

@@ -175,7 +175,7 @@ int idletime_frames = 0;
 unsigned long idletime_time = 0;
 int idletime_percent = 0;
 #define IDLETIME_FRAMES 20
-unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
 
 // Temporary define
 #define OFFSET_FREE_CPU_CYCLES 1500

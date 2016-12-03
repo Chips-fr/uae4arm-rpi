@@ -44,7 +44,7 @@
 
 extern int screen_is_picasso;
 
-unsigned long last_synctime = 0;
+long last_synctime = 0;
 static int frh_count = 0;
 #define LAST_SPEEDUP_LINE 30
 #define SPEEDUP_CYCLES_JIT 2800

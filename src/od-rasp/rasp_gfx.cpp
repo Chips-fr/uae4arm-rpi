@@ -61,8 +61,7 @@ int doStylusRightClick = 0;
 
 int DispManXElementpresent = 0;
 
-static unsigned long previous_synctime = 0;
-static unsigned long next_synctime = 0;
+static long next_synctime = 0;
 
 
 uae_sem_t vsync_wait_sem;
@@ -419,10 +418,11 @@ void flush_screen ()
   else
     adjust_idletime(next_synctime - start);
   
-  if(last_synctime - next_synctime > time_per_frame - 5000)
+  if(last_synctime - next_synctime > time_per_frame - (long)5000)
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+
 
 	init_row_map();
 

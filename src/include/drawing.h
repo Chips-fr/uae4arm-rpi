@@ -207,7 +207,7 @@ extern void init_hardware_for_drawing_frame (void);
 extern void reset_drawing (void);
 extern void drawing_init (void);
 
-extern unsigned long time_per_frame;
+extern long time_per_frame;
 extern void adjust_idletime(unsigned long ns_waited);
 
 /* Finally, stuff that shouldn't really be shared.  */
