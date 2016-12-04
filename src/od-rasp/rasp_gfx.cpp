@@ -374,7 +374,7 @@ void flush_screen ()
     }
   }
 
-  unsigned long start = read_processor_time();
+  long start = read_processor_time();
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
   //  usleep((next_synctime - start) - 1000);
   //SDL_Flip(prSDLScreen);
@@ -410,19 +410,16 @@ void flush_screen ()
 	}
 
   uae_sem_wait (&vsync_wait_sem);
-
+  // Here we are synchronized with VSync
+  // next_synctime is what we were expected as sync time.
   last_synctime = read_processor_time();
-  
-  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - 1000 || next_synctime < start)
+  // Check if we miss a frame (with a margin of 1000 cycles)
+  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000 )
     adjust_idletime(0);
   else
-    adjust_idletime(next_synctime - start);
-  
-  if(last_synctime - next_synctime > time_per_frame - (long)5000)
-    next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
-  else
-    next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
-
+    adjust_idletime(last_synctime - start);
+  // Update next synctime with current sync.
+  next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
 
 	init_row_map();
 

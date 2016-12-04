@@ -61,8 +61,7 @@ int mouseMoving = 0;
 int fcounter = 0;
 int doStylusRightClick = 0;
 
-static unsigned long previous_synctime = 0;
-static unsigned long next_synctime = 0;
+static long next_synctime = 0;
 
 
 unsigned char current_resource_amigafb = 0;
@@ -267,7 +266,7 @@ void flush_screen ()
     }
   }
 
-  unsigned long start = read_processor_time();
+  long start = read_processor_time();
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
   //  usleep((next_synctime - start) - 1000);
 
@@ -276,15 +275,12 @@ void flush_screen ()
 
   last_synctime = read_processor_time();
   
-  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - 1000 || next_synctime < start)
+  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000)
     adjust_idletime(0);
   else
-    adjust_idletime(next_synctime - start);
+    adjust_idletime(last_synctime - start);
   
-  if(last_synctime - next_synctime > time_per_frame - (long)5000)
-    next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
-  else
-    next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+  next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
 
 	init_row_map();
 
