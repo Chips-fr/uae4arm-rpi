@@ -137,6 +137,13 @@ static void open_screen(struct uae_prefs *p)
   }
 
 
+  if(Dummy_prSDLScreen)
+  { // y.f. 2016-10-13 : free the previous screen surface every time, 
+    // so we can have fullscreen while running and windowed while in config window.
+   // Apparently, something somewhere is resetting the screen.
+	SDL_FreeSurface(Dummy_prSDLScreen);
+	Dummy_prSDLScreen = NULL;
+  }
 
   if(Dummy_prSDLScreen == NULL )
   {

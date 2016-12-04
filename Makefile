@@ -233,6 +233,7 @@ endif
 
 ifeq ($(HAVE_GLES_DISPLAY), 1)
 OBJS += src/od-gles/gl.o
+OBJS += src/od-gles/shader_stuff.o
 OBJS += src/od-gles/gl_platform.o
 OBJS += src/od-gles/gles_gfx.o
 MORE_CFLAGS += -I/opt/vc/include/
