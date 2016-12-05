@@ -564,6 +564,8 @@ void gui_display (int shortcut)
 
 	/* Clear menu garbage at the bottom of the screen */
 	black_screen_now();
+	/* Empty audio buffer */
+	reset_sound();
 	resume_sound();
   blkdev_exitgui();
 
