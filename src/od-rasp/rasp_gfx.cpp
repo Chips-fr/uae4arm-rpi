@@ -35,9 +35,6 @@ static SDL_Surface *current_screenshot = NULL;
 static int x_size_table[MAX_SCREEN_MODES] = { 640, 640, 720, 800, 800, 960, 1024, 1280, 1280, 1920 };
 static int y_size_table[MAX_SCREEN_MODES] = { 400, 480, 400, 480, 600, 540,  768,  720,  800, 1080 };
 
-static int red_bits, green_bits, blue_bits;
-static int red_shift, green_shift, blue_shift;
-
 struct PicassoResolution *DisplayModes;
 struct MultiDisplay Displays[MAX_DISPLAYS];
 
@@ -53,11 +50,6 @@ FILE *screenshot_file=NULL;
 static void CreateScreenshot(void);
 static int save_thumb(char *path);
 int delay_savestate_frame = 0;
-
-int justClicked = 0;
-int mouseMoving = 0;
-int fcounter = 0;
-int doStylusRightClick = 0;
 
 int DispManXElementpresent = 0;
 
@@ -427,8 +419,9 @@ void flush_screen ()
 
 void black_screen_now(void)
 {
-	SDL_FillRect(Dummy_prSDLScreen,NULL,0);
-	SDL_Flip(Dummy_prSDLScreen);
+        SDL_FillRect(prSDLScreen,NULL,0);
+	SDL_Flip(prSDLScreen);
+	flush_screen();
 }
 
 
