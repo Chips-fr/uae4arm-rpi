@@ -370,7 +370,7 @@ void flush_screen ()
   	gfxvidinfo.bufmem = (uae_u8 *)prSDLScreen->pixels;
 
   if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - 1000 || next_synctime < start)
-    adjust_idletime(0);
+    adjust_idletime(-1);
   else
     adjust_idletime(next_synctime - start);
   

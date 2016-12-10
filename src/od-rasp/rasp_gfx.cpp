@@ -63,7 +63,6 @@ int DispManXElementpresent = 0;
 
 static long next_synctime = 0;
 
-
 uae_sem_t vsync_wait_sem;
 
 
@@ -79,14 +78,24 @@ VC_RECT_T       blit_rect;
 
 unsigned char current_resource_amigafb = 0;
 
+unsigned char need_wait_dispmanx_semaphore = 0;
+long start;
+
+
 void vsync_callback(unsigned int a, void* b)
 {
-	//vsync_timing=SDL_GetTicks();
-	//vsync_frequency = vsync_timing - old_time;
-	//old_time = vsync_timing;
-	//need_frameskip =  ( vsync_frequency > 31 ) ? (need_frameskip+1) : need_frameskip;
-	//printf("d: %i", vsync_frequency     );
-	uae_sem_post (&vsync_wait_sem);
+  // Here we are synchronized with VSync
+  // next_synctime is what we were expected as sync time.
+  last_synctime = read_processor_time();
+  // Check if we miss a frame (with a margin of 1000 cycles)
+  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000 )
+    adjust_idletime(-1);
+  else
+    adjust_idletime(last_synctime - start);
+  // Update next synctime with current sync.
+  next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+
+  uae_sem_post (&vsync_wait_sem);
 }
 
 
@@ -356,12 +365,6 @@ void flush_screen ()
 {
     //SDL_UnlockSurface (prSDLScreen);
 
-    //if (show_inputmode)
-    //{
-    //    inputmode_redraw();	
-    //}
-
-
     if (savestate_state == STATE_DOSAVE)
     {
     if(delay_savestate_frame > 0)
@@ -374,10 +377,17 @@ void flush_screen ()
     }
   }
 
-  long start = read_processor_time();
+  //start = read_processor_time();
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
   //  usleep((next_synctime - start) - 1000);
   //SDL_Flip(prSDLScreen);
+
+  if (need_wait_dispmanx_semaphore ==1)
+  {
+	need_wait_dispmanx_semaphore = 0;
+	start = read_processor_time();
+	uae_sem_wait (&vsync_wait_sem);
+  }
 
 
 	if (current_resource_amigafb == 1)
@@ -408,18 +418,7 @@ void flush_screen ()
 
 		vc_dispmanx_update_submit(dispmanxupdate,vsync_callback,NULL);
 	}
-
-  uae_sem_wait (&vsync_wait_sem);
-  // Here we are synchronized with VSync
-  // next_synctime is what we were expected as sync time.
-  last_synctime = read_processor_time();
-  // Check if we miss a frame (with a margin of 1000 cycles)
-  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000 )
-    adjust_idletime(0);
-  else
-    adjust_idletime(last_synctime - start);
-  // Update next synctime with current sync.
-  next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+	need_wait_dispmanx_semaphore = 1;
 
 	init_row_map();
 

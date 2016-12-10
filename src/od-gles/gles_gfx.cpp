@@ -283,7 +283,7 @@ void flush_screen ()
   last_synctime = read_processor_time();
   
   if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000)
-    adjust_idletime(0);
+    adjust_idletime(-1);
   else
     adjust_idletime(last_synctime - start);
   
