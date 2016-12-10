@@ -113,28 +113,17 @@ static void sound_copy_produced_block(void *ud, Uint8 *stream, int len)
 #ifdef SOUND_USE_SEMAPHORES
 	sem_wait(&sound_sem);
 #endif
-/*	if (rdcnt >= wrcnt) {
-		printf("PANIIK!!!\n");
-		if (rdcnt > wrcnt) printf("EXTRA PANIIK!!!\n");
-	} */
-
-	//printf("Sound callback %i\n", cnt);
-
 	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound callback cnt %d buf %d\n", cnt, cnt%SOUND_BUFFERS_COUNT);
 	if(currprefs.sound_stereo)
+	{
+		if(cdaudio_active && currprefs.sound_freq == 44100 && cdrdcnt < cdwrcnt)
 		{
-
-			if(cdaudio_active && currprefs.sound_freq == 44100 && cdrdcnt < cdwrcnt)
-			{
-				printf("cd audio what !? not supported yet\n");
-
-				for(int i=0; i<SNDBUFFER_LEN * 2; ++i)
+			for(int i=0; i<SNDBUFFER_LEN * 2 ; ++i)
 				sndbuffer[rdcnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
-				cdrdcnt++; 
-			}
-	
-			memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN*4, len));
 		}
+	
+		memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN*4, len));
+	}
 	else
 	  	memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN * 2, len));
 
@@ -142,15 +131,12 @@ static void sound_copy_produced_block(void *ud, Uint8 *stream, int len)
 	//cdrdcnt = cdwrcnt;
 
 	// how many smaller "producer buffers" do we have ready to be played?
-/*	float sound_production_buffer_fill_ratio = (float)(wrcnt - rdcnt)/(float)(SOUND_BUFFERS_COUNT);
 
-	if (sound_production_buffer_fill_ratio > 0.6f)
-	// over 60 % full? means, we're producing sound faster than we're consuming it
-		rdcnt += 2; // skip a producer-buffer to let sound output catch with emulation
-        else if (sound_production_buffer_fill_ratio > 0.48f)
-		rdcnt++; */
 	if (wrcnt - rdcnt >= (SOUND_BUFFERS_COUNT/2))
+	{
 		rdcnt++;
+		cdrdcnt++; 
+	}
 
 	// if less than half of the production buffers are full, it means that more sound has been
 	// output (by SDL) than the emulation has produced. We solve this by simply not 
@@ -328,7 +314,7 @@ void finish_cdaudio_buffer (void)
 
 bool cdaudio_catchup(void)
 {
-  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 10) && (sound_thread_active != 0) && (quit_program == 0)) {
+  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 30) && (sound_thread_active != 0) && (quit_program == 0)) {
     sleep_millis(10);
   }
   return (sound_thread_active != 0);
@@ -480,7 +466,7 @@ void reset_sound (void)
   if (!have_sound)
   	return;
 
-  //init_soundbuffer_usage();
+  init_soundbuffer_usage();
 
   clear_sound_buffers();
   clear_cdaudio_buffers();
