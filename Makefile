@@ -271,10 +271,10 @@ OBJS += src/jit/compemu_fpp.o
 OBJS += src/jit/compemu_support.o
 
 src/od-pandora/neon_helper.o: src/od-pandora/neon_helper.s
-	$(CXX) $(CPU_FLAGS) -Wall -o src/od-pandora/neon_helper.o -c src/od-pandora/neon_helper.s
+	$(CXX) -mfpu=neon -Wall -o src/od-pandora/neon_helper.o -c src/od-pandora/neon_helper.s
 
 src/od-pandora/arm_helper.o: src/od-pandora/arm_helper.s
-	$(CXX) $(CPU_FLAGS) -Wall -o src/od-pandora/arm_helper.o -c src/od-pandora/arm_helper.s
+	$(CXX) -Wall -o src/od-pandora/arm_helper.o -c src/od-pandora/arm_helper.s
 
 
 
