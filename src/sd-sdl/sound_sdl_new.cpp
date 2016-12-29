@@ -285,10 +285,10 @@ void finish_sound_buffer (void)
 	sem_post(&sound_sem);
 	sem_wait(&callback_sem);
 #endif
-/*	while ((wrcnt % SOUND_BUFFERS_COUNT) == (rdcnt % SOUND_BUFFERS_COUNT))
+	while ((wrcnt % SOUND_BUFFERS_COUNT) == (rdcnt % SOUND_BUFFERS_COUNT))
 	{
-		
-	} */
+		usleep(500);
+	} 
 #ifdef DEBUG_SOUND
 	dbg(" sound.c : ! finish_sound_buffer");
 #endif
