@@ -22,7 +22,6 @@ CORE_DIR  := .
 ROOT_DIR  := .
 
 ifeq ($(platform), unix)
-   CC = gcc
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
 	LDFLAGS := -lz -lpthread
