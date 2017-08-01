@@ -174,16 +174,48 @@ namespace sdl
       SDL_Event event;
       while(SDL_PollEvent(&event))
       {
-    		if (event.type == SDL_QUIT)
-    		{
-          //-------------------------------------------------
-          // Quit entire program via SQL-Quit
-          //-------------------------------------------------
-    			uae_quit();
-    			gui_running = false;
-    			break;
-    		}
-
+        if ((event.type == SDL_JOYBUTTONDOWN) || (event.type == SDL_JOYBUTTONUP)) {
+            TCHAR message[255];
+            sprintf(message, "BUTTON %i %i %i %i\n", event.jbutton.type, event.jbutton.which, event.jbutton.button, event.jbutton.state);
+            write_log(message);
+            if ((event.jbutton.button == 0) || (event.jbutton.button == 1)) {
+              SDL_Event fake_event;
+              if (event.type == SDL_JOYBUTTONDOWN)
+                fake_event.type = SDL_KEYDOWN;
+              else
+                fake_event.type = SDL_KEYUP;
+              fake_event.key.keysym.sym = SDLK_RETURN;
+              gui_input->pushInput(fake_event); // Fire key down
+            }
+        } else if (event.type == SDL_JOYHATMOTION) {
+            TCHAR message[255];
+            sprintf(message, "HAT %i %i %i %i\n", event.jhat.type, event.jhat.which, event.jhat.hat, event.jhat.value);
+            write_log(message);
+            SDL_Event fake_event;
+            if (event.jhat.value & SDL_HAT_UP) {
+                fake_event.key.keysym.sym = VK_UP;
+                if(HandleNavigation(DIRECTION_UP))
+                    continue;
+            } else if (event.jhat.value & SDL_HAT_DOWN) {
+                fake_event.key.keysym.sym = VK_DOWN;
+                if(HandleNavigation(DIRECTION_DOWN))
+                    continue;
+            } else if (event.jhat.value & SDL_HAT_LEFT) {
+                fake_event.key.keysym.sym = VK_LEFT;
+                if(HandleNavigation(DIRECTION_LEFT))
+                    continue;
+            } else if (event.jhat.value & SDL_HAT_RIGHT) {
+                fake_event.key.keysym.sym = VK_RIGHT;
+                if(HandleNavigation(DIRECTION_RIGHT))
+                    continue;
+            }
+            if (event.jhat.value) {
+              fake_event.type = SDL_KEYDOWN;  // and the key up
+              gui_input->pushInput(fake_event); // Fire key down
+              fake_event.type = SDL_KEYUP;  // and the key up
+              gui_input->pushInput(fake_event);
+            }
+        }
         else if (event.type == SDL_KEYDOWN)
         {
           gcn::FocusHandler* focusHdl;
