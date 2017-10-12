@@ -1,0 +1,9 @@
+#!/bin/sh -e
+cd CAPSImg
+if [ "$1" = "--enable-static" ]; then
+LDFLAGS="-static -static-libgcc -static-libstdc++" ./configure
+else
+./configure "$@"
+fi
+cd ..
+cp Makefile.in Makefile

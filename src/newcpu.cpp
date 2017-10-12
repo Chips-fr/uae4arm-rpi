@@ -26,7 +26,7 @@
 #include "inputdevice.h"
 #include "audio.h"
 #include "fpp.h"
-#include "threaddep/thread.h"
+#include "td-sdl/thread.h"
 #include "bsdsocket.h"
 #ifdef JIT
 #include "jit/compemu.h"

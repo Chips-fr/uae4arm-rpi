@@ -30,6 +30,10 @@
 #ifdef FDI2RAW
 #include "fdi2raw.h"
 #endif
+#ifdef CAPS
+#include "uae/caps.h"
+#endif
+
 #include "crc32.h"
 #include "fsdb.h"
 #include "rommgr.h"
@@ -179,6 +183,11 @@ typedef struct {
 #endif
   int useturbo;
   int floppybitcounter; /* number of bits left */
+#ifdef CAPS
+  int lastdataacesstrack;
+  int lastrev;
+  bool track_access_done;
+#endif
 } drive;
 
 #define MIN_STEPLIMIT_CYCLE (CYCLE_UNIT * 140)
@@ -584,6 +593,11 @@ static void drive_image_free (drive *drv)
 {
 	switch (drv->filetype)
 	{
+	case ADF_IPF:
+#ifdef CAPS
+		caps_unloadimage (drv - floppy);
+#endif
+		break;
   	case ADF_FDI:
 #ifdef FDI2RAW
 		  fdi2raw_header_free (drv->fdi);
@@ -953,6 +967,10 @@ static bool diskfile_iswriteprotect (struct uae_prefs *p, const TCHAR *fname, in
   zfile_fclose (zf2);
   zfile_fread (buffer, sizeof (char), 25, zf1);
   zfile_fclose (zf1);
+  if (strncmp ((uae_char*) buffer, "CAPS", 4) == 0) {
+	*needwritefile = 1;
+	return wrprot2;
+  }
   if (strncmp ((uae_char *) buffer, "Formatted Disk Image file", 25) == 0) {
 	  *needwritefile = 1;
 	  return wrprot2;
@@ -1053,6 +1071,17 @@ static int drive_insert (drive * drv, struct uae_prefs *p, int dnum, const TCHAR
 
 	if (0) {
 
+#ifdef CAPS
+	} else if (strncmp ((char*)buffer, "CAPS", 4) == 0) {
+		drv->wrprot = false;
+		if (!caps_loadimage (drv->diskfile, drv - floppy, &num_tracks)) {
+			zfile_fclose (drv->diskfile);
+			drv->diskfile = 0;
+			return 0;
+		}
+		drv->num_tracks = num_tracks;
+		drv->filetype = ADF_IPF;
+#endif
 #ifdef FDI2RAW
 	} else if ((drv->fdi = fdi2raw_header (drv->diskfile))) {
 
@@ -1699,6 +1728,7 @@ static void drive_fill_bigbuf (drive * drv, int force)
 {
   int tr = drv->cyl * 2 + side;
   trackid *ti = drv->trackdata + tr;
+	bool retrytrack;
 	int rev = -1;
 
   if (!drv->diskfile || tr >= drv->num_tracks) {
@@ -1714,6 +1744,10 @@ static void drive_fill_bigbuf (drive * drv, int force)
   drv->skipoffset = -1;
   drv->revolutions = 1;
 
+  retrytrack = drv->lastdataacesstrack == drv->cyl * 2 + side;
+  if (!dskdmaen && !retrytrack)
+    drv->track_access_done = false;
+
   if (drv->writediskfile && drv->writetrackdata[tr].bitlen > 0) {
 	  int i;
 	  trackid *wti = &drv->writetrackdata[tr];
@@ -1725,6 +1759,11 @@ static void drive_fill_bigbuf (drive * drv, int force)
 	    uae_u8 *data = (uae_u8 *) mfm;
 	    *mfm = 256 * *data + *(data + 1);
 	  }
+	} else if (drv->filetype == ADF_IPF) {
+
+#ifdef CAPS
+		caps_loadtrack (drv->bigmfmbuf, drv->tracktiming, drv - floppy, tr, &drv->tracklen, &drv->multi_revolution, &drv->skipoffset, &drv->lastrev, retrytrack);
+#endif
 
 	} else if (drv->filetype == ADF_FDI) {
 
@@ -2764,6 +2803,11 @@ static void fetchnextrevolution (drive *drv)
   	return;
 	switch (drv->filetype)
 	{
+	case ADF_IPF:
+#ifdef CAPS
+		caps_loadrevolution (drv->bigmfmbuf, drv->tracktiming, drv - floppy, drv->cyl * 2 + side, &drv->tracklen, &drv->lastrev, drv->track_access_done);
+#endif
+		break;
 	  case ADF_FDI:
 #ifdef FDI2RAW
 		  fdi2raw_loadrevolution(drv->fdi, drv->bigmfmbuf, drv->tracktiming, drv->cyl * 2 + side, &drv->tracklen, 1);

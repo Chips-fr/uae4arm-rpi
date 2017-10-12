@@ -1,0 +1,26 @@
+uname := $(shell uname -a)
+ifneq ($(findstring Msys,$(uname)),)
+os = windows
+else ifneq ($(findstring Darwin,$(uname)),)
+os = macosx
+else
+os = linux
+endif
+
+all:
+	make -C CAPSImg
+ifeq ($(os), windows)
+	cp CAPSImg/CAPSImg.dll capsimg.dll
+else ifeq ($(os), macosx)
+	cp CAPSImg/libcapsimage.dylib capsimg.so
+else
+	cp CAPSImg/libcapsimage.so.5.1 capsimg.so
+endif
+
+clean:
+	make -C CAPSImg clean
+	rm -f capsimg.so capsimg.dll
+
+distclean:
+	make -C CAPSImg distclean
+	rm -f capsimg.so capsimg.dll

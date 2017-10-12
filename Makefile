@@ -105,6 +105,11 @@ MORE_CFLAGS += -fprofile-use -fbranch-probabilities -fvpt
 endif
 
 
+CAPS = capsimg.so
+
+capsimg.so: capsimg
+	(cd capsimg ; ./bootstrap ; ./configure ; $(MAKE) ; cp capsimg.so ../ )
+
 OBJS =	\
 	src/akiko.o \
 	src/ar.o \
@@ -129,6 +134,7 @@ OBJS =	\
 	src/devices.o \
 	src/disk.o \
 	src/diskutil.o \
+	src/dlopen.o \
 	src/drawing.o \
 	src/events.o \
 	src/expansion.o \
@@ -204,6 +210,7 @@ OBJS =	\
 	src/archivers/mp2/kjmp2.o \
 	src/archivers/wrp/warp.o \
 	src/archivers/zip/unzip.o \
+	src/caps/caps_win32.o \
 	src/md-pandora/support.o \
 	src/od-pandora/bsdsocket_host.o \
 	src/od-pandora/cda_play.o \
@@ -316,7 +323,7 @@ src/od-pandora/arm_helper.o: src/od-pandora/arm_helper.s
 src/trace.o: src/trace.c
 	$(CC) $(MORE_CFLAGS) -c src/trace.c -o src/trace.o
 
-$(PROG): $(OBJS)
+$(PROG): $(OBJS) $(CAPS)
 	$(CXX) -o $(PROG) $(OBJS) $(LDFLAGS)
 ifndef DEBUG
 	$(STRIP) $(PROG)
