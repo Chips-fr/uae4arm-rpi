@@ -97,7 +97,6 @@ void discard_prefs (struct uae_prefs *p, int type)
 	currprefs.all_lines = changed_prefs.all_lines = NULL;
 #ifdef FILESYS
   filesys_cleanup ();
-  p->mountitems = 0;
 #endif
 }
 
@@ -405,7 +404,6 @@ void uae_quit (void)
 {
   if (quit_program != -UAE_QUIT) {
   	quit_program = -UAE_QUIT;
-		regs.spcflags |= SPCFLAG_MODE_CHANGE;
   }
   target_quit ();
 }

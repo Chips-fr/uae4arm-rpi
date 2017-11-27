@@ -1539,7 +1539,7 @@ void freescratch(void)
   int i;
   for (i=0; i<N_REGS; i++)
 #if defined(CPU_arm)
-  	if (live.nat[i].locked && i != 2 && i != 3 && i != 12) {
+  	if (live.nat[i].locked && i != 2 && i != 3 && i != 11 && i != 12) {
 #else
 		if (live.nat[i].locked && i!=4 && i!= 12) {
 #endif

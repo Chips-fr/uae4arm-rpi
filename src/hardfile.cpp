@@ -1983,6 +1983,22 @@ void hardfile_reset (void)
 		      abort_async (hfpd, request, 0, 0);
 	    }
 	  }
+
+    if(hfpd->thread_running) {
+  		write_comm_pipe_pvoid(&hfpd->requests, NULL, 0);
+  		write_comm_pipe_pvoid(&hfpd->requests, NULL, 0);
+      write_comm_pipe_u32 (&hfpd->requests, 0, 1);
+      while(hfpd->thread_running)
+        sleep_millis(10);      
+      if(hfpd->sync_sem != 0)
+        uae_sem_destroy(&hfpd->sync_sem);
+      hfpd->sync_sem = 0;
+    }
+    if(hfpd->requests.size == 300) {
+      destroy_comm_pipe(&hfpd->requests);
+      hfpd->requests.size = 0;
+    }
+
 	  memset (hfpd, 0, sizeof (struct hardfileprivdata));
   }
 }
@@ -1993,6 +2009,10 @@ void hardfile_install (void)
   uae_u32 initcode, openfunc, closefunc, expungefunc;
   uae_u32 beginiofunc, abortiofunc;
 
+  if(change_sem != 0) {
+    uae_sem_destroy(&change_sem);
+    change_sem = 0;
+  }
   uae_sem_init (&change_sem, 0, 1);
 
   ROM_hardfile_resname = ds (_T("uaehf.device"));

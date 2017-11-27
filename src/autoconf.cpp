@@ -254,7 +254,9 @@ void rtarea_init_mem (void)
 	rtarea_bank.allocated = RTAREA_SIZE;
 	if (!mapped_malloc (&rtarea_bank)) {
   	write_log (_T("virtual memory exhausted (rtarea)!\n"));
-		abort ();
+    SetStartupMsg(_T("Internal error"), _T("Virtual memory exhausted (rtarea)."));
+    uae_restart(1, NULL);
+    return;
   }
 }
 
@@ -311,7 +313,9 @@ void rtarea_init (void)
 	uae_boot_rom_size = here () - rtarea_base;
 	if (uae_boot_rom_size >= RTAREA_TRAPS) {
 		write_log (_T("RTAREA_TRAPS needs to be increased!"));
-		abort ();
+    SetStartupMsg(_T("Internal error"), _T("RTAREA_TRAPS needs to be increased."));
+    uae_restart(1, NULL);
+    return;
 	}
 
 #ifdef PICASSO96

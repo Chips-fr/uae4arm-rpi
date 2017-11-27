@@ -104,7 +104,7 @@ uae_u32 bsdthr_WaitSelect (SB);
 uae_u32 bsdthr_Wait (SB);
 void clearsockabort (SB);
 
-static uae_sem_t sem_queue;
+static uae_sem_t sem_queue = 0;
 
 /**
  ** Helper functions
@@ -1719,6 +1719,11 @@ uae_u32 host_gethostname (TrapContext *ctx, uae_u32 name, uae_u32 namelen)
 int init_socket_layer(void)
 {
 	int result = 0;
+
+	if(sem_queue != 0) {
+	  uae_sem_destroy(&sem_queue);
+	  sem_queue = 0;
+	}
 
 	if (currprefs.socket_emu) {
     if (uae_sem_init(&sem_queue, 0, 1) < 0) {

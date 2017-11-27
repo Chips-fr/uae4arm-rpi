@@ -1,3 +1,8 @@
+2017-08-08 - Beta version
+   - Fixed loading new config (now using same method like WinUAE)
+   - Display message instead of crash in some situations
+   - More cleanup of threads/pipes/mutex
+
 2017-08-06 - Beta version
    - Merged lot of changes from WinUAE 3.3.0
    - Added panel "Quickstart"

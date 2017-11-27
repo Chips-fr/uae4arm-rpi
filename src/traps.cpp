@@ -106,7 +106,8 @@ unsigned int define_trap (TrapHandler handler_func, int flags, const TCHAR *name
 {
   if (trap_count == MAX_TRAPS) {
 		write_log (_T("Ran out of emulator traps\n"));
-  	abort ();
+    SetStartupMsg(_T("Internal error"), _T("Ran out of emulator traps."));
+    uae_restart(1, NULL);
   	return -1;
   } else {
   	int i;

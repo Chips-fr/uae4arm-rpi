@@ -302,7 +302,7 @@ static volatile int frame2counter;
 
 static smp_comm_pipe requests;
 static volatile int akiko_thread_running;
-static uae_sem_t akiko_sem, sub_sem;
+static uae_sem_t akiko_sem = 0, sub_sem = 0;
 
 static void checkint (void)
 {
@@ -1684,6 +1684,7 @@ void akiko_reset (void)
 		akiko_thread_running = 0;
 		while(akiko_thread_running == 0)
 			sleep_millis (10);
+	  destroy_comm_pipe(&requests);
 		akiko_thread_running = 0;
 	}
 	akiko_cdrom_free ();
@@ -1695,6 +1696,12 @@ void akiko_free (void)
 {
 	akiko_reset ();
 	akiko_cdrom_free ();
+	if(akiko_sem != 0)
+	  uae_sem_destroy(&akiko_sem);
+	akiko_sem = 0;
+	if(sub_sem != 0)
+	  uae_sem_destroy(&sub_sem);
+	sub_sem = 0;
 }
 
 int akiko_init (void)
@@ -1711,7 +1718,13 @@ int akiko_init (void)
 	sector_buffer_info_2 = xmalloc (uae_u8, SECTOR_BUFFER_SIZE);
 	sector_buffer_sector_1 = -1;
 	sector_buffer_sector_2 = -1;
+	if(akiko_sem != 0)
+	  uae_sem_destroy(&akiko_sem);
+	akiko_sem = 0;
 	uae_sem_init (&akiko_sem, 0, 1);
+	if(sub_sem != 0)
+	  uae_sem_destroy(&sub_sem);
+	sub_sem = 0;
 	uae_sem_init (&sub_sem, 0, 1);
 	if (!savestate_state) {
 		cdrom_playing = cdrom_paused = 0;

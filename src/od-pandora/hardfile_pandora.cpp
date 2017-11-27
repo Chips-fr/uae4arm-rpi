@@ -5,6 +5,7 @@
 #include "options.h"
 #include "filesys.h"
 #include "zfile.h"
+#include "uae.h"
 
 
 struct hardfilehandle
@@ -164,18 +165,23 @@ static int hdf_seek (struct hardfiledata *hfd, uae_u64 offset)
 	int ret;
 
 	if (hfd->handle_valid == 0) {
-		gui_message (_T("hd: hdf handle is not valid. bug."));
-		abort();
+    SetStartupMsg(_T("Internal error"), _T("hd: hdf handle is not valid."));
+    uae_restart(1, NULL);
+    return -1;
 	}
 	if (offset >= hfd->physsize - hfd->virtual_size) {
-		gui_message (_T("hd: tried to seek out of bounds! (%I64X >= %I64X - %I64X)\n"), offset, hfd->physsize, hfd->virtual_size);
-		abort ();
+		write_log (_T("hd: tried to seek out of bounds! (%I64X >= %I64X - %I64X)\n"), offset, hfd->physsize, hfd->virtual_size);
+    SetStartupMsg(_T("Internal error"), _T("hd: tried to seek out of bounds."));
+    uae_restart(1, NULL);
+    return -1;
 	}
 	offset += hfd->offset;
 	if (offset & (hfd->ci.blocksize - 1)) {
-		gui_message (_T("hd: poscheck failed, offset=%I64X not aligned to blocksize=%d! (%I64X & %04X = %04X)\n"),
+		write_log (_T("hd: poscheck failed, offset=%I64X not aligned to blocksize=%d! (%I64X & %04X = %04X)\n"),
 			offset, hfd->ci.blocksize, offset, hfd->ci.blocksize, offset & (hfd->ci.blocksize - 1));
-		abort ();
+    SetStartupMsg(_T("Internal error"), _T("hd: poscheck failed."));
+    uae_restart(1, NULL);
+    return -1;
 	}
 	if (hfd->handle_valid == HDF_HANDLE_FILE) {
 		ret = fseek (hfd->handle->f, offset, SEEK_SET);
@@ -194,27 +200,37 @@ static void poscheck (struct hardfiledata *hfd, int len)
 	if (hfd->handle_valid == HDF_HANDLE_FILE) {
 		pos = ftell (hfd->handle->f);
 		if (pos == -1) {
-			gui_message (_T("hd: poscheck failed. seek failure"));
-			abort ();
+			write_log (_T("hd: poscheck failed. seek failure"));
+      SetStartupMsg(_T("Internal error"), _T("hd: poscheck failed. seek failure."));
+      uae_restart(1, NULL);
+      return;
 		}
 	} else if (hfd->handle_valid == HDF_HANDLE_ZFILE) {
 		pos = zfile_ftell (hfd->handle->zf);
 	}
 	if (len < 0) {
-		gui_message (_T("hd: poscheck failed, negative length! (%d)"), len);
-		abort ();
+		write_log (_T("hd: poscheck failed, negative length! (%d)"), len);
+    SetStartupMsg(_T("Internal error"), _T("hd: poscheck failed, negative length."));
+    uae_restart(1, NULL);
+    return;
 	}
 	if (pos < hfd->offset) {
-		gui_message (_T("hd: poscheck failed, offset out of bounds! (%I64d < %I64d)"), pos, hfd->offset);
-		abort ();
+		write_log (_T("hd: poscheck failed, offset out of bounds! (%I64d < %I64d)"), pos, hfd->offset);
+    SetStartupMsg(_T("Internal error"), _T("hd: hd: poscheck failed, offset out of bounds."));
+    uae_restart(1, NULL);
+    return;
 	}
 	if (pos >= hfd->offset + hfd->physsize - hfd->virtual_size || pos >= hfd->offset + hfd->physsize + len - hfd->virtual_size) {
-		gui_message (_T("hd: poscheck failed, offset out of bounds! (%I64d >= %I64d, LEN=%d)"), pos, hfd->offset + hfd->physsize, len);
-		abort ();
+		write_log (_T("hd: poscheck failed, offset out of bounds! (%I64d >= %I64d, LEN=%d)"), pos, hfd->offset + hfd->physsize, len);
+    SetStartupMsg(_T("Internal error"), _T("hd: hd: poscheck failed, offset out of bounds."));
+    uae_restart(1, NULL);
+    return;
 	}
 	if (pos & (hfd->ci.blocksize - 1)) {
-		gui_message (_T("hd: poscheck failed, offset not aligned to blocksize! (%I64X & %04X = %04X\n"), pos, hfd->ci.blocksize, pos & hfd->ci.blocksize);
-		abort ();
+		write_log (_T("hd: poscheck failed, offset not aligned to blocksize! (%I64X & %04X = %04X\n"), pos, hfd->ci.blocksize, pos & hfd->ci.blocksize);
+    SetStartupMsg(_T("Internal error"), _T("hd: poscheck failed, offset not aligned to blocksize."));
+    uae_restart(1, NULL);
+    return;
 	}
 }
 

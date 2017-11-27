@@ -1617,8 +1617,6 @@ void m68k_go (int may_quit)
 
 			if (quit_program == UAE_QUIT)
     		break;
-	    if(quit_program == UAE_RESET_HARD)
-	      reinit_amiga();
 
 			hsync_counter = 0;
 	    quit_program = 0;
@@ -1965,7 +1963,6 @@ void cpureset (void)
   uae_u16 ins;
 	addrbank *ab;
 
-	set_special(SPCFLAG_CHECK);
   if (currprefs.cpu_compatible && currprefs.cpu_model <= 68020) {
   	custom_reset (false, false);
   	return;

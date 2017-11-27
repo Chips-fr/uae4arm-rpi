@@ -33,6 +33,8 @@ extern unsigned long time_per_frame;
 
 void run_gui(void);
 void InGameMessage(const char *msg);
+void SetStartupMsg(TCHAR *title, TCHAR *msg);
+void init_max_signals(void);
 void wait_for_vsync(void);
 unsigned long target_lastsynctime(void);
 extern int screen_is_picasso;
@@ -112,9 +114,9 @@ extern void AddFileToCDList(const char *file, int moveToTop);
 extern const int amigawidth_values[AMIGAWIDTH_COUNT];
 extern const int amigaheight_values[AMIGAHEIGHT_COUNT];
 
-void reinit_amiga(void);
 int count_HDs(struct uae_prefs *p);
 extern void gui_force_rtarea_hdchange(void);
+extern void gui_restart(void);
 extern bool hardfile_testrdb (const TCHAR *filename);
 
 #ifdef __cplusplus

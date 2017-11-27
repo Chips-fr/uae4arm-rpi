@@ -145,7 +145,7 @@ bool HandleA3000Mem(int lowsize, int highsize)
       PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
     if(a3000_mem != MAP_FAILED)
     {
-      write_log("Succeeded!\n");
+      write_log(_T("Succeeded: location at 0x%08x (Amiga: 0x%08x)\n"), a3000_mem, (A3000MEM_START - lowsize));
     }
     else
     {
@@ -242,10 +242,9 @@ bool mapped_malloc (addrbank *ab)
       
     if(!strcmp(ab->label, "ramsey_low") && A3000MemAvailable())
       ab->baseaddr = natmem_offset + ab->start;
-    
     if(!strcmp(ab->label, "ramsey_high") && A3000MemAvailable())
       ab->baseaddr = natmem_offset + ab->start;
-      
+
     if(!strcmp(ab->label, "fmv_rom"))
       ab->baseaddr = natmem_offset + 0x200000;
       

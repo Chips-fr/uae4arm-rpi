@@ -15,6 +15,7 @@
 #include "memory.h"
 #include "newcpu.h"
 #include "gui.h"
+#include "uae.h"
 
 #define FLASH_LOG 0
 #define EEPROM_LOG 0
@@ -247,7 +248,8 @@ int eeprom_i2c_set(void *fdv, int line, int level)
 		}
         return bitbang_i2c_ret(i2c, 1);
     }
-    abort();
+    SetStartupMsg(_T("Internal error"), _T("eeprom_i2c_set: Unhandled case."));
+    uae_restart(1, NULL);
 }
 
 void eeprom_reset(void *fdv)

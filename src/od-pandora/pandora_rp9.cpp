@@ -376,7 +376,6 @@ static void parse_boot(struct uae_prefs *p, xmlNode *node)
             		struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
                 hardfile_media_change (hfd, &ci, true, false);
               }
-              gui_force_rtarea_hdchange();
             }
             xmlFree(content);
           }
@@ -487,8 +486,6 @@ static void extract_media(struct uae_prefs *p, unzFile uz, xmlNode *node)
                       		struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
                           hardfile_media_change (hfd, &ci, true, false);
                         }
-
-    	                  gui_force_rtarea_hdchange();
                       }
                       lstTmpRP9Files.push_back(target_file);
                     }
@@ -599,7 +596,7 @@ bool rp9_parse_file(struct uae_prefs *p, const char *filename)
   
     	unzClose (uz);
     }
-    zfile_fclose(zf);  
+    zfile_fclose(zf);
   }
   
   return bResult;

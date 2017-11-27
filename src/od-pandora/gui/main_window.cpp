@@ -17,6 +17,18 @@
 bool gui_running = false;
 static int last_active_panel = 2;
 
+#define MAX_STARTUP_TITLE 64
+#define MAX_STARTUP_MESSAGE 256
+static TCHAR startup_title[MAX_STARTUP_TITLE] = _T("");
+static TCHAR startup_message[MAX_STARTUP_MESSAGE] = _T("");
+
+
+void SetStartupMsg(TCHAR *title, TCHAR *msg)
+{
+  _tcsncpy(startup_title, title, MAX_STARTUP_TITLE);
+  _tcsncpy(startup_message, msg, MAX_STARTUP_MESSAGE);
+}
+
 
 ConfigCategory categories[] = {
   { "Paths",            "data/paths.ico",     NULL, NULL, InitPanelPaths,     ExitPanelPaths,   RefreshPanelPaths },
@@ -66,7 +78,7 @@ namespace widgets
 
 /* Flag for changes in rtarea:
   Bit 0: any HD in config?
-  Bit 1: force because add/remove HD was clicked
+  Bit 1: force because add/remove HD was clicked or new config loaded
   Bit 2: socket_emu on
   Bit 3: mousehack on
   Bit 4: rtgmem on
@@ -101,6 +113,11 @@ static int gui_create_rtarea_flag(struct uae_prefs *p)
 void gui_force_rtarea_hdchange(void)
 {
   gui_rtarea_flags_onenter |= 2;
+}
+
+void gui_restart(void)
+{
+  gui_running = false;
 }
 
 static void (*refreshFuncAfterDraw)(void) = NULL;
@@ -388,7 +405,7 @@ namespace widgets
             strncat (tmp, OPTIONSFILENAME, MAX_PATH);
             strncat (tmp, ".uae", MAX_PATH);
           }
-    			uae_restart(0, tmp);
+    			uae_restart(-1, tmp);
     			gui_running = false;
 			  }
 			  else if(actionEvent.getSource() == cmdStart)
@@ -556,6 +573,7 @@ namespace widgets
     gui_top->add(cmdReset, DISTANCE_BORDER, GUI_HEIGHT - DISTANCE_BORDER - BUTTON_HEIGHT);
     gui_top->add(cmdQuit, DISTANCE_BORDER + BUTTON_WIDTH + DISTANCE_NEXT_X, GUI_HEIGHT - DISTANCE_BORDER - BUTTON_HEIGHT);
     gui_top->add(cmdShutdown, DISTANCE_BORDER + 2 * BUTTON_WIDTH + 2 * DISTANCE_NEXT_X, GUI_HEIGHT - DISTANCE_BORDER - BUTTON_HEIGHT);
+    //gui_top->add(cmdRestart, DISTANCE_BORDER + 2 * BUTTON_WIDTH + 2 * DISTANCE_NEXT_X, GUI_HEIGHT - DISTANCE_BORDER - BUTTON_HEIGHT);
     gui_top->add(cmdStart, GUI_WIDTH - DISTANCE_BORDER - BUTTON_WIDTH, GUI_HEIGHT - DISTANCE_BORDER - BUTTON_HEIGHT);
 
     gui_top->add(selectors, DISTANCE_BORDER + 1, DISTANCE_BORDER + 1);
@@ -638,6 +656,11 @@ void run_gui(void)
   {
     sdl::gui_init();
     widgets::gui_init();
+    if(_tcslen(startup_message) > 0) {
+      ShowMessage(startup_title, startup_message, _T(""), _T("Ok"), _T(""));
+      _tcscpy(startup_title, _T(""));
+      _tcscpy(startup_message, _T(""));
+    }
     sdl::gui_run();
     widgets::gui_halt();
     sdl::gui_halt();
@@ -674,4 +697,7 @@ void run_gui(void)
 	  if(!A3000MemAvailable() && (changed_prefs.mbresmem_low_size || changed_prefs.mbresmem_high_size))
 	    HandleA3000Mem(changed_prefs.mbresmem_low_size, changed_prefs.mbresmem_high_size);
   }
+
+  // Reset counter for access violations
+  init_max_signals();
 }

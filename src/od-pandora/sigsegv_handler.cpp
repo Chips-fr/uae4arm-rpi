@@ -32,6 +32,7 @@
 #include "custom.h"
 #include "jit/comptbl.h"
 #include "jit/compemu.h"
+#include "uae.h"
 
 #include <asm/sigcontext.h>
 #include <signal.h>
@@ -73,9 +74,17 @@ enum style_type_t {
 };
 
 static int in_handler = 0;
+static int max_signals = 200;  
+
+void init_max_signals(void)
+{
 #ifdef WITH_LOGGING
-static int max_signals = 20;
+  max_signals = 20;
+#else
+  max_signals = 200;  
 #endif
+}
+
 
 enum {
   ARM_REG_PC = 15,
@@ -150,7 +159,7 @@ static int handle_exception(unsigned long *pregs, uintptr fault_addr)
   
     // Check for stupid RAM detection of kickstart
     if(a3000lmem_bank.allocated > 0 && amiga_addr >= a3000lmem_bank.start - 0x00100000 && amiga_addr < a3000lmem_bank.start - 0x00100000 + 8) {
-      output_log(_T("  Stupid kickstart detection for size of ramsey_low.\n"));
+      output_log(_T("  Stupid kickstart detection for size of ramsey_low at 0x%08x.\n"), amiga_addr);
       pregs[ARM_REG_PC] += 4;
       handled = HANDLE_EXCEPTION_A4000RAM;
       break;
@@ -158,7 +167,7 @@ static int handle_exception(unsigned long *pregs, uintptr fault_addr)
   
     // Check for stupid RAM detection of kickstart
     if(a3000hmem_bank.allocated > 0 && amiga_addr >= a3000hmem_bank.start + a3000hmem_bank.allocated && amiga_addr < a3000hmem_bank.start + a3000hmem_bank.allocated + 8) {
-      output_log(_T("  Stupid kickstart detection for size of ramsey_high.\n"));
+      output_log(_T("  Stupid kickstart detection for size of ramsey_high at 0x%08x.\n"), amiga_addr);
       pregs[ARM_REG_PC] += 4;
       handled = HANDLE_EXCEPTION_A4000RAM;
       break;
@@ -388,15 +397,14 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
 
   output_log(_T("--- end exception ---\n"));
 
-#ifdef WITH_LOGGING
   if (handled != HANDLE_EXCEPTION_A4000RAM) {
     --max_signals;
     if(max_signals <= 0) {
-      output_log(_T("Max. number of exceptions reached.\n"));
-      abort();
+      SetStartupMsg(_T("Exception"), _T("Too many access violations. Please turn off JIT."));
+      uae_restart(1, NULL);
+      return;
     }
   }
-#endif
 
 	if (handled != HANDLE_EXCEPTION_NONE)
 	  return;

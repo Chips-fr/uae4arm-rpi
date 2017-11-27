@@ -1542,8 +1542,10 @@ void expansion_init (void)
 #ifdef FILESYS
 	filesys_bank.allocated = 0x10000;
 	if (!mapped_malloc (&filesys_bank)) {
-	  write_log (_T("virtual memory exhausted (filesysory)!\n"));
-	  abort();
+	  write_log (_T("virtual memory exhausted (filesys_bank)!\n"));
+    SetStartupMsg(_T("Internal error"), _T("Virtual memory exhausted (filesys_bank)."));
+    uae_restart(1, NULL);
+    return;
   }
 #endif
 }
