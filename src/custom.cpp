@@ -2289,7 +2289,7 @@ static void record_sprite (int line, int num, int sprxp, uae_u16 *data, uae_u16 
 			stb1[6] |= state;
 			stb1[7] |= state;
 			stb1 += 8;
-		}
+  	}
 		e->has_attached = 1;
 	}
 }
@@ -2688,6 +2688,7 @@ static void compute_framesync (void)
 			else
 				v = cr->rate;
 			changed_prefs.chipset_refreshrate = currprefs.chipset_refreshrate = v;
+			vsync_switchmode((int)v);
     }
 		found = true;
 		break;
@@ -4972,6 +4973,7 @@ static bool framewait (void)
 {
 	frame_time_t curr_time;
 	frame_time_t start;
+  frame_time_t time_for_next_frame = vsynctimebase;
 	int vs = isvsync_chipset ();
 	int status = 0;
 
@@ -4984,21 +4986,29 @@ static bool framewait (void)
 
 	if (vs > 0) {
 
-		if (!frame_rendered && !picasso_on)
-			frame_rendered = render_screen (false);
+		if(!nodraw()) {
+  		if (!frame_rendered && !picasso_on)
+  			frame_rendered = render_screen (false);
+  
+  		if (!frame_shown) {
+  			show_screen (1);
+  		}
+      curr_time = target_lastsynctime();
+    }
+    else {
+      curr_time = target_lastsynctime() + vsynctimebase;
 
-		if (!frame_shown) {
-			show_screen (1);
-		}
+      if(read_processor_time () > curr_time)
+        time_for_next_frame = curr_time - read_processor_time ();
+    }
 
-    curr_time = target_lastsynctime();
 		vsyncwaittime = vsyncmaxtime = curr_time + vsynctimebase;
     vsyncmintime = curr_time;
-
+    
 		if (currprefs.m68k_speed < 0) {
-			vsynctimeperline = (vsynctimebase) / (maxvpos_display + 1);
+			vsynctimeperline = (time_for_next_frame) / (maxvpos_display + 1);
 		} else {
-			vsynctimeperline = (vsynctimebase) / 3;
+			vsynctimeperline = (time_for_next_frame) / 3;
 		}
 
 		if (vsynctimeperline < 1)
@@ -5083,7 +5093,7 @@ void fpscounter_reset (void)
 	idletime = 0;
 }
 
-static void fpscounter (bool frameok)
+static void fpscounter (void)
 {
   frame_time_t now, last;
 
@@ -5093,6 +5103,9 @@ static void fpscounter (bool frameok)
 
 	if ((int)last < 0)
 		return;
+
+	if(currprefs.gfx_framerate)
+	  idletime >>= 1;
 
 	mavg (&fps_mavg, last / 10, FPSCOUNTER_MAVG_SIZE);
 	mavg (&idle_mavg, idletime / 10, FPSCOUNTER_MAVG_SIZE);
@@ -5109,10 +5122,6 @@ static void fpscounter (bool frameok)
 			idle = 0;
 		if (idle > 100 * 10)
 			idle = 100 * 10;
-		if (fake_vblank_hz * 10 > fps) {
-			float mult = (float)fake_vblank_hz * 10.0 / fps;
-			idle *= mult;
-		}
 		gui_data.fps = fps;
     gui_data.idle = (int)idle;
   }
@@ -5139,9 +5148,9 @@ static void vsync_handler_pre (void)
 		frameskiptime += end - start;
 	}
 
-	bool frameok = framewait ();
+  framewait ();
 	
-	if (!picasso_on) {
+	if (!picasso_on && !nodraw()) {
 		if (!frame_rendered) {
 			frame_rendered = render_screen (false);
 		}
@@ -5149,8 +5158,12 @@ static void vsync_handler_pre (void)
 			frame_shown = show_screen_maybe (true);
 		}
 	}
-
-  fpscounter(frameok);
+#ifdef PICASSO96
+  if(!nodraw() || (picasso_on && picasso_rendered))
+#else
+  if(!nodraw() )
+#endif
+    fpscounter();
 
 	handle_events ();
 

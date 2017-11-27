@@ -513,3 +513,16 @@ void signal_buserror(int signum, siginfo_t* info, void*ptr)
   SDL_Quit();
   exit(1);
 }
+
+
+void signal_term(int signum, siginfo_t* info, void*ptr) 
+{
+  output_log(_T("--- SIGTERM ---\n"));
+
+#ifdef TRACER
+	trace_end();
+#endif
+
+  SDL_Quit();
+  exit(1);
+}

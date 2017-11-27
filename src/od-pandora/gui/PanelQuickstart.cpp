@@ -890,3 +890,17 @@ void RefreshPanelQuickstart(void)
 
   chkQuickstartMode->setSelected(quickstart_start);
 }
+
+
+bool HelpPanelQuickstart(std::vector<std::string> &helptext)
+{
+  helptext.clear();
+  helptext.push_back("Simplified start of emulation by just selecting the Amiga model and the disk/CD you want to use.");
+  helptext.push_back("");
+  helptext.push_back("After selecting the Amiga model, you can choose from a small list of standard configurations for this model to");
+  helptext.push_back("start with.");
+  helptext.push_back("");
+  helptext.push_back("When you activate \"Start in Quickstart mode\", the next time you run UAE4ARM, it  will start with the quickstart");
+  helptext.push_back("panel. Otherwise you start in configuraions panel.");
+  return true;
+}

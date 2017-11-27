@@ -39,7 +39,6 @@ unsigned long target_lastsynctime(void);
 extern int screen_is_picasso;
 
 bool HandleA3000Mem(int lowsize, int highsize);
-bool A3000MemAvailable(void);
 
 void saveAdfDir(void);
 bool SetVSyncRate(int hz);

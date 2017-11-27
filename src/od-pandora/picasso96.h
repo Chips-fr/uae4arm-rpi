@@ -588,6 +588,7 @@ struct picasso96_state_struct
 extern void InitPicasso96 (void);
 
 extern int uaegfx_card_found;
+extern bool picasso_rendered;
 
 extern struct picasso96_state_struct picasso96_state;
 

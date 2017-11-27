@@ -271,8 +271,8 @@ void RescanROMs(void)
   for(int i=0; i<files.size(); ++i)
   {
     char tmppath[MAX_PATH];
-    strncpy(tmppath, path, MAX_PATH);
-    strncat(tmppath, files[i].c_str(), MAX_PATH);
+    strncpy(tmppath, path, MAX_PATH - 1);
+    strncat(tmppath, files[i].c_str(), MAX_PATH - 1);
     scan_rom (tmppath);
   }
   
@@ -456,28 +456,28 @@ int gui_update (void)
   else
     strncpy(tmp, last_loaded_config, MAX_PATH);
 
-  strncat(savestate_fname, tmp, MAX_DPATH);
-  strncat(screenshot_filename, tmp, MAX_DPATH);
+  strncat(savestate_fname, tmp, MAX_DPATH - 1);
+  strncat(screenshot_filename, tmp, MAX_DPATH - 1);
   removeFileExtension(savestate_fname);
   removeFileExtension(screenshot_filename);
 
   switch(currentStateNum)
   {
     case 1:
-  		strncat(savestate_fname,"-1.uss", MAX_PATH);
-	    strncat(screenshot_filename,"-1.png", MAX_PATH);
+  		strncat(savestate_fname,"-1.uss", MAX_PATH - 1);
+	    strncat(screenshot_filename,"-1.png", MAX_PATH - 1);
 	    break;
     case 2:
-  		strncat(savestate_fname,"-2.uss", MAX_PATH);
-  		strncat(screenshot_filename,"-2.png", MAX_PATH);
+  		strncat(savestate_fname,"-2.uss", MAX_PATH - 1);
+  		strncat(screenshot_filename,"-2.png", MAX_PATH - 1);
   		break;
     case 3:
-  		strncat(savestate_fname,"-3.uss", MAX_PATH);
-  		strncat(screenshot_filename,"-3.png", MAX_PATH);
+  		strncat(savestate_fname,"-3.uss", MAX_PATH - 1);
+  		strncat(screenshot_filename,"-3.png", MAX_PATH - 1);
   		break;
     default: 
-	   	strncat(savestate_fname,".uss", MAX_PATH);
-  		strncat(screenshot_filename,".png", MAX_PATH);
+	   	strncat(savestate_fname,".uss", MAX_PATH - 1);
+  		strncat(screenshot_filename,".png", MAX_PATH - 1);
   }
   return 0;
 }

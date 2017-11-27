@@ -194,10 +194,9 @@ Select the required Amiga CPU (68000 - 68040).
 If you select 68020, you can choose between 24-bit addressing (68EC020) or 32-bit addressing (68020). 
 
 The option "More compatible" is only available if 68000 or 68010 is selected and emulates simple prefetch of the 68000. This may 
-improve compatibility in few situations but it's not required for most games and demos.
+improve compatibility in few situations but is not required for most games and demos.
 
-JIT enables the Just-in-time compiler. This may breaks compatibility in some games. You will not notice a big performance
-improvement as long as you didn't select "Fastest" in "CPU Speed".
+JIT enables the Just-in-time compiler. This may breaks compatibility in some games.
 
 What options are available for FPU depends on the selected CPU.
 
@@ -239,10 +238,10 @@ Select the amount of RAM for each type you want in your Amiga.
 3.8 Floppy drives
 
 You can enable/disable each drive by clicking the checkbox next to DFx or select the drive type in the dropdown control.
-"3.5'' DD" is the right choose for nearly all ADF and ADZ files. 
+"3.5'' DD" is the right choise for nearly all ADF and ADZ files. 
 The option "Write-protected" indicates if the emulator can write to the ADF.
 The button "..." opens a dialog to select the required disk file.
-With the big dropdown control, you can select one of the disks you recently used.
+With the dropdown control, you can select one of the disks you recently used.
 
 You can reduce the loading time for lot of games by increasing the floppy drive emulation speed. A few games will not load
 with higher drive speed and you have to select 100%.
@@ -262,7 +261,7 @@ create the new hard disk. You have to format the new HDD in Amiga via the Workbe
 
 If "Master harddrive write protection" is selected, you can't write to any HD.
 
-Select "CD drive" to emulate CD for CD32. Use "Eject"" to remove currentCD and click on "..." to open a dialog to select
+Select "CD drive" to emulate CD for CD32. Use "Eject" to remove current CD and click on "..." to open a dialog to select
 the iso/cue file for CD emulation.
 In current version, WAV, MP3 and FLAC is supported for audio tracks.
 
@@ -313,7 +312,7 @@ current frame rate. When you have a HDD in your Amiga emulation, the HD indicato
 to the HDD. The next values are showing the track number for each disk drive and indicates disk access.
 
 When you deactivate the option "Show GUI on startup" and use this configuration by specifying it with the command line
-parameter "-config=<file>", the emulations starts directly without showing the GUI.
+parameter "-config=<file>", the emulation starts directly without showing the GUI.
 
 Set the speed for the Pandora CPU to overclock it for games which need more power. Be careful with this parameter.
 

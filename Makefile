@@ -234,6 +234,7 @@ OBJS =	\
 	src/od-pandora/gui/UaeListBox.o \
 	src/od-pandora/gui/InGameMessage.o \
 	src/od-pandora/gui/SelectorEntry.o \
+	src/od-pandora/gui/ShowHelp.o \
 	src/od-pandora/gui/ShowMessage.o \
 	src/od-pandora/gui/SelectFolder.o \
 	src/od-pandora/gui/SelectFile.o \

@@ -58,6 +58,7 @@ int quickstart_conf = 0;
 
 extern void signal_segv(int signum, siginfo_t* info, void*ptr);
 extern void signal_buserror(int signum, siginfo_t* info, void*ptr);
+extern void signal_term(int signum, siginfo_t* info, void*ptr);
 extern void gui_force_rtarea_hdchange(void);
 
 static int delayed_mousebutton = 0;
@@ -334,9 +335,10 @@ void target_default_options (struct uae_prefs *p, int type)
 	p->cr[0].horiz = -1;
 	p->cr[0].vert = -1;
 	p->cr[0].lace = -1;
-	p->cr[0].vsync = 1;
-	p->cr[0].rate = 50.0;
-	p->cr[0].ntsc = 0;
+	p->cr[0].resolution = 0;
+	p->cr[0].vsync = -1;
+	p->cr[0].rate = 60.0;
+	p->cr[0].ntsc = 1;
 	p->cr[0].locked = true;
 	p->cr[0].rtg = true;
 	_tcscpy (p->cr[0].label, _T("RTG"));
@@ -508,7 +510,9 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
 
     if(!isdefault)
       inputdevice_updateconfig (NULL, p);
-  
+#ifdef WITH_LOGGING
+    p->leds_on_screen = true;
+#endif
     SetLastActiveConfig(filename);
     quickstart_model = -1;
   }
@@ -763,7 +767,7 @@ int currVSyncRate = 0;
 bool SetVSyncRate(int hz)
 {
 	char cmd[64];
-  
+
   if(currVSyncRate != hz && (hz == 50 || hz == 60))
   {
     snprintf((char*)cmd, 64, "sudo /usr/pandora/scripts/op_lcdrate.sh %d", hz);
@@ -917,6 +921,15 @@ int main (int argc, char *argv[])
   if(sigaction(SIGBUS, &action, NULL) < 0)
   {
     printf("Failed to set signal handler (SIGBUS).\n");
+    abort();
+  }
+
+  memset(&action, 0, sizeof(action));
+  action.sa_sigaction = signal_term;
+  action.sa_flags = SA_SIGINFO;
+  if(sigaction(SIGTERM, &action, NULL) < 0)
+  {
+    printf("Failed to set signal handler (SIGTERM).\n");
     abort();
   }
 

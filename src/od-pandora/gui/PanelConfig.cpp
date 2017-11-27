@@ -89,9 +89,9 @@ class ConfigsListModel : public gcn::ListModel
         strncpy(tmp, ConfigFilesList[i]->Name, MAX_DPATH);
         if(strlen(ConfigFilesList[i]->Description) > 0)
         {
-          strncat(tmp, " (", MAX_DPATH);
-          strncat(tmp, ConfigFilesList[i]->Description, MAX_DPATH);
-          strncat(tmp, ")", MAX_DPATH);
+          strncat(tmp, " (", MAX_DPATH - 1);
+          strncat(tmp, ConfigFilesList[i]->Description, MAX_DPATH - 1);
+          strncat(tmp, ")", MAX_DPATH - 1);
         }
         configs.push_back(tmp);
       }
@@ -131,7 +131,7 @@ class ConfigButtonActionListener : public gcn::ActionListener
         if(!txtName->getText().empty())
         {
           fetch_configurationpath(filename, MAX_DPATH);
-          strncat(filename, txtName->getText().c_str(), MAX_DPATH);
+          strncat(filename, txtName->getText().c_str(), MAX_DPATH - 1);
           strncat(filename, ".uae", MAX_DPATH);
           strncpy(changed_prefs.description, txtDesc->getText().c_str(), 256);
           if(cfgfile_save(&changed_prefs, filename, 0))
@@ -356,4 +356,18 @@ void RefreshPanelConfig(void)
       }
     }
   }
+}
+
+
+bool HelpPanelConfig(std::vector<std::string> &helptext)
+{
+  helptext.clear();
+  helptext.push_back("To load a configuration, select the entry in the list and then click on \"Load\". If you doubleclick on an entry");
+  helptext.push_back("in the list, the emulation starts with this configuration.");
+  helptext.push_back("");
+  helptext.push_back("If you want to create a new configuration, setup all options, enter a new name in \"Name\", provide a short");
+  helptext.push_back("description and then click on \"Save\".");
+  helptext.push_back("");
+  helptext.push_back("\"Delete\" will delete the selected configuration.");
+  return true;
 }

@@ -379,12 +379,12 @@ void show_screen (int mode)
     }
     current_vsync_frame += currprefs.gfx_framerate;
   }
-  
+
   last_synctime = read_processor_time();
   SDL_Flip(prSDLScreen);
 
   idletime += last_synctime - start;
-  
+
   if(!screen_is_picasso)
   	gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
 
@@ -678,8 +678,9 @@ bool vsync_switchmode (int hz)
     fpscounter_reset();
     time_per_frame = 1000 * 1000 / (hz);
   }
-   
-  changed_prefs.gfx_size.height = changed_height;
+  
+  if(!picasso_on && !picasso_requested_on)
+    changed_prefs.gfx_size.height = changed_height;
   
   return true;
 }

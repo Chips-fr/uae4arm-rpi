@@ -283,3 +283,22 @@ void RefreshPanelDisplay(void)
   chkLineDbl->setSelected(changed_prefs.gfx_vresolution != VRES_NONDOUBLE);
   chkFrameskip->setSelected(changed_prefs.gfx_framerate);
 }
+
+
+bool HelpPanelDisplay(std::vector<std::string> &helptext)
+{
+  helptext.clear();
+  helptext.push_back("Select the required width and height of the Amiga screen. If you select \"NTSC\" in chipset, a value greater than");
+  helptext.push_back("240 for \"Height\" makes no sense. When the game, demo or workbench uses Hires mode and you selected a");
+  helptext.push_back("value for \"Width\" lower than 640, you will only see half of the pixels.");
+  helptext.push_back("");
+  helptext.push_back("With \"Vert. offset\" you can adjust the position of the first drawn line of the Amiga screen.");
+  helptext.push_back("");
+  helptext.push_back("Enable 4/3 shrink if you want correct aspect ratio on modern 16/9 screen.");
+  helptext.push_back("");
+  helptext.push_back("Activate line doubling to remove flicker in interlace modes.");
+  helptext.push_back("");
+  helptext.push_back("When you activate \"Frameskip\", only every second frame is drawn. This will improve performance and some");
+  helptext.push_back("more games are playable.");
+  return true;
+}

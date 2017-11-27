@@ -104,9 +104,9 @@ class ListBoxActionListener : public gcn::ActionListener
       char foldername[MAX_PATH] = "";
 
       selected_item = lstFolders->getSelected();
-      strncpy(foldername, workingDir, MAX_PATH);
-      strncat(foldername, "/", MAX_PATH);
-      strncat(foldername, dirList.getElementAt(selected_item).c_str(), MAX_PATH);
+      strncpy(foldername, workingDir, MAX_PATH - 1);
+      strncat(foldername, "/", MAX_PATH - 1);
+      strncat(foldername, dirList.getElementAt(selected_item).c_str(), MAX_PATH - 1);
       checkfoldername(foldername);
     }
 };

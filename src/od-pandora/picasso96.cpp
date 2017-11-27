@@ -576,10 +576,9 @@ static void do_fillrect_frame_buffer (struct RenderInfo *ri, int X, int Y, int W
 }
 
 static int p96_framecnt;
-int p96skipmode = -1;
 static int doskip (void)
 {
-  if (p96_framecnt >= currprefs.gfx_framerate)
+  if (p96_framecnt > currprefs.gfx_framerate)
   	p96_framecnt = 0;
   return p96_framecnt > 0;
 }
@@ -597,16 +596,10 @@ static bool rtg_render (void)
 {
 	bool flushed = false;
 
-	if (doskip () && p96skipmode == 0) {
-		;
-	} else {
+	if (!doskip ())
 		flushed = picasso_flushpixels (gfxmem_banks[0]->start + natmem_offset, picasso96_state.XYOffset - gfxmem_banks[0]->start);
-	}
+
 	return flushed;
-}
-static void rtg_show (void)
-{
-	gfx_unlock_picasso (true);
 }
 static void rtg_clear (void)
 {
@@ -793,10 +786,10 @@ void picasso_refresh (void)
   }
 }
 
+bool picasso_rendered = false;
 void picasso_handle_vsync(void)
 {
 	static int vsynccnt;
-	bool rendered = false;
 
 	if (currprefs.rtgboards[0].rtgmem_size == 0)
 		return;
@@ -841,12 +834,9 @@ void picasso_handle_vsync(void)
 	if (!picasso_on)
 		return;
 
-	rendered = rtg_render();
+	picasso_rendered = rtg_render();
 
 	picasso_trigger_vblank();
-
-	if (!rendered)
-		rtg_show();
 }
 
 #define BLT_SIZE 4
@@ -3106,9 +3096,6 @@ bool picasso_flushpixels (uae_u8 *src, int off)
 	  return false;
   }
 
-	if (doskip () && p96skipmode == 1)
-    return false;
-
   dst = gfx_lock_picasso ();
   if (dst == NULL)
     return false;
@@ -3436,6 +3423,7 @@ void picasso_reset (void)
   	reserved_gfxmem = 0;
   	resetpalette();
 		InitPicasso96 ();
+		picasso_rendered = false;
 	}
 }
 

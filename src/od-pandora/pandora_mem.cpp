@@ -29,6 +29,9 @@ static uae_u8* a3000_mem = (uae_u8*) MAP_FAILED;
 static int a3000_totalsize = 0;
 #define A3000MEM_START 0x08000000
 
+static int lastLowSize = 0;
+static int lastHighSize = 0;
+
 
 int z3base_adr = 0;
 
@@ -129,15 +132,21 @@ void alloc_AmigaMem(void)
 }
 
 
-bool HandleA3000Mem(int lowsize, int highsize)
+static bool HandleA3000Mem(int lowsize, int highsize)
 {
   bool result = true;
   
+  if(lowsize == lastLowSize && highsize == lastHighSize)
+    return result;
+  
   if(a3000_mem != MAP_FAILED)
   {
+    write_log("HandleA3000Mem(): Free A3000 memory (0x%08x). %d MB.\n", a3000_mem, a3000_totalsize / (1024 * 1024));
     munmap(a3000_mem, a3000_totalsize);
     a3000_mem = (uae_u8*) MAP_FAILED;
     a3000_totalsize = 0;
+    lastLowSize = 0;
+    lastHighSize = 0;
   }
   if(lowsize + highsize > 0)
   {
@@ -149,6 +158,8 @@ bool HandleA3000Mem(int lowsize, int highsize)
       PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
     if(a3000_mem != MAP_FAILED)
     {
+      lastLowSize = lowsize;
+      lastHighSize = highsize;
       write_log(_T("Succeeded: location at 0x%08x (Amiga: 0x%08x)\n"), a3000_mem, (A3000MEM_START - lowsize));
     }
     else
@@ -163,21 +174,9 @@ bool HandleA3000Mem(int lowsize, int highsize)
 }
 
 
-bool A3000MemAvailable(void)
+static bool A3000MemAvailable(void)
 {
   return (a3000_mem != MAP_FAILED);
-}
-
-
-static uae_u32 getz2rtgaddr (int rtgsize)
-{
-	uae_u32 start;
-	start = currprefs.fastmem[0].size;
-	start += rtgsize - 1;
-	start &= ~(rtgsize - 1);
-	while (start & (currprefs.rtgboards[0].rtgmem_size - 1) && start < 4 * 1024 * 1024)
-		start += 1024 * 1024;
-	return start + 2 * 1024 * 1024;
 }
 
 
@@ -233,18 +232,26 @@ bool uae_mman_info(addrbank *ab, struct uae_mman_data *md)
 		got = true;
 		readonly = true;
 		readonlysize = RTAREA_TRAPS;
-	} else if (!_tcscmp(ab->label, _T("ramsey_low")) && A3000MemAvailable()) {
-		start = a3000lmem_bank.start;
-		got = true;
+	} else if (!_tcscmp(ab->label, _T("ramsey_low"))) {
+	  if(ab->reserved_size != lastLowSize)
+	    HandleA3000Mem(ab->reserved_size, lastHighSize);
+	  if(A3000MemAvailable()) {
+  		start = a3000lmem_bank.start;
+  		got = true;
+    }
 	} else if (!_tcscmp(ab->label, _T("csmk1_maprom"))) {
 		start = 0x07f80000;
 		got = true;
 	} else if (!_tcscmp(ab->label, _T("25bitram"))) {
 		start = 0x01000000;
 		got = true;
-	} else if (!_tcscmp(ab->label, _T("ramsey_high")) && A3000MemAvailable()) {
-		start = 0x08000000;
-		got = true;
+	} else if (!_tcscmp(ab->label, _T("ramsey_high"))) {
+	  if(ab->reserved_size != lastHighSize)
+	    HandleA3000Mem(lastLowSize, ab->reserved_size);
+	  if(A3000MemAvailable()) {
+  		start = 0x08000000;
+  		got = true;
+  	}
 	} else if (!_tcscmp(ab->label, _T("dkb"))) {
 		start = 0x10000000;
 		got = true;
@@ -366,7 +373,9 @@ bool mapped_malloc (addrbank *ab)
 			put_long_host(ab->baseaddr + ab->reserved_size, 0x4afc4afc);
 		}
 		ab->allocated_size = ab->reserved_size;
-	  write_log("mapped_malloc(): 0x%08x - 0x%08x -> %s (%s)\n", ab->baseaddr - natmem_offset, ab->baseaddr - natmem_offset + ab->allocated_size, ab->name, ab->label);
+	  write_log("mapped_malloc(): 0x%08x - 0x%08x (0x%08x - 0x%08x) -> %s (%s)\n", 
+	    ab->baseaddr - natmem_offset, ab->baseaddr - natmem_offset + ab->allocated_size,
+	    ab->baseaddr, ab->baseaddr + ab->allocated_size, ab->name, ab->label);
 	}
   ab->flags |= ABFLAG_DIRECTMAP;
   
@@ -376,8 +385,12 @@ bool mapped_malloc (addrbank *ab)
 
 void mapped_free (addrbank *ab)
 {
-  if(ab->label != NULL && !strcmp(ab->label, "filesys") && ab->baseaddr != NULL)
+  if(ab->label != NULL && !strcmp(ab->label, "filesys") && ab->baseaddr != NULL) {
     free(ab->baseaddr);
+    write_log("mapped_free(): 0x%08x - 0x%08x (0x%08x - 0x%08x) -> %s (%s)\n", 
+      ab->baseaddr - natmem_offset, ab->baseaddr - natmem_offset + ab->allocated_size,
+      ab->baseaddr, ab->baseaddr + ab->allocated_size, ab->name, ab->label);
+  }
   ab->baseaddr = NULL;
   ab->allocated_size = 0;
 }

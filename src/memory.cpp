@@ -935,8 +935,8 @@ static void allocate_memory (void)
   }
 
   if (bogomem_bank.reserved_size != currprefs.bogomem_size) {
-			mapped_free (&bogomem_bank);
-			bogomem_bank.reserved_size = 0;
+		mapped_free (&bogomem_bank);
+		bogomem_bank.reserved_size = 0;
 		
 		if(currprefs.bogomem_size > 0x1c0000)
       currprefs.bogomem_size = 0x1c0000;
@@ -1032,6 +1032,7 @@ void map_overlay (int chip)
 {
   int size;
   addrbank *cb;
+  
   int currPC = m68k_getpc();
 
   size = chipmem_bank.allocated_size >= 0x180000 ? (chipmem_bank.allocated_size >> 16) : 32;
@@ -1164,6 +1165,7 @@ void memory_reset (void)
 {
   int bnk, bnk_end;
 	bool gayleorfatgary;
+
 
 	need_hardreset = false;
 	/* Use changed_prefs, as m68k_reset is called later.  */

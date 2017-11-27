@@ -1,3 +1,9 @@
+2017-09-09 - Release version
+   - Fixed frameskip (was broken in last two beta versions)
+   - Fixed Picasso framerate (Pandora switches now to 60 Hz like the Amiga side)
+   - Added help page for every panel in GUI (Help button or F1)
+   - Fixed bug when emulator crashes or hangs after switching configs
+
 2017-09-06 - Beta version
    - Merged lot of changes from WinUAE 3.5.0
    - Fixed possible segfault and bus error on two locations

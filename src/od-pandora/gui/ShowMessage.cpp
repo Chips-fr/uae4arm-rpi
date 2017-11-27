@@ -168,6 +168,7 @@ bool ShowMessage(const char *title, const char *line1, const char *line2, const 
     cmdCancel->setVisible(false);
     cmdOK->setPosition(cmdCancel->getX(), cmdCancel->getY());
   }
+  cmdOK->setEnabled(true);
   ShowMessageLoop();
   ExitShowMessage();
   

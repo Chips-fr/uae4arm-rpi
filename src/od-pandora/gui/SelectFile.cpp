@@ -96,22 +96,22 @@ class FileButtonActionListener : public gcn::ActionListener
           char tmp[MAX_PATH];
           if(txtFilename->getText().length() <= 0)
             return;
-          strncpy(tmp, workingDir, MAX_PATH);
-          strncat(tmp, "/", MAX_PATH);
-          strncat(tmp, txtFilename->getText().c_str(), MAX_PATH);
+          strncpy(tmp, workingDir, MAX_PATH - 1);
+          strncat(tmp, "/", MAX_PATH - 1);
+          strncat(tmp, txtFilename->getText().c_str(), MAX_PATH - 1);
           if(strstr(tmp, filefilter[0]) == NULL)
-            strncat(tmp, filefilter[0], MAX_PATH);
+            strncat(tmp, filefilter[0], MAX_PATH - 1);
           if(my_existsfile(tmp) == 1)
             return; // File already exists
-          strncpy(workingDir, tmp, MAX_PATH);
+          strncpy(workingDir, tmp, MAX_PATH - 1);
           dialogResult = true;
         }
         else
         {
           if(fileList->isDir(selected_item))
             return; // Directory selected -> Ok not possible
-          strncat(workingDir, "/", MAX_PATH);
-          strncat(workingDir, fileList->getElementAt(selected_item).c_str(), MAX_PATH);
+          strncat(workingDir, "/", MAX_PATH - 1);
+          strncat(workingDir, fileList->getElementAt(selected_item).c_str(), MAX_PATH - 1);
           dialogResult = true;
         }
       }
@@ -165,8 +165,8 @@ class SelectFileActionListener : public gcn::ActionListener
 
       selected_item = lstFiles->getSelected();
       strncpy(foldername, workingDir, MAX_PATH);
-      strncat(foldername, "/", MAX_PATH);
-      strncat(foldername, fileList->getElementAt(selected_item).c_str(), MAX_PATH);
+      strncat(foldername, "/", MAX_PATH - 1);
+      strncat(foldername, fileList->getElementAt(selected_item).c_str(), MAX_PATH - 1);
       if(fileList->isDir(selected_item))
         checkfoldername(foldername);
       else if(!createNew)

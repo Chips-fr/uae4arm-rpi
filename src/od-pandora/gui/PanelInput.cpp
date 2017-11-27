@@ -34,7 +34,7 @@ static gcn::UaeDropDown* cboAutofire;
 static gcn::Label* lblMouseSpeed;
 static gcn::Label* lblMouseSpeedInfo;
 static gcn::Slider* sldMouseSpeed;
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
 static gcn::Label *lblTapDelay;
 static gcn::UaeDropDown* cboTapDelay;
 static gcn::UaeCheckBox* chkMouseHack;
@@ -111,7 +111,7 @@ StringListModel ctrlPortList(inputport_list, 5);
 const char *autofireValues[] = { "Off", "Slow", "Medium", "Fast" };
 StringListModel autofireList(autofireValues, 4);
 
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
 const char *tapDelayValues[] = { "Normal", "Short", "None" };
 StringListModel tapDelayList(tapDelayValues, 3);
 #endif
@@ -247,7 +247,7 @@ class InputActionListener : public gcn::ActionListener
     		changed_prefs.input_joymouse_multiplier = mousespeed_values[(int)(sldMouseSpeed->getValue())];
     		RefreshPanelInput();
     	}
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
       else if (actionEvent.getSource() == cboTapDelay)
       {
         if(cboTapDelay->getSelected() == 0)
@@ -369,7 +369,7 @@ void InitPanelInput(const struct _ConfigCategory& category)
 	sldMouseSpeed->setId("MouseSpeed");
   sldMouseSpeed->addActionListener(inputActionListener);
   lblMouseSpeedInfo = new gcn::Label(".25");
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
   lblTapDelay = new gcn::Label("Tap Delay:");
   lblTapDelay->setSize(100, LABEL_HEIGHT);
   lblTapDelay->setAlignment(gcn::Graphics::RIGHT);
@@ -542,7 +542,7 @@ void InitPanelInput(const struct _ConfigCategory& category)
   category.panel->add(sldMouseSpeed, 300 + lblMouseSpeed->getWidth() + 8, posY);
   category.panel->add(lblMouseSpeedInfo, sldMouseSpeed->getX() + sldMouseSpeed->getWidth() + 12, posY);
   posY += sldMouseSpeed->getHeight() + DISTANCE_NEXT_Y;
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
   category.panel->add(chkMouseHack, DISTANCE_BORDER + lblA->getWidth() + 8, posY);
   category.panel->add(lblTapDelay, 300, posY);
   category.panel->add(cboTapDelay, 300 + lblTapDelay->getWidth() + 8, posY);
@@ -611,7 +611,7 @@ void ExitPanelInput(void)
   delete lblMouseSpeed;
   delete sldMouseSpeed;
   delete lblMouseSpeedInfo;
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
   delete lblTapDelay;
   delete cboTapDelay;
   delete chkMouseHack;
@@ -716,7 +716,7 @@ void RefreshPanelInput(void)
       break;
     }
   }
-#ifndef RASPBERRY
+#ifdef PANDORA_SPECIFIC
 	if (changed_prefs.pandora_tapDelay == 10)
     cboTapDelay->setSelected(0);
   else if (changed_prefs.pandora_tapDelay == 5)
@@ -753,4 +753,18 @@ void RefreshPanelInput(void)
     }
   }
 #endif
+}
+
+
+bool HelpPanelInput(std::vector<std::string> &helptext)
+{
+  helptext.clear();
+  helptext.push_back("You can select the control type for both ports and the rate for autofire.");
+  helptext.push_back("");
+  helptext.push_back("Set the emulated mouse speed to .25x, .5x, 1x, 2x and 4x to slow down or speed up the mouse.");
+  helptext.push_back("");
+  helptext.push_back("When you activate \"Custom Control\", you can define which Amiga key should be emulated by pressing one of the");
+  helptext.push_back("ABXY- or D-pad buttons. Useful to setup controls for pinball games. During emulation, you can switch between");
+  helptext.push_back("regular buttons and custom settings by pressing left shoulder button and 'c'.");
+  return true;
 }

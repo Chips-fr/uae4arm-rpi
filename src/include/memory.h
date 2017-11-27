@@ -547,12 +547,12 @@ STATIC_INLINE void put_pointer (uaecptr addr, void *v)
 
 STATIC_INLINE uae_u8 *get_real_address(uaecptr addr)
 {
-    return get_mem_bank(addr).xlateaddr(addr);
+  return get_mem_bank(addr).xlateaddr(addr);
 }
 
 STATIC_INLINE int valid_address(uaecptr addr, uae_u32 size)
 {
-    return get_mem_bank(addr).check(addr, size);
+  return get_mem_bank(addr).check(addr, size);
 }
 
 STATIC_INLINE void put_quad_host(void *addr, uae_u64 v)

@@ -99,7 +99,6 @@ static void set_default_system(struct uae_prefs *p, const char *system, int rom)
     bip_a2000(p, rom);
   else if(strcmp(system, "a-4000") == 0) {
     bip_a4000(p, rom);
-    HandleA3000Mem(p->mbresmem_low_size, p->mbresmem_high_size);
   }
 }
 
@@ -340,9 +339,9 @@ static void parse_boot(struct uae_prefs *p, xmlNode *node)
           {
             char target_file[MAX_DPATH];
             fetch_rp9path(target_file, MAX_DPATH);
-            strncat(target_file, "workbench-", MAX_DPATH);
-            strncat(target_file, (const char *)content, MAX_DPATH);
-            strncat(target_file, ".hdf", MAX_DPATH);
+            strncat(target_file, "workbench-", MAX_DPATH - 1);
+            strncat(target_file, (const char *)content, MAX_DPATH - 1);
+            strncat(target_file, ".hdf", MAX_DPATH - 1);
             FILE *f = fopen(target_file, "rb");
             if(f != NULL)
             {
