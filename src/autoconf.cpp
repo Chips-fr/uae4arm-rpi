@@ -55,12 +55,21 @@ static int REGPARAM2 rtarea_check (uaecptr addr, uae_u32 size)
 static uae_u32 REGPARAM2 rtarea_lget (uaecptr addr)
 {
   addr &= 0xFFFF;
+	if (addr & 1)
+		return 0;
+	if (addr >= 0xfffd)
+		return 0;
 	return (rtarea_bank.baseaddr[addr + 0] << 24) | (rtarea_bank.baseaddr[addr + 1] << 16) |
 		(rtarea_bank.baseaddr[addr + 2] << 8) | (rtarea_bank.baseaddr[addr + 3] << 0);
 }
 static uae_u32 REGPARAM2 rtarea_wget (uaecptr addr)
 {
   addr &= 0xFFFF;
+	if (addr & 1)
+		return 0;
+
+	uaecptr addr2 = addr - RTAREA_TRAP_STATUS;
+
 	return (rtarea_bank.baseaddr[addr] << 8) + rtarea_bank.baseaddr[addr + 1];
 }
 static uae_u32 REGPARAM2 rtarea_bget (uaecptr addr)
@@ -71,7 +80,7 @@ static uae_u32 REGPARAM2 rtarea_bget (uaecptr addr)
 		rtarea_bank.baseaddr[addr] = atomic_bit_test_and_reset(&uae_int_requested, 0);
 		//write_log(rtarea_bank.baseaddr[addr] ? _T("+") : _T("-"));
 	} else if (addr == RTAREA_INTREQ + 1) {
-		rtarea_bank.baseaddr[addr] = 0;
+		rtarea_bank.baseaddr[addr] = false;
 	} else if (addr == RTAREA_INTREQ + 2) {
 			rtarea_bank.baseaddr[addr] = 0;
 	}	
@@ -103,8 +112,13 @@ static void REGPARAM2 rtarea_wput (uaecptr addr, uae_u32 value)
 	addr &= 0xffff;
 	value &= 0xffff;
 
+	if (addr & 1)
+		return;
+
 	if (!rtarea_write(addr))
 		return;
+
+	uaecptr addr2 = addr - RTAREA_TRAP_STATUS;
 
 	rtarea_bank.baseaddr[addr + 0] = value >> 8;
 	rtarea_bank.baseaddr[addr + 1] = (uae_u8)value;
@@ -113,6 +127,10 @@ static void REGPARAM2 rtarea_wput (uaecptr addr, uae_u32 value)
 static void REGPARAM2 rtarea_lput (uaecptr addr, uae_u32 value)
 {
 	addr &= 0xffff;
+	if (addr & 1)
+		return;
+	if (addr >= 0xfffd)
+		return;
 	if (!rtarea_write(addr))
 		return;
 	rtarea_bank.baseaddr[addr + 0] = value >> 24;
@@ -238,7 +256,7 @@ static uae_u32 REGPARAM2 getchipmemsize (TrapContext *ctx)
 {
 	trap_set_dreg(ctx, 1, 0);
 	trap_set_areg(ctx, 1, 0);
-  return chipmem_bank.allocated;
+  return chipmem_bank.allocated_size;
 }
 
 static uae_u32 REGPARAM2 uae_puts (TrapContext *ctx)
@@ -251,10 +269,11 @@ static uae_u32 REGPARAM2 uae_puts (TrapContext *ctx)
 
 void rtarea_init_mem (void)
 {
-	rtarea_bank.allocated = RTAREA_SIZE;
+	rtarea_bank.reserved_size = RTAREA_SIZE;
+	rtarea_bank.start = rtarea_base;
 	if (!mapped_malloc (&rtarea_bank)) {
   	write_log (_T("virtual memory exhausted (rtarea)!\n"));
-    SetStartupMsg(_T("Internal error"), _T("Virtual memory exhausted (rtarea)."));
+    target_startup_msg(_T("Internal error"), _T("Virtual memory exhausted (rtarea)."));
     uae_restart(1, NULL);
     return;
   }
@@ -290,7 +309,6 @@ void rtarea_init (void)
 
 #ifdef FILESYS
   filesys_install_code ();
-
 #endif
 
   deftrap (NULL); /* Generic emulator trap */
@@ -313,7 +331,7 @@ void rtarea_init (void)
 	uae_boot_rom_size = here () - rtarea_base;
 	if (uae_boot_rom_size >= RTAREA_TRAPS) {
 		write_log (_T("RTAREA_TRAPS needs to be increased!"));
-    SetStartupMsg(_T("Internal error"), _T("RTAREA_TRAPS needs to be increased."));
+    target_startup_msg(_T("Internal error"), _T("RTAREA_TRAPS needs to be increased."));
     uae_restart(1, NULL);
     return;
 	}
@@ -330,8 +348,7 @@ volatile uae_atomic uae_int_requested = 0;
 
 void rtarea_setup(void)
 {
-  uae_int_requested = 0;
-  uaecptr base = need_uae_boot_rom ();
+  uaecptr base = need_uae_boot_rom (&currprefs);
   if (base) {
   	write_log (_T("RTAREA located at %08X\n"), base);
 	  rtarea_base = base;

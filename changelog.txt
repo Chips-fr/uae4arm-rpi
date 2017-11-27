@@ -1,3 +1,8 @@
+2017-09-06 - Beta version
+   - Merged lot of changes from WinUAE 3.5.0
+   - Fixed possible segfault and bus error on two locations
+   - Better performance by using gcc 7.2 with profiler 
+
 2017-08-08 - Beta version
    - Fixed loading new config (now using same method like WinUAE)
    - Display message instead of crash in some situations

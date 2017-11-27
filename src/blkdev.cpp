@@ -85,8 +85,14 @@ void tolongbcd (uae_u8 *p, int v)
 	p[2] = tobcd ((v >> 0) & 0xff);
 }
 
-static struct cd_toc *gettoc (struct cd_toc_head *th, int block)
+static struct cd_toc *gettoc (int unitnum, struct cd_toc_head *th, int block)
 {
+	if (th->lastaddress == 0) {
+		if (unitnum < 0)
+			return NULL;
+		if (!sys_command_cd_toc(unitnum, th))
+			return NULL;
+	}
 	for (int i = th->first_track_offset + 1; i <= th->last_track_offset; i++) {
 		struct cd_toc *t = &th->toc[i];
 		if (block < t->paddress)
@@ -97,7 +103,7 @@ static struct cd_toc *gettoc (struct cd_toc_head *th, int block)
 
 int isaudiotrack (struct cd_toc_head *th, int block)
 {
-	struct cd_toc *t = gettoc (th, block);
+	struct cd_toc *t = gettoc (-1, th, block);
 	if (!t)
 		return 0;
 	return (t->control & 0x0c) != 4;
@@ -142,14 +148,16 @@ static void install_driver (int flags)
 				  break;
 			}
 			// do not default to image mode if unit 1+ and automount
-			// use image mode if driver disabled
-			for (int j = 1; j < NUM_DEVICE_TABLE_ENTRIES; j++) {
-				if (devicetable[j] == st->device_func && driver_installed[j] < 0) {
-					st->device_func = devicetable[SCSI_UNIT_IMAGE];
-					st->scsiemu = true;
-				}
-			}
-		}
+			if (i == 0) {
+			  // use image mode if driver disabled
+			  for (int j = 1; j < NUM_DEVICE_TABLE_ENTRIES; j++) {
+				  if (devicetable[j] == st->device_func && driver_installed[j] < 0) {
+					  st->device_func = devicetable[SCSI_UNIT_IMAGE];
+					  st->scsiemu = true;
+				  }
+			  }
+		  }
+	  }
 	}
 
 	for (int j = 1; j < NUM_DEVICE_TABLE_ENTRIES; j++) {
@@ -317,6 +325,7 @@ static int getunitinfo (int unitnum, int drive, cd_standard_unit csu, int *isaud
 static int get_standard_cd_unit2 (struct uae_prefs *p, cd_standard_unit csu)
 {
 	int unitnum = 0;
+	int isaudio = 0;
 	if (p->cdslots[unitnum].name[0] || p->cdslots[unitnum].inuse) {
 		if (p->cdslots[unitnum].name[0]) {
 			device_func_init (SCSI_UNIT_IMAGE);
@@ -327,7 +336,12 @@ static int get_standard_cd_unit2 (struct uae_prefs *p, cd_standard_unit csu)
 		}
 		return unitnum;
 	}
-
+	if (isaudio) {
+		TCHAR vol[100];
+		_stprintf (vol, _T("%c:\\"), isaudio);
+		if (sys_command_open_internal (unitnum, vol, csu)) 
+			return unitnum;
+	}
 fallback:
 	device_func_init (SCSI_UNIT_IMAGE);
 	if (!sys_command_open_internal (unitnum, _T(""), csu)) {
@@ -490,7 +504,6 @@ static void check_changes (int unitnum)
 		changed = true;
 
 	if (changed) {
-		bool wasimage = currprefs.cdslots[unitnum].name[0] != 0;
 		if (st->sema)
 			gotsem = getsem (unitnum, true);
 		st->cdimagefileinuse = changed_prefs.cdslots[unitnum].inuse;
@@ -658,6 +671,7 @@ int sys_command_cd_play (int unitnum, int startlsn, int endlsn, int scan, play_s
 		return 0;
 	if (!getsem (unitnum))
 		return 0;
+	state[unitnum].play_end_pos = endlsn;
 	if (state[unitnum].device_func->play == NULL)
 		v = sys_command_cd_play (unitnum, startlsn, endlsn, scan);
 	else
@@ -859,7 +873,7 @@ struct device_info *sys_command_info (int unitnum, struct device_info *di, int q
 	struct device_info *dix;
 
 	dix = sys_command_info_session (unitnum, di, quick, -1);
-	if (dix && dix->media_inserted && !quick) {
+	if (dix && dix->media_inserted && !quick && !dix->audio_playing) {
 		TCHAR *name = NULL;
 		uae_u8 buf[2048];
 		if (sys_command_cd_read(unitnum, buf, 16, 1)) {
@@ -1416,7 +1430,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 				goto nodisk;
 			stopplay (unitnum);
 			offset = ((cmdbuf[1] & 31) << 16) | (cmdbuf[2] << 8) | cmdbuf[3];
-			struct cd_toc *t = gettoc (&di.toc, offset);
+			struct cd_toc *t = gettoc (unitnum, &di.toc, offset);
+			if (!t)
+				goto readerr;
 			v = scsi_read_cd_data (unitnum, scsi_data, offset, 0, &di, &scsi_len, t);
 			if (v == -1)
 				goto outofbounds;
@@ -1428,7 +1444,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 			goto nodisk;
 		stopplay (unitnum);
 		offset = ((cmdbuf[1] & 31) << 16) | (cmdbuf[2] << 8) | cmdbuf[3];
-		struct cd_toc *t = gettoc (&di.toc, offset);
+		struct cd_toc *t = gettoc (unitnum, &di.toc, offset);
+		if (!t)
+			goto readerr;
 		if ((t->control & 0x0c) == 0x04) {
 			len = cmdbuf[4];
 			if (!len)
@@ -1451,7 +1469,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 				goto nodisk;
 			stopplay (unitnum);
 			offset = rl (cmdbuf + 2);
-			struct cd_toc *t = gettoc (&di.toc, offset);
+			struct cd_toc *t = gettoc (unitnum, &di.toc, offset);
+			if (!t)
+				goto readerr;
 			v = scsi_read_cd_data (unitnum, scsi_data, offset, 0, &di, &scsi_len, t);
 			if (v == -1)
 				goto outofbounds;
@@ -1463,7 +1483,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 			goto nodisk;
 		stopplay (unitnum);
 		offset = rl (cmdbuf + 2);
-		struct cd_toc *t = gettoc (&di.toc, offset);
+		struct cd_toc *t = gettoc (unitnum, &di.toc, offset);
+		if (!t)
+			goto readerr;
 		if ((t->control & 0x0c) == 0x04) {
 			len = rl (cmdbuf + 7 - 2) & 0xffff;
 			v = scsi_read_cd_data (unitnum, scsi_data, offset, len, &di, &scsi_len, t);
@@ -1484,7 +1506,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 			goto nodisk;
 		stopplay (unitnum);
 		offset = rl (cmdbuf + 2);
-		struct cd_toc *t = gettoc (&di.toc, offset);
+		struct cd_toc *t = gettoc (unitnum, &di.toc, offset);
+		if (!t)
+			goto readerr;
 		if ((t->control & 0x0c) == 0x04) {
 			len = rl (cmdbuf + 6);
 			v = scsi_read_cd_data (unitnum, scsi_data, offset, len, &di, &scsi_len, t);
@@ -1540,7 +1564,9 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 			} else {
 				lsn = rl (p + 2);
 			}
-			struct cd_toc *t = gettoc (toc, lsn);
+			struct cd_toc *t = gettoc (unitnum, toc, lsn);
+			if (!t)
+				goto readerr;
 			p[0] = 0;
 			p[1] = 28 - 2;
 			p[2] = t->track;
@@ -1883,7 +1909,8 @@ end:
 	*sense_len = ls;
 	if (ls) {
 		//s[0] |= 0x80;
-		s[7] = ls - 7; // additional sense length
+		if (ls > 7)
+			s[7] = ls - 8; // additional sense length
 	}
 	return status;
 }

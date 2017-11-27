@@ -300,6 +300,7 @@ static void ide_data_ready (struct ide_hdf *ide)
 	memset (ide->secbuf, 0, ide->blocksize);
 	ide->data_offset = 0;
 	ide->data_size = ide->blocksize;
+	ide->buffer_offset = 0;
 	ide->data_multi = 1;
 	ide->intdrq = true;
 	ide_interrupt (ide);
@@ -528,8 +529,8 @@ static int dec_nsec (struct ide_hdf *ide, int v)
 {
 	if (ide->lba48 && ide->lba48cmd) {
 		uae_u16 nsec;
-		nsec = ide->regs.ide_nsector2 * 256 + ide->regs.ide_nsector;
-		ide->regs.ide_nsector -= v;
+		nsec = (ide->regs.ide_nsector2 << 8) | ide->regs.ide_nsector;
+		nsec -= v;
 		ide->regs.ide_nsector2 = nsec >> 8;
 		ide->regs.ide_nsector = nsec & 0xff;
 		return (ide->regs.ide_nsector2 << 8) | ide->regs.ide_nsector;
@@ -618,7 +619,7 @@ static void process_rw_command (struct ide_hdf *ide)
 static void process_packet_command (struct ide_hdf *ide)
 {
 	setbsy (ide);
-	write_comm_pipe_u32 (&ide->its->requests, ide->num | 0x80, 1);
+	write_comm_pipe_u32 (&ide->its->requests, ide->num | 0x100, 1);
 }
 
 static void atapi_data_done (struct ide_hdf *ide)
@@ -692,7 +693,7 @@ static void do_packet_command (struct ide_hdf *ide)
 		ide->regs.ide_status = 0;
 		if (ide->scsi->status) {
 			// error
-			ide->regs.ide_error = (ide->scsi->sense[2] << 4) | 4;
+			ide->regs.ide_error = (ide->scsi->sense[2] << 4) | 4; // ABRT
 			atapi_data_done (ide);
 			ide->regs.ide_status |= ATAPI_STATUS_CHK;
 			atapi_set_size (ide);
@@ -1004,7 +1005,7 @@ static uae_u16 ide_get_data_2(struct ide_hdf *ide, int bussize)
 		if (ide->data_offset == ide->packet_transfer_size) {
 			if (IDE_LOG > 1)
 				write_log (_T("IDE%d ATAPI partial read finished, %d bytes remaining\n"), ide->num, ide->data_size);
-			if (ide->data_size == 0) {
+			if (ide->data_size == 0 || ide->data_size == 1) { // 1 byte remaining: ignore, ATAPI has word transfer size.
 				ide->packet_state = 0;
 				atapi_data_done (ide);
 				if (IDE_LOG > 1)
@@ -1124,7 +1125,7 @@ uae_u32 ide_read_reg (struct ide_hdf *ide, int ide_reg)
 	if (ide->regs.ide_status & IDE_STATUS_BSY)
 		ide_reg = IDE_STATUS;
 	if (!ide_isdrive (ide)) {
-		if (ide_reg == IDE_STATUS) {
+		if (ide_reg == IDE_STATUS || ide_reg == IDE_DEVCON) {
 			if (ide->pair->irq)
 				ide->pair->irq = 0;
 			if (ide_isdrive (ide->pair))
@@ -1296,8 +1297,8 @@ static void *ide_thread (void *idedata)
 		struct ide_hdf *ide;
 		if (its->state == 0 || unit == 0xfffffff)
 			break;
-		ide = its->idetable[unit & 0x7f];
-		if (unit & 0x80)
+		ide = its->idetable[unit & 0xff];
+		if (unit & 0x100)
 			do_process_packet_command (ide);
 		else
 			do_process_rw_command (ide);
@@ -1378,7 +1379,7 @@ void remove_ide_unit(struct ide_hdf **idetable, int ch)
 	}
 }
 
-struct ide_hdf *add_ide_unit (struct ide_hdf **idetable, int max, int ch, struct uaedev_config_info *ci)
+struct ide_hdf *add_ide_unit (struct ide_hdf **idetable, int max, int ch, struct uaedev_config_info *ci, struct romconfig *rc)
 {
 	struct ide_hdf *ide;
 

@@ -76,8 +76,6 @@ struct Trap
 static struct Trap  traps[MAX_TRAPS];
 static unsigned int trap_count = 1;
 
-static const int trace_traps = 0;
-
 static void trap_HandleExtendedTrap (TrapHandler, int has_retval);
 
 uaecptr find_trap (const TCHAR *name)
@@ -106,7 +104,7 @@ unsigned int define_trap (TrapHandler handler_func, int flags, const TCHAR *name
 {
   if (trap_count == MAX_TRAPS) {
 		write_log (_T("Ran out of emulator traps\n"));
-    SetStartupMsg(_T("Internal error"), _T("Ran out of emulator traps."));
+    target_startup_msg(_T("Internal error"), _T("Ran out of emulator traps."));
     uae_restart(1, NULL);
   	return -1;
   } else {
@@ -146,9 +144,6 @@ void REGPARAM2 m68k_handle_trap (unsigned int trap_num)
 
   int has_retval   = (trap->flags & TRAPFLAG_NO_RETVAL) == 0;
   int implicit_rts = (trap->flags & TRAPFLAG_DORET) != 0;
-
-  if (trap->name && trap->name[0] != 0 && trace_traps)
-		write_log (_T("TRAP: %s\n"), trap->name);
 
   if (trap_num < trap_count) {
   	if (trap->flags & TRAPFLAG_EXTRA_STACK) {

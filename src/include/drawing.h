@@ -167,6 +167,8 @@ STATIC_INLINE void color_reg_cpy (struct color_entry *dst, struct color_entry *s
  */
 
 #define COLOR_CHANGE_BRDBLANK 0x80000000
+#define COLOR_CHANGE_SHRES_DELAY 0x40000000
+#define COLOR_CHANGE_MASK 0xf0000000
 struct color_change {
   int linepos;
   int regno;
@@ -175,7 +177,6 @@ struct color_change {
 
 /* 440 rather than 880, since sprites are always lores.  */
 #define MAX_PIXELS_PER_LINE 1760
-#define MAX_VIDHEIGHT 270
 
 /* No divisors for MAX_PIXELS_PER_LINE; we support AGA and SHRES sprites  */
 #define MAX_SPR_PIXELS (((MAXVPOS + 1)*2 + 1) * MAX_PIXELS_PER_LINE)
@@ -242,11 +243,12 @@ extern void hsync_record_line_state (int lineno);
 extern void partial_draw_frame(void);
 extern void halt_draw_frame(void);
 extern void vsync_handle_redraw (void);
-extern void vsync_handle_check (void);
+extern bool vsync_handle_check (void);
 extern void init_hardware_for_drawing_frame (void);
 extern void reset_drawing (void);
 extern void drawing_init (void);
 extern bool notice_interlace_seen (bool);
+extern void check_prefs_picasso(void);
 
 /* Finally, stuff that shouldn't really be shared.  */
 

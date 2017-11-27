@@ -10,12 +10,9 @@ struct m68k_exception {
 	m68k_exception (int exc) : prb (exc) {}
 	operator int() { return prb; }
 };
-#define SAVE_EXCEPTION
-#define RESTORE_EXCEPTION
 #define TRY(var) try
 #define CATCH(var) catch(m68k_exception var)
 #define THROW(n) throw m68k_exception(n)
-#define THROW_AGAIN(var) throw
 #define ENDTRY
 #else
 /* we are in plain C, just use a stack of long jumps */
@@ -27,9 +24,6 @@ extern int     __exvalue;
 #define CATCH(x)  __poptry(); } else {m68k_exception x=__exvalue; 
 #define ENDTRY    __poptry();}
 #define THROW(x) if (__is_catched()) {longjmp(__exbuf,x);}
-#define THROW_AGAIN(var) if (__is_catched()) longjmp(*__poptry(),__exvalue)
-#define SAVE_EXCEPTION
-#define RESTORE_EXCEPTION
 jmp_buf* __poptry(void);
 void __pushtry(jmp_buf *j);
 int __is_catched(void);

@@ -145,6 +145,7 @@ class DFxCheckActionListener : public gcn::ActionListener
               // Failed to change write protection -> maybe filesystem doesn't support this
               ShowMessage("Set/Clear write protect", "Failed to change write permission.", "Maybe underlying filesystem doesn't support this.", "Ok", "");
             }
+            DISK_reinsert(i);
           }
         }
       }
@@ -331,7 +332,7 @@ class CreateDiskActionListener : public gcn::ActionListener
           extractFileName(tmp, diskname);
           removeFileExtension(diskname);
           diskname[31] = '\0';
-          disk_creatediskfile(tmp, 0, DRV_35_DD, diskname, false, false, NULL);
+          disk_creatediskfile(&changed_prefs, tmp, 0, DRV_35_DD, -1, diskname, false, false, NULL);
     	    AddFileToDiskList(tmp, 1);
     	    extractPath(tmp, currentDir);
         }
@@ -348,7 +349,7 @@ class CreateDiskActionListener : public gcn::ActionListener
           extractFileName(tmp, diskname);
           removeFileExtension(diskname);
           diskname[31] = '\0';
-          disk_creatediskfile(tmp, 0, DRV_35_HD, diskname, false, false, NULL);
+          disk_creatediskfile(&changed_prefs, tmp, 0, DRV_35_HD, -1, diskname, false, false, NULL);
     	    AddFileToDiskList(tmp, 1);
     	    extractPath(tmp, currentDir);
         }

@@ -16,6 +16,7 @@
 #include "inputdevice.h"
 #include "picasso96.h"
 #include "blkdev.h"
+#include "picasso96.h"
 #include "autoconf.h"
 #include "newcpu.h"
 #include "savestate.h"
@@ -27,9 +28,19 @@
 #include "native2amiga.h"
 #include "gensound.h"
 #include "gui.h"
+#include "drawing.h"
 #ifdef JIT
 #include "jit/compemu.h"
 #endif
+
+void device_check_config(void)
+{
+	check_prefs_changed_cd ();
+  check_prefs_changed_audio ();
+  check_prefs_changed_custom ();
+  check_prefs_changed_cpu ();
+	check_prefs_picasso();
+}
 
 void devices_reset(int hardreset)
 {
@@ -72,6 +83,7 @@ void devices_hsync(void)
 	gayle_hsync ();
 }
 
+// these really should be dynamically allocated..
 void devices_rethink(void)
 {
   rethink_cias ();
@@ -99,6 +111,7 @@ void reset_all_systems (void)
   filesys_prepare_reset ();
   filesys_reset ();
 #endif
+	init_shm ();
   memory_reset ();
 #if defined (BSDSOCKET)
 	bsdlib_reset ();
@@ -175,8 +188,10 @@ void devices_restore_start(void)
 	restore_blkdev_start();
   changed_prefs.bogomem_size = 0;
   changed_prefs.chipmem_size = 0;
-  changed_prefs.fastmem_size = 0;
-  changed_prefs.z3fastmem_size = 0;
+	for (int i = 0; i < MAX_RAM_BOARDS; i++) {
+		changed_prefs.fastmem[i].size = 0;
+		changed_prefs.z3fastmem[i].size = 0;
+	}
 	changed_prefs.mbresmem_low_size = 0;
 	changed_prefs.mbresmem_high_size = 0;
 }

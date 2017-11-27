@@ -2779,7 +2779,7 @@ const struct cputbl CPUFUNC(op_smalltbl_1)[] = {
 { CPUFUNC(op_4e70_0), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_0), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_0), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_0), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_1), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_0), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_0), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_0), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */
@@ -4648,7 +4648,7 @@ const struct cputbl CPUFUNC(op_smalltbl_2)[] = {
 { CPUFUNC(op_4e70_0), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_0), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_0), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_0), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_2), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_0), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_0), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_0), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */
@@ -6486,7 +6486,7 @@ const struct cputbl CPUFUNC(op_smalltbl_3)[] = {
 { CPUFUNC(op_4e70_0), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_0), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_0), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_0), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_3), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_0), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_0), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_0), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */
@@ -16385,7 +16385,7 @@ const struct cputbl CPUFUNC(op_smalltbl_41)[] = {
 { CPUFUNC(op_4e70_40), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_40), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_40), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_40), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_41), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_40), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_40), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_40), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */
@@ -18254,7 +18254,7 @@ const struct cputbl CPUFUNC(op_smalltbl_42)[] = {
 { CPUFUNC(op_4e70_40), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_40), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_40), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_40), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_42), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_40), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_40), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_40), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */
@@ -20092,7 +20092,7 @@ const struct cputbl CPUFUNC(op_smalltbl_43)[] = {
 { CPUFUNC(op_4e70_40), 0x4e70, 2, { 0, 0 }, 0 }, /* RESET */
 { CPUFUNC(op_4e71_40), 0x4e71, 2, { 0, 0 }, 0 }, /* NOP */
 { CPUFUNC(op_4e72_40), 0x4e72, 4, { 0, 0 }, 0 }, /* STOP */
-{ CPUFUNC(op_4e73_40), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
+{ CPUFUNC(op_4e73_43), 0x4e73, 2, { 0, 0 }, 1 }, /* RTE */
 { CPUFUNC(op_4e74_40), 0x4e74, 4, { 0, 0 }, 1 }, /* RTD */
 { CPUFUNC(op_4e75_40), 0x4e75, 2, { 0, 0 }, 1 }, /* RTS */
 { CPUFUNC(op_4e76_40), 0x4e76, 2, { 0, 0 }, 0 }, /* TRAPV */

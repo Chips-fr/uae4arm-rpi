@@ -16,6 +16,7 @@ extern int decode_cloanto_rom_do (uae_u8 *mem, int size, int real_size);
 #define ROMTYPE_ARCADIAGAME	0x00004000
 #define ROMTYPE_CD32CART	0x00008000
 #define ROMTYPE_SPECIALKICK	0x00010000
+#define ROMTYPE_ALG			0x00020000
 
 #define ROMTYPE_CPUBOARD	0x00040000
 #define ROMTYPE_CB_A3001S1	0x00040001
@@ -38,6 +39,9 @@ extern int decode_cloanto_rom_do (uae_u8 *mem, int size, int real_size);
 #define ROMTYPE_CB_DBK_WF	0x00040012
 #define ROMTYPE_CB_EMATRIX	0x00040013
 #define ROMTYPE_CB_SX32PRO	0x00040014
+#define ROMTYPE_CB_B1230MK2	0x00040015
+#define ROMTYPE_CB_B1230MK3	0x00040016
+#define ROMTYPE_CB_VECTOR	0x00040017
 
 #define ROMTYPE_FREEZER		0x00080000
 #define ROMTYPE_AR			0x00080001
@@ -76,7 +80,7 @@ extern int decode_cloanto_rom_do (uae_u8 *mem, int size, int real_size);
 #define ROMTYPE_ROCHARD		0x0010001a
 #define ROMTYPE_CLTDSCSI	0x0010001b
 #define ROMTYPE_PTNEXUS		0x0010001c
-#define ROMTYPE_DATAFLYER	0x0010001d
+#define ROMTYPE_DATAFLYERP	0x0010001d
 #define ROMTYPE_SUPRADMA	0x0010001e
 #define ROMTYPE_GREX		0x0010001f
 #define ROMTYPE_PROMETHEUS	0x00100020
@@ -106,6 +110,47 @@ extern int decode_cloanto_rom_do (uae_u8 *mem, int size, int real_size);
 #define ROMTYPE_GOLEMFAST	0x00100038
 #define ROMTYPE_PHOENIXB	0x00100039
 #define ROMTYPE_IVSTPRO		0x0010003A
+#define ROMTYPE_TOCCATA		0x0010003B
+#define ROMTYPE_ES1370		0x0010003C
+#define ROMTYPE_FM801		0x0010003D
+#define ROMTYPE_UAESNDZ2	0x0010003E
+#define ROMTYPE_UAESNDZ3	0x0010003F
+#define ROMTYPE_RAMZ2		0x00100040
+#define ROMTYPE_RAMZ3		0x00100041
+#define ROMTYPE_CATWEASEL	0x00100042
+#define ROMTYPE_CDTVSCSI	0x00100043
+#define ROMTYPE_MB_IDE		0x00100044
+#define ROMTYPE_SCSI_A3000	0x00100045
+#define ROMTYPE_SCSI_A4000T	0x00100046
+#define ROMTYPE_MB_PCMCIA	0x00100047
+#define ROMTYPE_MEGACHIP	0x00100048
+#define ROMTYPE_A2065		0x00100049
+#define ROMTYPE_NE2KPCI		0x0010004a
+#define ROMTYPE_NE2KPCMCIA	0x0010004b
+#define ROMTYPE_CDTVDMAC	0x0010004c
+#define ROMTYPE_CDTVCR		0x0010004d
+#define ROMTYPE_IVSVECTOR	0x0010004e
+#define ROMTYPE_BUDDHA		0x0010004f
+#define ROMTYPE_NE2KISA		0x00100050
+#define ROMTYPE_BLIZKIT3	0x00100051
+#define ROMTYPE_SCRAM5380	0x00100052
+#define ROMTYPE_SCRAM5394	0x00100053
+#define ROMTYPE_OSSI		0x00100054
+#define ROMTYPE_HARLEQUIN	0x00100055
+#define ROMTYPE_DATAFLYER	0x00100056
+#define ROMTYPE_ARIADNE2	0x00100057
+#define ROMTYPE_XSURF		0x00100058
+#define ROMTYPE_XSURF100Z2	0x00100059
+#define ROMTYPE_XSURF100Z3	0x0010005a
+#define ROMTYPE_HYDRA		0x0010005b
+#define ROMTYPE_LANROVER	0x0010005c
+#define ROMTYPE_ARIADNE		0x0010005d
+#define ROMTYPE_HARDFRAME	0x0010005e
+#define ROMTYPE_ATEAM		0x0010005f
+#define ROMTYPE_PMX			0x00100060
+#define ROMTYPE_COMSPEC		0x00100061
+#define ROMTYPE_MALIBU		0x00100062
+#define ROMTYPE_RAPIDFIRE	0x00100063
 
 #define ROMTYPE_NOT			0x00800000
 #define ROMTYPE_QUAD		0x01000000
@@ -118,7 +163,7 @@ extern int decode_cloanto_rom_do (uae_u8 *mem, int size, int real_size);
 #define ROMTYPE_NONE		0x80000000
 
 #define ROMTYPE_ALL_KICK (ROMTYPE_KICK | ROMTYPE_KICKCD32 | ROMTYPE_CD32)
-#define ROMTYPE_ALL_EXT (ROMTYPE_EXTCD32 | ROMTYPE_EXTCDTV)
+#define ROMTYPE_ALL_EXT (ROMTYPE_EXTCD32)
 #define ROMTYPE_ALL_CART (ROMTYPE_AR | ROMTYPE_HRTMON | ROMTYPE_NORDIC | ROMTYPE_XPOWER | ROMTYPE_CD32CART)
 
 struct romheader {
@@ -170,6 +215,7 @@ extern TCHAR *romlist_get (const struct romdata *rd);
 extern void romlist_clear (void);
 extern struct zfile *read_rom (struct romdata *rd);
 extern struct zfile *read_rom_name (const TCHAR *filename);
+extern struct zfile *read_device_from_romconfig(struct romconfig *rc, uae_u32 romtype);
 
 extern int load_keyring (struct uae_prefs *p, const TCHAR *path);
 extern uae_u8 *target_load_keyfile (struct uae_prefs *p, const TCHAR *path, int *size, TCHAR *name);
@@ -186,5 +232,24 @@ extern void addkeyfile (const TCHAR *path);
 extern int romlist_count (void);
 extern struct romlist *romlist_getit (void);
 extern int configure_rom (struct uae_prefs *p, const int *rom, int msg);
+
+int is_device_rom(struct uae_prefs *p, int romtype, int devnum);
+struct romconfig *get_device_romconfig(struct uae_prefs *p, int romtype, int devnum);
+struct boardromconfig *get_device_rom(struct uae_prefs *p, int romtype, int devnum, int *index);
+const struct expansionromtype *get_device_expansion_rom(int romtype);
+struct boardromconfig *get_device_rom_new(struct uae_prefs *p, int romtype, int devnum, int *index);
+void clear_device_rom(struct uae_prefs *p, int romtype, int devnum, bool deleteDevice);
+struct boardromconfig *get_boardromconfig(struct uae_prefs *p, int romtype, int *index);
+bool is_board_enabled(struct uae_prefs *p, int romtype, int devnum);
+
+#define LOADROM_FILL 1
+#define LOADROM_EVENONLY 2
+#define LOADROM_EVENONLY_ODDONE ((255 << 16) | LOADROM_EVENONLY)
+#define LOADROM_ONEFILL 4
+#define LOADROM_ZEROFILL 8
+#define LOADROM_ODDFILL(x) ((x << 16) | LOADROM_EVENONLY)
+bool load_rom_rc(struct romconfig *rc, uae_u32 romtype, int maxfilesize, int fileoffset, uae_u8 *rom, int maxromsize, int flags);
+
+#define EXPANSION_ORDER_MAX 10000
 
 #endif /* UAE_ROMMGR_H */

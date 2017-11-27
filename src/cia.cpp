@@ -29,6 +29,7 @@
 #include "keyboard.h"
 #include "uae.h"
 #include "autoconf.h"
+#include "rtc.h"
 
 /* Akiko internal CIA differences:
 
@@ -69,6 +70,9 @@ static unsigned int ciabprb, ciabdra, ciabdrb, ciabsdr, ciabsdr_cnt;
 static int div10;
 static int kbstate, kblostsynccnt;
 static uae_u8 kbcode;
+
+static struct rtc_msm_data rtc_msm;
+static struct rtc_ricoh_data rtc_ricoh;
 
 STATIC_INLINE void setclr (unsigned int *p, unsigned int val)
 {
@@ -330,6 +334,7 @@ static void CIA_calctimers (void)
 	int div10diff = DIV10 - div10;
 
   eventtab[ev_cia].oldcycles = get_cycles ();
+
   if ((ciaacra & 0x21) == 0x01) {
 		ciaatimea = div10diff + DIV10 * (ciaata + ciaastarta);
   }
@@ -343,6 +348,7 @@ static void CIA_calctimers (void)
   if ((ciabcrb & 0x61) == 0x01) {
 		ciabtimeb = div10diff + DIV10 * (ciabtb + ciabstartb);
   }
+
   eventtab[ev_cia].active = (ciaatimea != -1 || ciaatimeb != -1
 	  || ciabtimea != -1 || ciabtimeb != -1);
   if (eventtab[ev_cia].active) {
@@ -391,7 +397,7 @@ static bool checkalarm (unsigned long tod, unsigned long alarm, bool inc)
   return false;
 }
 
-STATIC_INLINE void ciab_checkalarm (bool inc)
+STATIC_INLINE void ciab_checkalarm (bool inc, bool irq)
 {
 	// hack: do not trigger alarm interrupt if KS code and both
 	// tod and alarm == 0. This incorrectly triggers on non-cycle exact
@@ -405,8 +411,10 @@ STATIC_INLINE void ciab_checkalarm (bool inc)
 	}
 #endif
   if (checkalarm (ciabtod, ciabalarm, inc)) {
-    ciabicr |= 4;
-    RethinkICRB ();
+		if (irq) {
+      ciabicr |= 4;
+      RethinkICRB ();
+    }
   }
 }
 
@@ -429,6 +437,64 @@ static void keyreq (void)
 	kblostsynccnt = 8 * maxvpos * 8; // 8 frames * 8 bits.
 	ciaaicr |= 8;
 	RethinkICRA ();
+}
+
+/* All this complexity to lazy evaluate TOD increase.
+ * Only increase it cycle-exactly if it is visible to running program:
+ * causes interrupt or program is reading or writing TOD registers
+ */
+
+static int ciab_tod_hoffset;
+static int ciab_tod_event_state;
+// TOD increase has extra 14-16 E-clock delay
+// Possibly TICK input pin has built-in debounce circuit
+#define TOD_INC_DELAY (14 * (ECLOCK_DATA_CYCLE + ECLOCK_WAIT_CYCLE) / 2)
+
+static void CIAB_tod_inc (bool irq)
+{
+	ciab_tod_event_state = 3; // done
+	if (!ciabtodon)
+		return;
+	ciabtod++;
+	ciabtod &= 0xFFFFFF;
+	ciab_checkalarm (true, irq);
+}
+
+void CIAB_tod_inc_event (uae_u32 v)
+{
+	if (ciab_tod_event_state != 2)
+		return;
+	CIAB_tod_inc (true);
+}
+
+// Someone reads or writes TOD registers, sync TOD increase
+static void CIAB_tod_check (void)
+{
+	if (ciab_tod_event_state != 1 || !ciabtodon)
+		return;
+	int hpos = current_hpos ();
+	hpos -= ciab_tod_hoffset;
+	if (hpos >= 0 || currprefs.m68k_speed < 0) {
+		// Program should see the changed TOD
+		CIAB_tod_inc (true);
+		return;
+	}
+	// Not yet, add event to guarantee exact TOD inc position
+	ciab_tod_event_state = 2; // event active
+	event2_newevent(ev2_ciab_tod, -hpos, 0);
+}
+
+void CIAB_tod_handler (int hoffset)
+{
+	if (!ciabtodon)
+		return;
+	ciab_tod_hoffset = hoffset + TOD_INC_DELAY;
+	ciab_tod_event_state = 1; // TOD inc needed
+	if (checkalarm ((ciabtod + 1) & 0xffffff, ciabalarm, true)) {
+		// causes interrupt on this line, add event
+		ciab_tod_event_state = 2; // event active
+		event2_newevent(ev2_ciab_tod, ciab_tod_hoffset, 0);
+	}
 }
 
 STATIC_INLINE void check_keyboard(void)
@@ -456,16 +522,20 @@ STATIC_INLINE void check_keyboard(void)
 	}
 }
 
-void CIA_hsync_posthandler (void)
+void CIA_hsync_posthandler (bool ciahsync)
 {
-  if (ciabtodon) {
-	  ciabtod++;
-	  ciabtod &= 0xFFFFFF;
-    ciab_checkalarm (1);
+	if (ciahsync) {
+		// cia hysnc
+		// Previous line was supposed to increase TOD but
+		// no one cared. Do it now.
+		if (ciab_tod_event_state == 1)
+			CIAB_tod_inc (false);
+		ciab_tod_event_state = 0;
+	} else {
+		// custom hsync
+	  if ((hsync_counter & 15) == 0)
+		  check_keyboard();
   }
-
-	if ((hsync_counter & 15) == 0)
-		check_keyboard();
 }
 
 void CIA_vsync_prehandler (void)
@@ -480,13 +550,18 @@ void CIA_vsync_prehandler (void)
 	}
 }
 
-void CIA_vsync_posthandler (void)
+void CIAA_tod_handler (uae_u32 v)
 {
-  if (ciaatodon) {
-  	ciaatod++;
-    ciaatod &= 0xFFFFFF;
-  	ciaa_checkalarm (1);
-  }
+	ciaatod++;
+  ciaatod &= 0xFFFFFF;
+	ciaa_checkalarm (true);
+}
+
+void CIAA_tod_inc (int cycles)
+{
+	if (!ciaatodon)
+		return;
+	event2_newevent(ev2_ciaa_tod, cycles + TOD_INC_DELAY, 0);
 }
 
 STATIC_INLINE void check_led (void)
@@ -530,13 +605,15 @@ static uae_u8 ReadCIAA (unsigned int addr)
 
   switch (reg) {
   case 0:
+	{
 #ifdef ACTION_REPLAY
 		action_replay_cia_access(false);
 #endif
-	  tmp = DISK_status_ciaa() & 0x3c;
-    tmp |= handle_joystick_buttons (ciaapra, ciaadra);	
-	  tmp |= (ciaapra | (ciaadra ^ 3)) & 0x03;
-	  return tmp;
+	  uae_u8 v = DISK_status_ciaa() & 0x3c;
+    v |= handle_joystick_buttons (ciaapra, ciaadra);	
+	  v |= (ciaapra | (ciaadra ^ 3)) & 0x03;
+	  return v;
+	}
   case 1:
 #ifdef INPUTDEVICE_SIMPLE
     tmp = (ciaaprb & ciaadrb) | (ciaadrb ^ 0xff);
@@ -590,6 +667,8 @@ static uae_u8 ReadCIAA (unsigned int addr)
     	ciaatol = ciaatod;
   	}
   	return (uae_u8)(ciaatol >> 16);
+	case 11:
+		break;
   case 12:
   	return ciaasdr;
   case 13:
@@ -650,17 +729,20 @@ static uae_u8 ReadCIAB (unsigned int addr)
   case 7:
   	return (uae_u8)((ciabtb - ciabtb_passed) >> 8);
   case 8:
+		CIAB_tod_check ();
   	if (ciabtlatch) {
 	    ciabtlatch = 0;
 	    return (uae_u8)ciabtol;
   	} else
 	    return (uae_u8)ciabtod;
   case 9:
+		CIAB_tod_check ();
   	if (ciabtlatch)
 	    return (uae_u8)(ciabtol >> 8);
   	else
 	    return (uae_u8)(ciabtod >> 8);
   case 10:
+		CIAB_tod_check ();
   	if (!ciabtlatch) {
       /* no latching if ALARM is set */
       if (!(ciabcrb & 0x80))
@@ -668,6 +750,8 @@ static uae_u8 ReadCIAB (unsigned int addr)
   	  ciabtol = ciabtod;
   	}
   	return (uae_u8)(ciabtol >> 16);
+	case 11:
+		break;
   case 12:
   	return ciabsdr;
   case 13:
@@ -767,6 +851,8 @@ static void WriteCIAA (uae_u16 addr,uae_u8 val)
 	    ciaatodon = 0;
   	}
   	break;
+	case 11:
+		break;
   case 12:
 	  CIA_update ();
 	  ciaasdr = val;
@@ -867,15 +953,17 @@ static void WriteCIAB (uae_u16 addr,uae_u8 val)
   	CIA_calctimers ();
   	break;
   case 8:
+		CIAB_tod_check ();
   	if (ciabcrb & 0x80) {
 	    ciabalarm = (ciabalarm & ~0xff) | val;
   	} else {
 	    ciabtod = (ciabtod & ~0xff) | val;
 	    ciabtodon = 1;
-	    ciab_checkalarm (false);
+			ciab_checkalarm (false, true);
   	}
   	break;
   case 9:
+		CIAB_tod_check ();
   	if (ciabcrb & 0x80) {
 	    ciabalarm = (ciabalarm & ~0xff00) | (val << 8);
   	} else {
@@ -883,6 +971,7 @@ static void WriteCIAB (uae_u16 addr,uae_u8 val)
   	}
   	break;
   case 10:
+		CIAB_tod_check ();
   	if (ciabcrb & 0x80) {
 	    ciabalarm = (ciabalarm & ~0xff0000) | (val << 16);
   	} else {
@@ -890,6 +979,8 @@ static void WriteCIAB (uae_u16 addr,uae_u8 val)
 	    ciabtodon = 0;
   	}
   	break;
+	case 11:
+		break;
   case 12:
 	  CIA_update ();
    	ciabsdr = val;
@@ -955,6 +1046,7 @@ void CIA_reset (void)
 
   kblostsynccnt = 0;
 	oldcd32mute = 1;
+	ciab_tod_event_state = 0;
 
   if (!savestate_state) {
 		oldovl = true;
@@ -1282,77 +1374,14 @@ addrbank clock_bank = {
 	ABFLAG_IO, S_READ, S_WRITE, NULL, 0x3f, 0xd80000
 };
 
-static unsigned int clock_control_d;
-static unsigned int clock_control_e;
-static unsigned int clock_control_f;
-
-#define RF5C01A_RAM_SIZE 16
-static uae_u8 rtc_memory[RF5C01A_RAM_SIZE], rtc_alarm[RF5C01A_RAM_SIZE];
-
 static uae_u8 getclockreg (int addr, struct tm *ct)
 {
 	uae_u8 v = 0;
 
 	if (currprefs.cs_rtc == 1 || currprefs.cs_rtc == 3) { /* MSM6242B */
-    switch (addr) {
-      case 0x0: v = ct->tm_sec % 10; break;
-      case 0x1: v = ct->tm_sec / 10; break;
-      case 0x2: v = ct->tm_min % 10; break;
-      case 0x3: v = ct->tm_min / 10; break;
-      case 0x4: v = ct->tm_hour % 10; break;
-      case 0x5: 
-			  if (clock_control_f & 4) {
-				  v = ct->tm_hour / 10; // 24h
-			  } else {
-				  v = (ct->tm_hour % 12) / 10; // 12h
-				  v |= ct->tm_hour >= 12 ? 4 : 0; // AM/PM bit
-			  }
-        break;
-      case 0x6: v = ct->tm_mday % 10; break;
-      case 0x7: v = ct->tm_mday / 10; break;
-      case 0x8: v = (ct->tm_mon + 1) % 10; break;
-      case 0x9: v = (ct->tm_mon + 1) / 10; break;
-      case 0xA: v = ct->tm_year % 10; break;
-      case 0xB: v = (ct->tm_year / 10) & 0x0f; break;
-      case 0xC: v = ct->tm_wday; break;
-      case 0xD: v = clock_control_d; break;
-      case 0xE: v = clock_control_e; break;
-      case 0xF: v = clock_control_f; break;
-    }
+		return get_clock_msm(&rtc_msm, addr, ct);
 	} else if (currprefs.cs_rtc == 2) { /* RF5C01A */
-		int bank = clock_control_d & 3;
-		/* memory access */
-		if (bank >= 2 && addr < 0x0d)
-			return (rtc_memory[addr] >> ((bank == 2) ? 0 : 4)) & 0x0f;
-		/* alarm */
-		if (bank == 1 && addr < 0x0d) {
-			v = rtc_alarm[addr];
-			return v;
-		}
-		switch (addr) {
-		case 0x0: v = ct->tm_sec % 10; break;
-		case 0x1: v = ct->tm_sec / 10; break;
-		case 0x2: v = ct->tm_min % 10; break;
-		case 0x3: v = ct->tm_min / 10; break;
-		case 0x4: v = ct->tm_hour % 10; break;
-		case 0x5:
-			if (rtc_alarm[10] & 1)
-				v = ct->tm_hour / 10; // 24h
-			else
-				v = ((ct->tm_hour % 12) / 10) | (ct->tm_hour >= 12 ? 2 : 0); // 12h
-		break;
-		case 0x6: v = ct->tm_wday; break;
-		case 0x7: v = ct->tm_mday % 10; break;
-		case 0x8: v = ct->tm_mday / 10; break;
-		case 0x9: v = (ct->tm_mon + 1) % 10; break;
-		case 0xA: v = (ct->tm_mon + 1) / 10; break;
-		case 0xB: v = (ct->tm_year % 100) % 10; break;
-		case 0xC: v = (ct->tm_year % 100) / 10; break;
-		case 0xD: v = clock_control_d; break;
-		/* E and F = write-only, reads as zero */
-		case 0xE: v = 0; break;
-		case 0xF: v = 0; break;
-		}
+		return get_clock_ricoh(&rtc_ricoh, addr, ct);
 	}
 	return v;
 }
@@ -1361,17 +1390,17 @@ void rtc_hardreset(void)
 {
 	if (currprefs.cs_rtc == 1 || currprefs.cs_rtc == 3) { /* MSM6242B */
 		clock_bank.name = currprefs.cs_rtc == 1 ? _T("Battery backed up clock (MSM6242B)") : _T("Battery backed up clock A2000 (MSM6242B)");
-    clock_control_d = 0x1;
-    clock_control_e = 0;
-    clock_control_f = 0x4; /* 24/12 */
+		rtc_msm.clock_control_d = 0x1;
+		rtc_msm.clock_control_e = 0;
+		rtc_msm.clock_control_f = 0x4; /* 24/12 */
 	} else if (currprefs.cs_rtc == 2) { /* RF5C01A */
 		clock_bank.name = _T("Battery backed up clock (RF5C01A)");
-		clock_control_d = 0x8; /* Timer EN */
-		clock_control_e = 0;
-		clock_control_f = 0;
-		memset (rtc_memory, 0, RF5C01A_RAM_SIZE);
-		memset (rtc_alarm, 0, RF5C01A_RAM_SIZE);
-		rtc_alarm[10] = 1; /* 24H mode */
+		rtc_ricoh.clock_control_d = 0x8; /* Timer EN */
+		rtc_ricoh.clock_control_e = 0;
+		rtc_ricoh.clock_control_f = 0;
+		memset (rtc_ricoh.rtc_memory, 0, RF5C01A_RAM_SIZE);
+		memset (rtc_ricoh.rtc_alarm, 0, RF5C01A_RAM_SIZE);
+		rtc_ricoh.rtc_alarm[10] = 1; /* 24H mode */
 	}
 }
 
@@ -1441,38 +1470,9 @@ static void REGPARAM2 clock_bput (uaecptr addr, uae_u32 value)
   addr >>= 2;
   value &= 0x0f;
 	if (currprefs.cs_rtc == 1 || currprefs.cs_rtc == 3) { /* MSM6242B */
-    switch (addr) 
-    {
-      case 0xD: clock_control_d = value & (1|8); break;
-      case 0xE: clock_control_e = value; break;
-      case 0xF: clock_control_f = value; break;
-    }
+		put_clock_msm(&rtc_msm, addr, value);
 	} else if (currprefs.cs_rtc == 2) { /* RF5C01A */
-		int bank = clock_control_d & 3;
-		/* memory access */
-		if (bank >= 2 && addr < 0x0d) {
-			rtc_memory[addr] &= ((bank == 2) ? 0xf0 : 0x0f);
-			rtc_memory[addr] |= value << ((bank == 2) ? 0 : 4);
-			return;
-		}
-		/* alarm */
-		if (bank == 1 && addr < 0x0d) {
-			rtc_alarm[addr] = value;
-			rtc_alarm[0] = rtc_alarm[1] = rtc_alarm[9] = rtc_alarm[12] = 0;
-			rtc_alarm[3] &= ~0x8;
-			rtc_alarm[5] &= ~0xc;
-			rtc_alarm[6] &= ~0x8;
-			rtc_alarm[8] &= ~0xc;
-			rtc_alarm[10] &= ~0xe;
-			rtc_alarm[11] &= ~0xc;
-			return;
-		}
-		switch (addr)
-		{
-		  case 0xD: clock_control_d = value; break;
-		  case 0xE: clock_control_e = value; break;
-		  case 0xF: clock_control_f = value; break;
-		}
+		put_clock_ricoh(&rtc_ricoh, addr, value);
 	}
 }
 

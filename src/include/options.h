@@ -15,7 +15,7 @@
 #include "traps.h"
 
 #define UAEMAJOR 3
-#define UAEMINOR 3
+#define UAEMINOR 5
 #define UAESUBREV 0
 
 typedef enum { KBD_LANG_US, KBD_LANG_DK, KBD_LANG_DE, KBD_LANG_SE, KBD_LANG_FR, KBD_LANG_IT, KBD_LANG_ES } KbdLang;
@@ -111,7 +111,6 @@ struct wh {
 #define UAEDEV_DIR 0
 #define UAEDEV_HDF 1
 #define UAEDEV_CD 2
-#define UAEDEV_TAPE 3
 
 #define HD_LEVEL_SCSI_1 0
 #define HD_LEVEL_SCSI_2 1
@@ -133,6 +132,7 @@ struct uaedev_config_info {
   TCHAR volname[MAX_DPATH];
   TCHAR rootdir[MAX_DPATH];
   bool readonly;
+	bool lock;
   int bootpri;
   TCHAR filesys[MAX_DPATH];
 	int lowcyl;
@@ -143,6 +143,7 @@ struct uaedev_config_info {
   int reserved;
   int blocksize;
 	int controller_type;
+	int controller_type_unit;
 	int controller_unit;
 	int controller_media_type; // 1 = CF IDE, 0 = normal
 	int unit_feature_level;
@@ -188,14 +189,13 @@ struct chipset_refresh
 	int index;
 	bool locked;
 	bool rtg;
-	bool exit;
+	bool defaultdata;
 	int horiz;
 	int vert;
 	int lace;
 	int resolution;
 	int ntsc;
 	int vsync;
-	int framelength;
 	float rate;
 	TCHAR label[16];
 };
@@ -213,11 +213,49 @@ struct apmode
 	int gfx_refreshrate;
 };
 
+#define MAX_DUPLICATE_EXPANSION_BOARDS 1
+#define MAX_EXPANSION_BOARDS 20
+struct boardromconfig;
+struct romconfig
+{
+	TCHAR romfile[MAX_DPATH];
+	TCHAR romident[256];
+	uae_u32 board_ram_size;
+	bool autoboot_disabled;
+	int device_id;
+	int device_settings;
+	int subtype;
+	void *unitdata;
+	TCHAR configtext[256];
+	struct boardromconfig *back;
+};
+#define MAX_BOARD_ROMS 2
+struct boardromconfig
+{
+	int device_type;
+	int device_num;
+	int device_order;
+	struct romconfig roms[MAX_BOARD_ROMS];
+};
 #define MAX_RTG_BOARDS 1
 struct rtgboardconfig
 {
 	int rtgmem_type;
 	uae_u32 rtgmem_size;
+	int device_order;
+};
+#define MAX_RAM_BOARDS 1
+struct ramboard
+{
+	uae_u32 size;
+	uae_u16 manufacturer;
+	uae_u8 product;
+	uae_u8 autoconfig[16];
+	int device_order;
+};
+struct expansion_params
+{
+	int device_order;
 };
 
 #define Z3MAPPING_AUTO 0
@@ -248,6 +286,8 @@ struct uae_prefs {
 	int sound_volume_cd;
 
   int cachesize;
+	bool fpu_strict;
+	bool fpu_softfloat;
 
   int gfx_framerate;
   struct wh gfx_size;
@@ -277,6 +317,7 @@ struct uae_prefs {
   int floppy_write_length;
 	int floppy_auto_ext2;
 	int cd_speed;
+	int boot_rom;
 	int filesys_limit;
 	int filesys_max_name;
 	bool filesys_inject_icons;
@@ -285,6 +326,7 @@ struct uae_prefs {
 	TCHAR filesys_inject_icons_drawer[MAX_DPATH];
 
 	int cs_compatible;
+	int cs_ciaatod;
 	int cs_rtc;
 	bool cs_ksmirror_e0;
 	bool cs_ksmirror_a8;
@@ -302,6 +344,8 @@ struct uae_prefs {
 	bool cs_ciatodbug;
 	bool cs_z3autoconfig;
 	bool cs_bytecustomwritebug;
+
+	struct boardromconfig expansionboard[MAX_EXPANSION_BOARDS];
 
   TCHAR romfile[MAX_DPATH];
   TCHAR romextfile[MAX_DPATH];
@@ -324,8 +368,8 @@ struct uae_prefs {
   int picasso96_modeflags;
 
 	uae_u32 z3autoconfig_start;
-  uae_u32 z3fastmem_size;
-  uae_u32 fastmem_size;
+	struct ramboard z3fastmem[MAX_RAM_BOARDS];
+	struct ramboard fastmem[MAX_RAM_BOARDS];
   uae_u32 chipmem_size;
   uae_u32 bogomem_size;
 	uae_u32 mbresmem_low_size;
@@ -334,6 +378,8 @@ struct uae_prefs {
 	uae_u32 custom_memory_addrs[MAX_CUSTOM_MEMORY_ADDRS];
 	uae_u32 custom_memory_sizes[MAX_CUSTOM_MEMORY_ADDRS];
 	uae_u32 custom_memory_mask[MAX_CUSTOM_MEMORY_ADDRS];
+	int uaeboard;
+	int uaeboard_order;
 
 	int z3_mapping_mode;
 
@@ -427,7 +473,7 @@ extern int cfgfile_strval (const TCHAR *option, const TCHAR *value, const TCHAR 
 extern int cfgfile_string (const TCHAR *option, const TCHAR *value, const TCHAR *name, TCHAR *location, int maxsz);
 extern TCHAR *cfgfile_subst_path (const TCHAR *path, const TCHAR *subst, const TCHAR *file);
 
-extern TCHAR *target_expand_environment (const TCHAR *path);
+extern TCHAR *target_expand_environment (const TCHAR *path, TCHAR *out, int maxlen);
 extern int target_parse_option (struct uae_prefs *, const TCHAR *option, const TCHAR *value);
 extern void target_save_options (struct zfile*, struct uae_prefs *);
 extern void target_default_options (struct uae_prefs *, int type);
@@ -450,6 +496,8 @@ extern int cfgfile_configuration_change(int);
 extern void fixup_prefs_dimensions (struct uae_prefs *prefs);
 extern void fixup_prefs (struct uae_prefs *prefs, bool userconfig);
 extern void fixup_cpu (struct uae_prefs *prefs);
+extern void cfgfile_compatibility_romtype(struct uae_prefs *p);
+extern void cfgfile_compatibility_rtg(struct uae_prefs *p);
 
 extern void check_prefs_changed_custom (void);
 extern void check_prefs_changed_cpu (void);

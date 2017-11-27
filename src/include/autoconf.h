@@ -92,7 +92,7 @@ extern uaecptr filesys_initcode, filesys_initcode_ptr;
 extern int is_hardfile (int unit_no);
 extern int nr_units (void);
 extern int nr_directory_units (struct uae_prefs*);
-extern uaecptr need_uae_boot_rom (void);
+extern uaecptr need_uae_boot_rom(struct uae_prefs*);
 
 struct mountedinfo
 {
@@ -115,7 +115,7 @@ int filesys_eject (int nr);
 int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_config_data *uci);
 
 extern TCHAR *filesys_createvolname (const TCHAR *volname, const TCHAR *rootdir, struct zvolume *zv, const TCHAR *def);
-extern int target_get_volume_name (struct uaedev_mount_info *mtinf, const TCHAR *volumepath, TCHAR *volumename, int size, bool inserted, bool fullcheck);
+extern int target_get_volume_name (struct uaedev_mount_info *mtinf, struct uaedev_config_info *ci, bool inserted, bool fullcheck, int cnt);
 
 extern int sprintf_filesys_unit (TCHAR *buffer, int num);
 
@@ -137,9 +137,67 @@ extern void emulib_install (void);
 extern void expansion_init (void);
 extern void expansion_cleanup (void);
 extern void expansion_clear (void);
+extern uaecptr expansion_startaddress(struct uae_prefs*, uaecptr addr, uae_u32 size);
+extern uaecptr uaeboard_alloc_ram(uae_u32);
+extern uae_u8 *uaeboard_map_ram(uaecptr);
+extern void expansion_scan_autoconfig(struct uae_prefs*, bool);
+extern void expansion_generate_autoconfig_info(struct uae_prefs *p);
+extern struct autoconfig_info *expansion_get_autoconfig_by_address(struct uae_prefs *p, uaecptr addr);
+extern void expansion_map(void);
 
 extern void uaegfx_install_code (uaecptr);
 
 extern uae_u32 emulib_target_getcpurate (uae_u32, uae_u32*);
+
+typedef bool (*DEVICE_INIT)(struct autoconfig_info*);
+typedef void(*DEVICE_ADD)(int, struct uaedev_config_info*, struct romconfig*);
+typedef bool(*E8ACCESS)(int, uae_u32*, int, bool);
+typedef void(*DEVICE_MEMORY_CALLBACK)(struct romconfig*, uae_u8*, int);
+#define EXPANSIONTYPE_SCSI 1
+#define EXPANSIONTYPE_IDE 2
+#define EXPANSIONTYPE_24BIT 4
+#define EXPANSIONTYPE_SASI 16
+#define EXPANSIONTYPE_CUSTOM 32
+#define EXPANSIONTYPE_PCI_BRIDGE 64
+#define EXPANSIONTYPE_PARALLEL_ADAPTER 128
+#define EXPANSIONTYPE_X86_BRIDGE 0x100
+#define EXPANSIONTYPE_CUSTOM_SECONDARY 0x200
+#define EXPANSIONTYPE_RTG 0x400
+#define EXPANSIONTYPE_SOUND 0x800
+#define EXPANSIONTYPE_FLOPPY 0x1000
+#define EXPANSIONTYPE_NET 0x2000
+#define EXPANSIONTYPE_INTERNAL 0x4000
+#define EXPANSIONTYPE_FALLBACK_DISABLE 0x8000
+#define EXPANSIONTYPE_HAS_FALLBACK 0x10000
+
+#define EXPANSIONBOARD_CHECKBOX 0
+#define EXPANSIONBOARD_MULTI 1
+#define EXPANSIONBOARD_STRING 2
+
+struct expansionboardsettings
+{
+	const TCHAR *name;
+	const TCHAR *configname;
+	int type;
+	bool invert;
+};
+struct expansionromtype
+{
+	const TCHAR *name;
+	const TCHAR *friendlyname;
+	const TCHAR *friendlymanufacturer;
+	DEVICE_INIT init, init2;
+	DEVICE_ADD add;
+	uae_u32 romtype;
+	uae_u32 romtype_extra;
+	uae_u32 parentromtype;
+	int zorro;
+	bool singleonly;
+	int deviceflags;
+	const struct expansionboardsettings *settings;
+	uae_u8 autoconfig[16];
+};
+extern const struct expansionromtype expansionroms[];
+
 
 #endif /* UAE_AUTOCONF_H */

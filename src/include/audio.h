@@ -14,11 +14,6 @@
 #define PERIOD_MAX ULONG_MAX
 #define MAX_EV ~0u
 
-void aud0_handler (void);
-void aud1_handler (void);
-void aud2_handler (void);
-void aud3_handler (void);
-
 void AUDxDAT (int nr, uae_u16 value);
 void AUDxVOL (int nr, uae_u16 value);
 void AUDxPER (int nr, uae_u16 value);
@@ -45,15 +40,10 @@ void audio_deactivate (void);
 extern int sound_cd_volume[2];
 
 #define AUDIO_CHANNELS_PAULA 4
-#define AUDIO_CHANNELS_MAX 4
 
 enum {
   SND_MONO,
   SND_STEREO,
-  SND_4CH_CLONEDSTEREO,
-  SND_4CH,
-  SND_6CH_CLONEDSTEREO,
-  SND_6CH,
   SND_NONE
 };
 

@@ -47,6 +47,7 @@
 #include "inputdevice.h"
 #include "blkdev.h"
 #include "picasso96.h"
+#include "rommgr.h"
 
 #define TRACING_ENABLED 0
 int log_filesys = 0;
@@ -686,30 +687,36 @@ static const TCHAR *getunittype(struct uaedev_config_info *uci)
 	return uci->type == UAEDEV_CD ? _T("CD") : _T("HD");
 }
 
-static bool ismainboardide(void)
+static int cpuboard_hd;
+static romconfig cpuboard_dummy;
+
+static void add_cpuboard_unit_init(void)
 {
-	return currprefs.cs_ide != 0;
-}
-// this needs better implementation.
-static void add_mainboard_unit_init(void)
-{
-	if (ismainboardide()) {
-		write_log(_T("Initializing mainboard IDE\n"));
-		gayle_add_ide_unit(-1, NULL);
-	}
+	memset(&cpuboard_dummy, 0, sizeof cpuboard_dummy);
+	cpuboard_dummy.device_id = 7;
 }
 
 static bool add_ide_unit(int type, int unit, struct uaedev_config_info *uci)
 {
 	bool added = false;
-	if (type == HD_CONTROLLER_TYPE_IDE_MB) {
-		if (ismainboardide()) {
-			write_log(_T("Adding mainboard IDE %s unit %d ('%s')\n"),
-				getunittype(uci), unit, uci->rootdir);
-			gayle_add_ide_unit(unit, uci);
-			added = true;
+	if (type >= HD_CONTROLLER_TYPE_IDE_EXPANSION_FIRST && type <= HD_CONTROLLER_TYPE_IDE_LAST) {
+		for (int i = 0; expansionroms[i].name; i++) {
+			if (i == type - HD_CONTROLLER_TYPE_IDE_EXPANSION_FIRST) {
+				const struct expansionromtype *ert = &expansionroms[i];
+				if ((ert->deviceflags & 2) && is_board_enabled(&currprefs, ert->romtype, uci->controller_type_unit)) {
+					cpuboard_hd = 1;
+					if (ert->add) {
+						struct romconfig *rc = get_device_romconfig(&currprefs, ert->romtype, uci->controller_type_unit);
+						write_log(_T("Adding IDE %s '%s' unit %d ('%s')\n"), getunittype(uci),
+							ert->name, unit, uci->rootdir);
+						ert->add(unit, uci, rc);
+					}
+					if (cpuboard_hd)
+						added = true;
+				}
+			}
 		}
-  }
+	}
 	return added;
 }
 
@@ -730,9 +737,23 @@ static void initialize_mountinfo(void)
 			allocuci (&currprefs, nr, idx);
     }
   }
+	nr = nr_units ();
 
 	// init all controllers first
-	add_mainboard_unit_init();
+	add_cpuboard_unit_init();
+	for (int i = 0; expansionroms[i].name; i++) {
+		const struct expansionromtype *ert = &expansionroms[i];
+		for (int j = 0; j < MAX_DUPLICATE_EXPANSION_BOARDS; j++) {
+			struct romconfig *rc = get_device_romconfig(&currprefs, ert->romtype, j);
+			if ((ert->deviceflags & 3) && rc) {
+				if (ert->add) {
+					struct uaedev_config_info ci = { 0 };
+					ci.controller_type_unit = j;
+					ert->add(-1, &ci, rc);
+				}
+			}
+		}
+	}
 
 	for (nr = 0; nr < currprefs.mountitems; nr++) {
 		struct uaedev_config_info *uci = &currprefs.mountconfig[nr].ci;
@@ -743,12 +764,20 @@ static void initialize_mountinfo(void)
 			continue;
 		} else if (type != HD_CONTROLLER_TYPE_IDE_AUTO && type >= HD_CONTROLLER_TYPE_IDE_FIRST && type <= HD_CONTROLLER_TYPE_IDE_LAST) {
 			added = add_ide_unit(type, unit, uci);
-		} else if (type == HD_CONTROLLER_TYPE_PCMCIA_SRAM) {
-			gayle_add_pcmcia_sram_unit (uci);
-			added = true;
-		} else if (type == HD_CONTROLLER_TYPE_PCMCIA_IDE) {
-			gayle_add_pcmcia_ide_unit (uci);
-			added = true;
+		} else if (type == HD_CONTROLLER_TYPE_IDE_AUTO) {
+			for (int st = HD_CONTROLLER_TYPE_IDE_FIRST; st <= HD_CONTROLLER_TYPE_IDE_LAST; st++) {
+				added = add_ide_unit(st, unit, uci);
+				if (added)
+					break;
+			}
+		} else if (type == HD_CONTROLLER_TYPE_PCMCIA) {
+			if (uci->controller_type_unit == 0) {
+			  gayle_add_pcmcia_sram_unit (uci);
+			  added = true;
+			} else {
+			  gayle_add_pcmcia_ide_unit (uci);
+			  added = true;
+			}
     }
 		if (added)
 			allocuci (&currprefs, nr, -1);
@@ -1686,8 +1715,10 @@ int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_conf
   	if (uci) {
 			volptr = my_strdup (uci->ci.volname);
   	} else {
-	    volname[0] = 0;
-	    target_get_volume_name (&mountinfo, rootdir, volname, MAX_DPATH, 1, 0);
+			struct uaedev_config_info ci2 = { 0 };
+			_tcscpy(ci2.rootdir, rootdir);
+			target_get_volume_name (&mountinfo, &ci2, 1, 0, -1);
+			_tcscpy(volname, ci2.volname);
 	    volptr = volname;
 	    if (!volname[0])
     		volptr = NULL;
@@ -1745,10 +1776,11 @@ int filesys_media_change (const TCHAR *rootdir, int inserted, struct uaedev_conf
 
 int hardfile_added (struct uaedev_config_info *ci)
 {
-	if (ci->controller_type == HD_CONTROLLER_TYPE_PCMCIA_IDE) {
-		return gayle_add_pcmcia_ide_unit(ci);
-	} else if (ci->controller_type == HD_CONTROLLER_TYPE_PCMCIA_SRAM) {
-		return gayle_add_pcmcia_sram_unit(ci);
+	if (ci->controller_type == HD_CONTROLLER_TYPE_PCMCIA) {
+		if (ci->controller_type_unit == 1)
+		  return gayle_add_pcmcia_ide_unit(ci);
+		if (ci->controller_type_unit == 0)
+		  return gayle_add_pcmcia_sram_unit(ci);
 	}
 	return 0;
 }
@@ -2546,8 +2578,7 @@ static uae_u32 REGPARAM2 startup_handler (TrapContext *ctx)
 	uae_u32 mode = trap_get_dreg(ctx, 0);
 
 	if (mode == 1) {
-		uaecptr addr = 0;
-		return addr;
+		return 0;
   }
 
 	/* Just got the startup packet. It's in D3. DosBase is in A2,
@@ -2731,11 +2762,15 @@ static void	do_info(TrapContext *ctx, Unit *unit, dpacket *packet, uaecptr info,
 		uae_s64 numblocks = 0;
 		while (blocksize < 32768 || numblocks == 0) {
 			numblocks = fsu.total / blocksize;
+			if (numblocks <= 10)
+				numblocks = 10;
 			if (numblocks <= 0x7fffffff)
 				break;
 			blocksize *= 2;
 	  }
-		uae_s64 inuse = (fsu.total - fsu.avail + blocksize - 1) / blocksize;
+		uae_s64 inuse = (numblocks * blocksize - fsu.avail) / blocksize;
+		if (inuse > numblocks)
+			inuse = numblocks;
 
 		put_long_host(buf + 12, (uae_u32)numblocks); /* numblocks */
 		put_long_host(buf + 16, (uae_u32)inuse); /* inuse */
@@ -5779,7 +5814,6 @@ static uae_u32 REGPARAM2 exter_int_helper (TrapContext *ctx)
     filesys_in_interrupt++;
     unit_no = 0;
   }
-
 	if (n >= 10) {
 
 	  /* Find work that needs to be done:
@@ -6455,8 +6489,8 @@ static uae_u32 REGPARAM2 filesys_diagentry (TrapContext *ctx)
    * here.
    * We can simply add more Resident structures here. Although the Amiga OS
    * only knows about the one at address DiagArea + 0x10, we scan for other
-   * Resident structures and call InitResident() for them at the end of the
-   * diag entry. */
+	* Resident structures and inject them to ResList in priority order
+	*/
 
 	if (kickstart_version >= 37) {
 		trap_put_word(ctx, resaddr + 0x0, 0x4afc);
@@ -6583,7 +6617,6 @@ static uae_u32 REGPARAM2 filesys_diagentry (TrapContext *ctx)
 
   trap_set_areg(ctx, 0, last_resident);
 
-#if 1
 	tmp = first_resident;
 	while (tmp < last_resident && tmp >= first_resident) {
 		if (trap_get_word(ctx, tmp) == 0x4AFC && trap_get_long(ctx, tmp + 0x2) == tmp) {
@@ -6593,7 +6626,6 @@ static uae_u32 REGPARAM2 filesys_diagentry (TrapContext *ctx)
 			tmp += 2;
 		}
 	}
-#endif
 
   return 1;
 }
@@ -6706,6 +6738,12 @@ static uae_u32 REGPARAM2 filesys_bcpl_wrapper(TrapContext *ctx)
 		trap_put_word(ctx, seglist + offset, 0x4eb9);
 		trap_put_long(ctx, seglist + offset + 2, patchfunc);
 		patchfunc += 4;
+	}
+	uae_u16 ver = trap_get_word(ctx, trap_get_areg(ctx, 6) + 20);
+	if (ver < 31) {
+		// OpenLibrary -> OldOpenLibrary
+		trap_put_word(ctx, seglist + 0x7f4, -0x198);
+		trap_put_word(ctx, seglist + 0x2a6e, -0x198);
 	}
 	write_log(_T("FFS pre-1.2 patched\n"));
 	return 0;
@@ -7436,20 +7474,23 @@ static uae_u32 REGPARAM2 mousehack_done (TrapContext *ctx)
 		uaecptr a2 = trap_get_areg(ctx, 2);
   	input_mousehack_mouseoffset (a2);
   } else if (mode == 17) {
-		uae_u32 v = 0;
-	  return v;
+		return 0;
 	} else if (mode == 18) {
 		put_long_host(rtarea_bank.baseaddr + RTAREA_EXTERTASK, trap_get_dreg(ctx, 0));
 		put_long_host(rtarea_bank.baseaddr + RTAREA_TRAPTASK, trap_get_dreg(ctx, 2));
 		return rtarea_base + RTAREA_HEARTBEAT;
 	} else if (mode == 19) {
 		// boot rom copy
+		// d2 = ram address
+		return 0;
 	} else if (mode == 20) {
 		// boot rom copy done
+		return 0;
+	} else if (mode == 21) {
+		// keymap hook (nur für Retroplatform relevant)
+		return 1;
   } else if (mode == 101) {
   } else if (mode == 102) {
-	  uaecptr ret = 0;
-	  trap_put_long(ctx, trap_get_areg(ctx, 7) + 4 * 4, ret);
   } else {
 		write_log (_T("Unknown mousehack hook %d\n"), mode);
   }
@@ -7498,7 +7539,7 @@ void filesys_vsync (void)
 
 void filesys_cleanup (void)
 {
-  filesys_prepare_reset();
+	filesys_free_handles();
   free_mountinfo ();
   
   if(singlethread_int_sem != 0)
@@ -7587,9 +7628,11 @@ void filesys_install (void)
 
 	org(rtarea_base + 0xFF68);
 	calltrap(deftrap2(filesys_bcpl_wrapper, 0, _T("filesys_bcpl_wrapper")));
+	dw(RTS);
 
 	org(rtarea_base + 0xFF78);
 	calltrap(deftrap2(debugger_helper, 0, _T("debugger_helper")));
+	dw(RTS);
 
   org (loop);
 }

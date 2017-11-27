@@ -59,6 +59,7 @@ struct gui_msg gui_msglist[] = {
   { NUMSG_KICKREPNO,      "The floppy disk (image file) in DF0: is not compatible with the system ROM replacement functionality." },
   { NUMSG_ROMNEED,        "One of the following system ROMs is required:\n\n%s\n\nCheck the System ROM path in the Paths panel and click Rescan ROMs." },
   { NUMSG_EXPROMNEED,     "One of the following expansion boot ROMs is required:\n\n%s\n\nCheck the System ROM path in the Paths panel and click Rescan ROMs." },
+  { NUMSG_NOMEMORY,       "Out of memory or too much Z3 autoconfig space configured." },
 
   { -1, "" }
 };
@@ -652,6 +653,29 @@ void notify_user (int msg)
     if(gui_msglist[i].num == msg)
     {
       gui_message(gui_msglist[i].msg);
+      break;
+    }
+    ++i;
+  }
+}
+
+void notify_user_parms (int msg, const TCHAR *parms, ...)
+{
+	TCHAR msgtxt[MAX_DPATH];
+	TCHAR tmp[MAX_DPATH];
+	int c = 0;
+	va_list parms2;
+
+  int i=0;
+  while(gui_msglist[i].num >= 0)
+  {
+    if(gui_msglist[i].num == msg)
+    {
+      strncpy(tmp, gui_msglist[i].msg, MAX_DPATH);
+    	va_start (parms2, parms);
+    	_vsntprintf (msgtxt, sizeof msgtxt / sizeof (TCHAR), tmp, parms2);
+      gui_message(msgtxt);
+    	va_end (parms2);
       break;
     }
     ++i;

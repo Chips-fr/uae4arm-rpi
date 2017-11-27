@@ -12,6 +12,7 @@
 #include "uae/types.h"
 #include "readcpu.h"
 #include "md-pandora/m68k.h"
+#include <softfloat/softfloat.h>
 
 extern const int areg_byteinc[];
 extern const int imm8_table[];
@@ -25,6 +26,8 @@ extern int fpp_movem_index1[256];
 extern int fpp_movem_index2[256];
 extern int fpp_movem_next[256];
 #endif
+
+extern int bus_error_offset;
 
 typedef uae_u32 REGPARAM3 cpuop_func (uae_u32) REGPARAM;
 typedef void REGPARAM3 cpuop_func_ce (uae_u32) REGPARAM;
@@ -56,7 +59,6 @@ struct comptbl {
 #endif
 
 extern uae_u32 REGPARAM3 op_illg (uae_u32) REGPARAM;
-extern void REGPARAM3 op_unimpl (uae_u16) REGPARAM;
 
 typedef uae_u8 flagtype;
 
@@ -73,6 +75,7 @@ typedef double fptype;
 
 typedef struct
 {
+	floatx80 fpx;
 	fptype fp;
 } fpdata;
 
@@ -89,7 +92,7 @@ struct regstruct
   
 	uae_u16 irc, ir, db;
   volatile uae_atomic spcflags;
-
+  
   uaecptr usp, isp, msp;
   uae_u16 sr;
   flagtype t1;
@@ -105,23 +108,20 @@ struct regstruct
 
 #ifdef FPUEMU
 	fpdata fp[8];
-	fpdata fp_result;
-	uae_u32 fp_result_status;
   uae_u32 fpcr,fpsr, fpiar;
 	uae_u32 fpu_state;
 	uae_u32 fpu_exp_state;
-	fpdata exp_src1, exp_src2;
-	uae_u32 exp_pack[3];
-  uae_u16 exp_opcode, exp_extra, exp_type;
-	uae_u16 exp_size;
+	uae_u16 fp_opword;
+	uaecptr fp_ea;
+	uae_u32 fp_exp_pend, fp_unimp_pend;
+	bool fpu_exp_pre;
+	bool fp_unimp_ins;
 	bool fp_exception;
 	bool fp_branch;
 #endif
-#ifndef CPUEMU_68000_ONLY
   uae_u32 cacr, caar;
   uae_u32 itt0, itt1, dtt0, dtt1;
   uae_u32 tcr, mmusr, urp, srp, buscr;
-#endif
 
   uae_u32 pcr;
   uae_u32 address_space_mask;
@@ -226,6 +226,7 @@ STATIC_INLINE void m68k_do_rts (void)
   m68k_areg(regs, 7) += 4;
 }
 
+
 /* indirect (regs.pc) access */
 
 #define m68k_setpci(newpc) (regs.instruction_pc = regs.pc = newpc)
@@ -273,6 +274,8 @@ STATIC_INLINE void m68k_setpc_normal(uaecptr pc)
 	}
 }
 
+extern void check_t0_trace(void);
+
 #define x_do_cycles(c) do_cycles(c)
 
 extern void m68k_setstopped (void);
@@ -289,7 +292,9 @@ extern int get_cpu_model(void);
 extern void set_cpu_caches (bool flush);
 extern void REGPARAM3 MakeSR (void) REGPARAM;
 extern void REGPARAM3 MakeFromSR (void) REGPARAM;
+extern void REGPARAM3 MakeFromSR_T0(void) REGPARAM;
 extern void REGPARAM3 Exception (int) REGPARAM;
+extern void REGPARAM3 Exception_cpu(int) REGPARAM;
 extern void NMI (void);
 extern void doint (void);
 extern void dump_counts (void);
@@ -343,7 +348,6 @@ extern void exception3b (uae_u32 opcode, uaecptr addr, bool w, bool i, uaecptr p
 extern void exception2 (uaecptr addr, bool read, int size, uae_u32 fc);
 extern void cpureset (void);
 extern void cpu_halt (int id);
-#define cpu_sleep_millis(ms) sleep_millis_main(ms)
 
 extern void fill_prefetch (void);
 
@@ -370,12 +374,12 @@ extern const struct cputbl op_smalltbl_12_ff[]; // prefetch
 extern cpuop_func *cpufunctbl[65536] ASM_SYM_FOR_FUNC ("cpufunctbl");
 
 #ifdef JIT
-extern void flush_icache(uaecptr, int);
-extern void flush_icache_hard(uaecptr, int);
+extern void flush_icache(int);
+extern void flush_icache_hard(int);
 extern void compemu_reset(void);
 #else
-#define flush_icache(uaecptr, int) do {} while (0)
-#define flush_icache_hard(uaecptr, int) do {} while (0)
+#define flush_icache(int) do {} while (0)
+#define flush_icache_hard(int) do {} while (0)
 #endif
 bool check_prefs_changed_comp (bool);
 
@@ -392,5 +396,6 @@ extern int movec_illg (int regno);
 #define CPU_HALT_PCI_CONFLICT 8
 #define CPU_HALT_CPU_STUCK 9
 #define CPU_HALT_SSP_IN_NON_EXISTING_ADDRESS 10
+#define CPU_HALT_INVALID_START_ADDRESS 11
 
 #endif /* UAE_NEWCPU_H */

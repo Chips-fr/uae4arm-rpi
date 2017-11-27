@@ -695,7 +695,6 @@ STATIC_INLINE uae_u8* get_target(void)
   return get_target_noopt();
 }
 
-
 /********************************************************************
  * New version of data buffer: interleave data and code             *
  ********************************************************************/
@@ -811,7 +810,7 @@ static void make_flags_live_internal(void)
     live.flags_in_flags = VALID;
     return;
   }
-  jit_abort (_T("JIT: Huh? live.flags_in_flags=%d, live.flags_on_stack=%d, but need to make live\n"),
+	jit_abort("Huh? live.flags_in_flags=%d, live.flags_on_stack=%d, but need to make live",
     live.flags_in_flags, live.flags_on_stack);
 }
 
@@ -1870,7 +1869,7 @@ void calc_disp_ea_020(int base, uae_u32 dp, int target, int tmp)
 void set_cache_state(int enabled)
 {
   if (enabled != letit)
-  	flush_icache_hard(0, 3);
+  	flush_icache_hard(3);
   letit = enabled;
 }
 
@@ -1889,7 +1888,7 @@ uae_u32 get_jitted_size(void)
 void alloc_cache(void)
 {
   if (compiled_code) {
-	  flush_icache_hard(0, 3);
+	  flush_icache_hard(3);
 	  cache_free(compiled_code, cache_size * 1024);
 		compiled_code = 0;
   }
@@ -2299,7 +2298,7 @@ void build_comp(void)
 			cflow &= ~fl_const_jump;
 		prop[cft_map(tbl[i].opcode)].cflow = cflow;
 
-		int uses_fpu = (tbl[i].specific & 32) != 0;
+		bool uses_fpu = (tbl[i].specific & COMP_OPCODE_USES_FPU) != 0;
 		if (uses_fpu && avoid_fpu)
 			compfunctbl[cft_map(tbl[i].opcode)] = NULL;
 		else
@@ -2307,7 +2306,7 @@ void build_comp(void)
   }
 
   for (i = 0; nftbl[i].opcode < 65536; i++) {
-		int uses_fpu = tbl[i].specific & 32;
+		int uses_fpu = tbl[i].specific & COMP_OPCODE_USES_FPU;
 		if (uses_fpu && avoid_fpu)
 			nfcompfunctbl[cft_map(nftbl[i].opcode)] = NULL;
 		else
@@ -2394,7 +2393,7 @@ void build_comp(void)
   default_ss = empty_ss;
 }
 
-void flush_icache_hard(uaecptr ptr, int n)
+void flush_icache_hard(int n)
 {
   blockinfo* bi, *dbi;
 
@@ -2432,7 +2431,7 @@ void flush_icache_hard(uaecptr ptr, int n)
    we simply mark everything as "needs to be checked".
 */
 
-void flush_icache(uaecptr ptr, int n)
+void flush_icache(int n)
 {
   blockinfo* bi;
   blockinfo* bi2;
@@ -2508,7 +2507,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 
 	  redo_current_block = 0;
 	  if (current_compile_p >= MAX_COMPILE_PTR)
-	    flush_icache_hard(0, 3);
+	    flush_icache_hard(3);
 
 	  alloc_blockinfos();
 
@@ -2670,7 +2669,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   			    compemu_raw_sub_l_mi(uae_p32(&countdown), scaled_cycles(totcycles));
   			    compemu_raw_jmp((uintptr)popall_do_nothing);
   			    *(branchadd - 4) = (((uintptr)get_target() - (uintptr)branchadd) - 4) >> 2;
-            jit_log("  branchadd(byte) to 0x%08x: 0x%02x", branchadd, *branchadd);
   		    }
     		}
       }
@@ -2825,7 +2823,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 
   	/* We will flush soon, anyway, so let's do it now */
   	if (current_compile_p >= MAX_COMPILE_PTR)
-  	  flush_icache_hard(0, 3);
+  	  flush_icache_hard(3);
 
   	bi->status = BI_ACTIVE;
   	if (redo_current_block)

@@ -43,6 +43,7 @@ void do_cycles_cpu_fastest (unsigned long cycles_to_add)
   cycles_to_add = -regs.pissoff;
   regs.pissoff = 0;
 
+	/* Keep only CPU emulation running while waiting for sync point. */
   if (is_syncline) {
 	  int rpt = read_processor_time ();
 	  int v = rpt - vsyncmintime;
@@ -76,6 +77,7 @@ void do_cycles_cpu_norm (unsigned long cycles_to_add)
 {
   while ((nextevent - currcycle) <= cycles_to_add) {
 	  int i;
+
 	  cycles_to_add -= (nextevent - currcycle);
 	  currcycle = nextevent;
 

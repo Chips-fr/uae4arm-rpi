@@ -250,8 +250,6 @@ static int default_keyboard_layout[MAX_JPORTS];
 #define KBR_DEFAULT_MAP_CD32_NP 6
 #define KBR_DEFAULT_MAP_CD32_CK 7
 #define KBR_DEFAULT_MAP_CD32_SE 8
-#define KBR_DEFAULT_MAP_ARCADIA 9
-#define KBR_DEFAULT_MAP_CDTV 10
 static int **keyboard_default_kbmaps;
 
 static int mouse_axis[MAX_INPUT_DEVICES][MAX_INPUT_DEVICE_EVENTS];
@@ -1297,11 +1295,15 @@ static const struct inputevent *readevent (const TCHAR *name, TCHAR **customp)
 			return &events[i];
 		i++;
 	}
-	if (_tcslen (name) > 2 && name[0] == '\'' && name[_tcslen (name) - 1] == '\'') {
-		if (!customp)
+	if (_tcslen (name) > 2 && name[0] == '\'') {
+		name++;
+		const TCHAR *end = name;
+		while (*end && *end != '\'')
+			end++;
+		if (!customp || *end == 0)
 			return NULL;
-		TCHAR *custom = my_strdup (name + 1);
-		custom[_tcslen (custom) - 1] = 0;
+		TCHAR *custom = my_strdup (name);
+		custom[end - name] = 0;
 		*customp = custom;
 	}
 	return &events[0];
@@ -1449,7 +1451,7 @@ void read_inputdevice_config (struct uae_prefs *pr, const TCHAR *option, TCHAR *
 
 	bool newdev = false;
 	if (temp_uid_index[devnum][tid->devtype] == -1) {
-		int newdevnum;
+		int newdevnum = -1;
 		if (tid->devtype == IDTYPE_KEYBOARD) {
 			// keyboard devnum == 0: always select keyboard zero.
 			if (devnum == 0) {
@@ -1466,8 +1468,18 @@ void read_inputdevice_config (struct uae_prefs *pr, const TCHAR *option, TCHAR *
 				newdevnum = matchdevice(idf, tid->configname, tid->name);
 			}
 		} else {
-			newdevnum = matchdevice(idf, tid->configname, tid->name);
-		}
+			// match devices with empty names to first free slot
+			if (tid->configname && tid->configname[0] == 0 && tid->name && tid->name[0] == 0) {
+				for (int i = 0; i < MAX_INPUT_DEVICES; i++) {
+					if (tid->matcheddevices[i] < 0) {
+						newdevnum = i;
+						break;
+					}
+				}
+			} else {
+  			newdevnum = matchdevice(idf, tid->configname, tid->name);
+    	}
+	}
 		newdev = true;
 		if (newdevnum >= 0) {
 			temp_uid_index[devnum][tid->devtype] = newdevnum;
@@ -1680,7 +1692,7 @@ static bool mousehack_enable (void)
   if (currprefs.input_tablet == TABLET_MOUSEHACK)
   	mode |= 1;
 	if (mousehack_address && rtarea_bank.baseaddr) {
-    write_log (_T("Mouse driver enabled (%s)\n"), ((mode & 3) == 3 ? _T("tablet+mousehack") : ((mode & 3) == 2) ? _T("tablet") : _T("mousehack")));
+		write_log (_T("Mouse driver enabled (%s)\n"), _T("mousehack"));
 		put_byte_host(mousehack_address + MH_E, mode);
 		mousehack_enabled = true;
 	}
@@ -1699,6 +1711,9 @@ void mousehack_wakeup(void)
 		mousehack_alive_cnt = -100;
 	else if (mousehack_alive_cnt > 0)
 		mousehack_alive_cnt = 100;
+	if (uaeboard_bank.baseaddr) {
+		uaeboard_bank.baseaddr[0x201] &= ~3;
+	}
 }
 
 int input_mousehack_status(TrapContext *ctx, int mode, uaecptr diminfo, uaecptr dispinfo, uaecptr vp, uae_u32 moffset)
@@ -1952,6 +1967,18 @@ static void joymousecounter (int joy)
 		mouse_frame_x[joy] = mouse_x[joy];
 		mouse_frame_y[joy] = mouse_y[joy];
 	}
+}
+
+static int inputdelay;
+
+static void inputdevice_read (void)
+{
+	do {
+		handle_msgpump ();
+		idev[IDTYPE_MOUSE].read ();
+		idev[IDTYPE_JOYSTICK].read ();
+		idev[IDTYPE_KEYBOARD].read ();
+	} while (handle_msgpump ());
 }
 
 static uae_u16 getjoystate (int joy)
@@ -2274,18 +2301,6 @@ static uae_u16 handle_joystick_potgor (uae_u16 potgor)
 		}
 	}
 	return potgor;
-}
-
-static int inputdelay;
-
-static void inputdevice_read (void)
-{
-	do {
-		handle_msgpump ();
-		idev[IDTYPE_MOUSE].read ();
-		idev[IDTYPE_JOYSTICK].read ();
-		idev[IDTYPE_KEYBOARD].read ();
-	} while (handle_msgpump ());
 }
 
 static void inject_events (const TCHAR *str)
@@ -3130,6 +3145,7 @@ static bool checkqualifiers (int evt, uae_u64 flags, uae_u64 *qualmask, uae_s16 
 		return isspecial == false;
 	}
 
+	// do we have any subevents with qualifier set?
 	for (i = 0; i < MAX_INPUT_SUB_EVENT; i++) {
 		for (j = 0; j < MAX_INPUT_QUALIFIERS; j++) {
 			uae_u64 mask = (ID_FLAG_QUALIFIER1 | ID_FLAG_QUALIFIER1_R) << (j * 2);
@@ -3169,7 +3185,6 @@ static void setqualifiers (int evt, int state)
 		qualifiers |= mask;
 	else
 		qualifiers &= ~mask;
-	//write_log (_T("%llx\n"), qualifiers);
 }
 
 static uae_u64 getqualmask (uae_u64 *qualmask, struct uae_input_device *id, int num, bool *qualonly)
@@ -4571,7 +4586,7 @@ bool inputdevice_set_gameports_mapping (struct uae_prefs *prefs, int devnum, int
 	keyboards = prefs->keyboard_settings[input_selected_setting];
 
 	sub = 0;
-	if (inputdevice_get_widget_type (devnum, num, NULL) != IDEV_WIDGET_KEY) {
+	if (inputdevice_get_widget_type (devnum, num, NULL, false) != IDEV_WIDGET_KEY) {
 		for (sub = 0; sub < MAX_INPUT_SUB_EVENT; sub++) {
 			int port2 = 0;
 			int evt = inputdevice_get_mapping (devnum, num, NULL, &port2, NULL, NULL, sub);
@@ -5444,10 +5459,17 @@ int inputdevice_set_mapping (int devnum, int num, const TCHAR *name, TCHAR *cust
 	return 0;
 }
 
-int inputdevice_get_widget_type (int devnum, int num, TCHAR *name)
+int inputdevice_get_widget_type (int devnum, int num, TCHAR *name, bool inccode)
 {
+	uae_u32 code = 0;
 	const struct inputdevice_functions *idf = getidf (devnum);
-	return idf->get_widget_type (inputdevice_get_device_index (devnum), num, name, 0);
+	int r = idf->get_widget_type (inputdevice_get_device_index (devnum), num, name, &code);
+	if (r && inccode && &idev[IDTYPE_KEYBOARD] == idf) {
+		TCHAR *p = name + _tcslen(name);
+		if (_tcsncmp(name, _T("KEY_"), 4))
+			_stprintf(p, _T(" [0x%02X]"), code);
+	}
+	return r;
 }
 
 static int config_change;

@@ -68,8 +68,6 @@ int m68k_move2c (int regno, uae_u32 *regp)
 	  case 5: regs.itt1 = *regp & 0xffffe364; break;
 	  case 6: regs.dtt0 = *regp & 0xffffe364; break;
 	  case 7: regs.dtt1 = *regp & 0xffffe364; break;
-			/* 68060 only */
-		case 8: regs.buscr = *regp & 0xf0000000; break;
 
 	  case 0x800: regs.usp = *regp; break;
 	  case 0x801: regs.vbr = *regp; break;
@@ -81,21 +79,6 @@ int m68k_move2c (int regno, uae_u32 *regp)
 	  /* 68040/060 */
     case 0x806: regs.urp = *regp & 0xfffffe00; break;
 	  case 0x807: regs.srp = *regp & 0xfffffe00; break;
-			/* 68060 only */
-		case 0x808:
-			{
-				uae_u32 opcr = regs.pcr;
-				regs.pcr &= ~(0x40 | 2 | 1);
-				regs.pcr |= (*regp) & (0x40 | 2 | 1);
-				if (currprefs.fpu_model <= 0)
-					regs.pcr |= 2;
-				if (((opcr ^ regs.pcr) & 2) == 2) {
-					write_log (_T("68060 FPU state: %s\n"), regs.pcr & 2 ? _T("disabled") : _T("enabled"));
-					/* flush possible already translated FPU instructions */
-					flush_icache (0, 3);
-				}
-			}
-			break;
 	  default:
 			op_illg (0x4E7B);
 			return 0;

@@ -13,24 +13,6 @@
 #include "rtgmodes.h"
 #include "xwin.h"
 
-float getvsyncrate (float hz, int *mult)
-{
-	struct apmode *ap = picasso_on ? &currprefs.gfx_apmode[1] : &currprefs.gfx_apmode[0];
-
-	if (hz < 0)
-		return 0;
-	if (hz > 85) {
-		*mult = -1;
-		return hz / 2;
-	}
-	if (hz < 35 && hz > 0) {
-		*mult = 1;
-		return hz * 2;
-	}
-	*mult = 0;
-	return hz;
-}
-
 #define	RED 	0
 #define	GRN	1
 #define	BLU	2
@@ -40,7 +22,7 @@ unsigned int doMask (int p, int bits, int shift)
   /* scale to 0..255, shift to align msb with mask, and apply mask */
   uae_u32 val;
 
-  val = p * 0x11111111UL;
+	val = p << 24;
   if (!bits) 
     return 0;
   val >>= (32 - bits);
@@ -118,9 +100,9 @@ void alloc_colors64k (int rw, int gw, int bw, int rs, int gs, int bs, int byte_s
 {
 	int i;
 	for (i = 0; i < 4096; i++) {
-		int r = i >> 8;
-		int g = (i >> 4) & 0xf;
-		int b = i & 0xf;
+		int r = ((i >> 8) << 4) | (i >> 8);
+		int g = (((i >> 4) & 0xf) << 4) | ((i >> 4) & 0x0f);
+		int b = ((i & 0xf) << 4) | (i & 0x0f);
 		xcolors[i] = doMask(r, rw, rs) | doMask(g, gw, gs) | doMask(b, bw, bs);
 		/* Fill upper 16 bits of each colour value
 		* with a copy of the colour. */

@@ -41,6 +41,7 @@ extern void scsi_free(struct scsi_data*);
 
 extern void scsi_start_transfer(struct scsi_data*);
 extern void scsi_emulate_cmd(struct scsi_data *sd);
+extern void scsi_clear_sense(struct scsi_data *sd);
 
 extern int scsi_hd_emulate(struct hardfiledata *hfd, struct hd_hardfiledata *hdhfd, uae_u8 *cmdbuf, int scsi_cmd_len,
 		uae_u8 *scsi_data, int *data_len, uae_u8 *r, int *reply_len, uae_u8 *s, int *sense_len);

@@ -59,7 +59,7 @@ enum {
 };
 
 enum {
-    ev2_disk, ev2_disk_motor0, ev2_disk_motor1, ev2_disk_motor2, ev2_disk_motor3,
+    ev2_disk, ev2_ciaa_tod, ev2_ciab_tod, ev2_disk_motor0, ev2_disk_motor1, ev2_disk_motor2, ev2_disk_motor3,
     ev2_max
 };
 

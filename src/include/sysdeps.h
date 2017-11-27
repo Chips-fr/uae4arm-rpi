@@ -124,10 +124,6 @@ using namespace std;
 #include <errno.h>
 #include <assert.h>
 
-#if EEXIST == ENOTEMPTY
-#define BROKEN_OS_PROBABLY_AIX
-#endif
-
 #ifdef __NeXT__
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
@@ -138,10 +134,6 @@ struct utimbuf
     time_t actime;
     time_t modtime;
 };
-#endif
-
-#ifndef L_tmpnam
-#define L_tmpnam 128 /* ought to be safe */
 #endif
 
 /* If char has more then 8 bits, good night. */
@@ -442,7 +434,11 @@ extern void gui_message (const TCHAR *,...);
 #endif
 
 #ifndef STATIC_INLINE
-#if __GNUC__ - 1 > 1 && __GNUC_MINOR__ - 1 >= 0
+#ifdef DEBUG
+#define STATIC_INLINE static __attribute__ ((noinline))
+#define NOINLINE __attribute__ ((noinline))
+#define NORETURN
+#elif __GNUC__ - 1 > 1 && __GNUC_MINOR__ - 1 >= 0
 #ifdef RASPBERRY
 #define STATIC_INLINE static __inline__
 #else

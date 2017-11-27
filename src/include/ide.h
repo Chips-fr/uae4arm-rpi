@@ -27,7 +27,7 @@ struct ide_registers
 struct ide_thread_state;
 struct ide_hdf;
 
-#define MAX_IDE_PORTS_BOARD 2
+#define MAX_IDE_PORTS_BOARD 3
 struct ide_board
 {
 	uae_u8 *rom;
@@ -119,7 +119,7 @@ bool ide_irq_check(struct ide_hdf *ide, bool edge_triggered);
 bool ide_drq_check(struct ide_hdf *ide);
 bool ide_isdrive(struct ide_hdf *ide);
 void ide_initialize(struct ide_hdf **idetable, int chpair);
-struct ide_hdf *add_ide_unit (struct ide_hdf **idetable, int max, int ch, struct uaedev_config_info *ci);
+struct ide_hdf *add_ide_unit (struct ide_hdf **idetable, int max, int ch, struct uaedev_config_info *ci, struct romconfig *rc);
 void remove_ide_unit(struct ide_hdf **idetable, int ch);
 void alloc_ide_mem (struct ide_hdf **ide, int max, struct ide_thread_state *its);
 void ide_reset_device(struct ide_hdf *ide);

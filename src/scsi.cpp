@@ -13,46 +13,13 @@
 #include "options.h"
 #include "filesys.h"
 #include "blkdev.h"
-#include "zfile.h"
-#include "memory.h"
 #include "scsi.h"
-#include "autoconf.h"
-#include "rommgr.h"
-#include "newcpu.h"
-#include "custom.h"
-#include "cia.h"
 
-#define NCR5380_SUPRA 1
-#define NONCR_GOLEM 2
-#define NCR5380_STARDRIVE 3
-#define NONCR_KOMMOS 4
-#define NONCR_VECTOR 5
-#define NONCR_APOLLO 6
-#define NCR5380_PROTAR 7
-#define NCR5380_ADD500 8
-#define NCR5380_KRONOS 9
-#define NCR5380_ADSCSI 10
-#define NCR5380_ROCHARD 11
-#define NCR5380_CLTD 12
-#define NCR5380_PTNEXUS 13
-#define NCR5380_DATAFLYER 14
-#define NONCR_TECMAR 15
-#define NCR5380_XEBEC 16
-#define NONCR_MICROFORGE 17
-#define NONCR_PARADOX 18
-#define OMTI_HDA506 19
-#define OMTI_ALF1 20
-#define OMTI_PROMIGOS 21
-#define OMTI_SYSTEM2000 22
-#define OMTI_ADAPTER 23
-#define OMTI_X86 24
-#define NCR5380_PHOENIXBOARD 25
-#define NCR5380_TRUMPCARDPRO 26
-#define NCR_LAST 27
+#define NCR_LAST 1
 
 static const int outcmd[] = { 0x04, 0x0a, 0x0c, 0x2a, 0xaa, 0x15, 0x55, 0x0f, -1 };
 static const int incmd[] = { 0x01, 0x03, 0x08, 0x12, 0x1a, 0x5a, 0x25, 0x28, 0x34, 0x37, 0x42, 0x43, 0xa8, 0x51, 0x52, 0xb9, 0xbd, 0xbe, -1 };
-static const int nonecmd[] = { 0x00, 0x05, 0x09, 0x0b, 0x11, 0x16, 0x17, 0x19, 0x1b, 0x1e, 0x2b, 0x35, 0xe0, 0xe3, 0xe4, -1 };
+static const int nonecmd[] = { 0x00, 0x05, 0x06, 0x09, 0x0b, 0x11, 0x16, 0x17, 0x19, 0x1b, 0x1d, 0x1e, 0x2b, 0x35, 0x45, 0x47, 0x48, 0x49, 0x4b, 0x4e, 0xa5, 0xa9, 0xba, 0xbc, 0xe0, 0xe3, 0xe4, -1 };
 static const int scsicmdsizes[] = { 6, 10, 10, 12, 16, 12, 10, 6 };
 
 static void scsi_illegal_command(struct scsi_data *sd)
@@ -131,13 +98,19 @@ bool scsi_emulate_analyze (struct scsi_data *sd)
 			return true;
 		}
 	break;
+	case 0x06: // FORMAT TRACK
+		if (sd->device_type == UAEDEV_CD)
+			goto nocmd;
+		sd->direction = 0;
+		sd->data_len = 0;
+		return true;
 	case 0x0c: // INITIALIZE DRIVE CHARACTERICS (SASI)
 		if (sd->hfd && sd->hfd->ci.unit_feature_level < HD_LEVEL_SASI)
 			goto nocmd;
 		data_len = 8;
 	break;
 	case 0x08: // READ(6)
-		data_len2 = sd->cmd[4] * sd->blocksize;
+		data_len2 = (sd->cmd[4] == 0 ? 256 : sd->cmd[4]) * sd->blocksize;
 		scsi_grow_buffer(sd, data_len2);
 	break;
 	case 0x28: // READ(10)
@@ -155,7 +128,7 @@ bool scsi_emulate_analyze (struct scsi_data *sd)
 	case 0x0a: // WRITE(6)
 		if (sd->device_type == UAEDEV_CD)
 			goto nocmd;
-		data_len = sd->cmd[4] * sd->blocksize;
+		data_len = (sd->cmd[4] == 0 ? 256 : sd->cmd[4]) * sd->blocksize;
 		scsi_grow_buffer(sd, data_len);
 	break;
 	case 0x2a: // WRITE(10)
@@ -212,7 +185,7 @@ nocmd:
 	return false;
 }
 
-static void scsi_clear_sense(struct scsi_data *sd)
+void scsi_clear_sense(struct scsi_data *sd)
 {
 	memset (sd->sense, 0, sizeof (sd->sense));
 	memset (sd->reply, 0, sizeof (sd->reply));
@@ -220,16 +193,20 @@ static void scsi_clear_sense(struct scsi_data *sd)
 }
 static void copysense(struct scsi_data *sd)
 {
+	bool sasi = sd->hfd && (sd->hfd->ci.unit_feature_level >= HD_LEVEL_SASI && sd->hfd->ci.unit_feature_level <= HD_LEVEL_SASI_ENHANCED);
 	int len = sd->cmd[4];
-	if (len == 0)
+	if (len == 0 || sasi)
 		len = 4;
 	memset(sd->buffer, 0, len);
-	memcpy(sd->buffer, sd->sense, sd->sense_len > len ? len : sd->sense_len);
-	if (len > 7 && sd->sense_len > 7)
-		sd->buffer[7] = sd->sense_len - 8;
-	if (sd->sense_len == 0)
+	int tlen = sd->sense_len > len ? len : sd->sense_len;
+	memcpy(sd->buffer, sd->sense, tlen);
+	if (!sasi && sd->sense_len == 0) {
+		// at least 0x12 bytes if SCSI and no sense
+		tlen = len > 0x12 ? 0x12 : len;
 		sd->buffer[0] = 0x70;
-	sd->data_len = len;
+		sd->sense_len = tlen;
+	}
+	sd->data_len = tlen;
 	scsi_clear_sense(sd);
 }
 static void copyreply(struct scsi_data *sd)

@@ -97,8 +97,10 @@ static void set_default_system(struct uae_prefs *p, const char *system, int rom)
     bip_a1200(p, rom);
   else if(strcmp(system, "a-2000") == 0)
     bip_a2000(p, rom);
-  else if(strcmp(system, "a-4000") == 0)
+  else if(strcmp(system, "a-4000") == 0) {
     bip_a4000(p, rom);
+    HandleA3000Mem(p->mbresmem_low_size, p->mbresmem_high_size);
+  }
 }
 
 
@@ -151,9 +153,9 @@ static void parse_ram(struct uae_prefs *p, xmlNode *node)
         {
           int size = atoi((const char *)content);
           if(strcmp((const char *) attr, "fast") == 0)
-            p->fastmem_size = size;
+            p->fastmem[0].size = size;
           else if(strcmp((const char *) attr, "z3") == 0)
-            p->z3fastmem_size = size;
+            p->z3fastmem[0].size = size;
           else if(strcmp((const char *) attr, "chip") == 0)
             p->chipmem_size = size;
           xmlFree(attr);

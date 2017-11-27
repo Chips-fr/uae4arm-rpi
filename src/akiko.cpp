@@ -211,8 +211,8 @@ static uae_u32 akiko_c2p_read (int offset)
 */
 
 #define CDINTERRUPT_SUBCODE		0x80000000
-#define CDINTERRUPT_DRIVEXMIT	0x40000000 /* not used by ROM */
-#define CDINTERRUPT_DRIVERECV	0x20000000 /* not used by ROM */
+#define CDINTERRUPT_DRIVEXMIT	0x40000000 /* not used by ROM. PIO mode. */
+#define CDINTERRUPT_DRIVERECV	0x20000000 /* not used by ROM. PIO mode. */
 #define CDINTERRUPT_RXDMADONE	0x10000000
 #define CDINTERRUPT_TXDMADONE	0x08000000
 #define CDINTERRUPT_PBX			0x04000000
@@ -313,9 +313,6 @@ static void checkint (void)
 
 static void set_status (uae_u32 status)
 {
-	// always set in real hardware
-	cdrom_intreq |= CDINTERRUPT_DRIVEXMIT;
-
 	cdrom_intreq |= status;
 	checkint ();
 	cdrom_led ^= LED_CD_ACTIVE2;
@@ -374,13 +371,12 @@ static void subfunc (uae_u8 *data, int cnt)
 	uae_sem_post (&sub_sem);
 }
 
-static int statusfunc (int status)
+static int statusfunc (int status, int playpos)
 {
 	if (status == -1)
 		return 0;
 	if (status == -2)
 		return 10;
-#if 1
 	if (cdrom_audiostatus != status) {
 		if (status == AUDIO_STATUS_IN_PROGRESS) {
 			cdrom_playing = 1;
@@ -391,7 +387,6 @@ static int statusfunc (int status)
 		}
 	}
 	cdrom_audiostatus = status;
-#endif
 	return 0;
 }
 
@@ -423,7 +418,7 @@ static bool isaudiotrack (int startlsn)
 		s++;
 	}
 	if (s && (s->control & 0x0c) == 0x04) {
-		write_log (_T("tried to play data track %d!\n"), s->track);
+		write_log (_T("CD32: tried to play data track %d!\n"), s->track);
 		return false;
 	}
 	return true;
@@ -451,7 +446,7 @@ static int cd_play_audio (int startlsn, int endlsn, int scan)
 	if (s && (s->control & 0x0c) == 0x04) {
 		s = get_track (startlsn + 150);
 		if (s && (s->control & 0x0c) == 0x04) {
-			write_log (_T("tried to play data track %d!\n"), s->track);
+			write_log (_T("CD32: tried to play data track %d!\n"), s->track);
 			s++;
 			startlsn = s->paddress;
 			s++;
@@ -519,8 +514,6 @@ static int cd_qcode (uae_u8 *d)
 			d[10] = tobcd ((uae_u8)(msf >> 0));
 		}
 	}
-//	write_log (_T("%02X.%02X.%02X.%02X.%02X.%02X.%02X.%02X.%02X.%02X.%02X.%02X\n"),
-//		d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10], d[11]);
 	return 0;
 }
 
@@ -574,7 +567,7 @@ static int sys_cddev_open (void)
 	struct device_info di = { 0 };
 	unitnum = get_standard_cd_unit (CD_STANDARD_UNIT_CD32);
 	sys_command_info (unitnum, &di, 0);
-	write_log (_T("using drive %s (unit %d, media %d)\n"), di.label, unitnum, di.media_inserted);
+	write_log (_T("CD32: using drive %s (unit %d, media %d)\n"), di.label, unitnum, di.media_inserted);
 	/* make sure CD audio is not playing */
 	cdaudiostop_do ();
 	return 0;
@@ -591,16 +584,27 @@ static void sys_cddev_close (void)
 	
 }
 
-static const int command_lengths[] = { 1,2,1,1,12,2,1,1,4,1,2,-1,-1,-1,-1,-1 };
+static bool cdrom_can_return_data(void)
+{
+	if (cdrom_receive_length > 0)
+		return false;
+	return true;
+}
 
 static int cdrom_start_return_data (int len)
 {
-	if (cdrom_receive_length > 0)
+	if (!cdrom_can_return_data())
 		return 0;
 	if (len <= 0)
 		return -1;
 	cdrom_receive_length = len;
-	cdrom_receive_offset = -1;
+	uae_u8 checksum = 0xff;
+	for (int i = 0; i < cdrom_receive_length; i++) {
+		checksum -= cdrom_result_buffer[i];
+	}
+	cdrom_result_buffer[cdrom_receive_length++] = checksum;
+	cdrom_receive_offset = 0;
+	set_status(CDINTERRUPT_DRIVERECV);
 	return 1;
 }
 
@@ -615,8 +619,6 @@ static int cdrom_start_return_data (int len)
 static void cdrom_return_data (void)
 {
 	uae_u32 cmd_buf = cdrx_address;
-	int i;
-	uae_u8 checksum;
 
 	if (!cdrom_receive_length)
 		return;
@@ -627,15 +629,6 @@ static void cdrom_return_data (void)
 	if (cdrom_rx_dma_delay > 0)
 		return;
 
-
-	if (cdrom_receive_offset < 0) {
-	  checksum = 0xff;
-		for (i = 0; i < cdrom_receive_length; i++) {
-		  checksum -= cdrom_result_buffer[i];
-	  }
-		cdrom_result_buffer[cdrom_receive_length++] = checksum;
-		cdrom_receive_offset = 0;
-	}
 	while (cdrom_receive_offset < cdrom_receive_length) {
 		cdrom_last_rx = cdrom_result_buffer[cdrom_receive_offset];
 		put_byte (cmd_buf + cdcomrxinx, cdrom_last_rx);
@@ -647,8 +640,12 @@ static void cdrom_return_data (void)
 	  }
 	}
 
-	if (cdrom_receive_offset == cdrom_receive_length)
+	if (cdrom_receive_offset == cdrom_receive_length) {
 		cdrom_receive_length = 0;
+		cdrom_receive_offset = 0;
+		cdrom_intreq &= ~CDINTERRUPT_DRIVERECV;
+		set_status(CDINTERRUPT_DRIVEXMIT);
+	}
 }
 
 static int cdrom_command_led (void)
@@ -785,7 +782,7 @@ static int cdrom_command_multi (void)
 		return 2;
 	}
 
-	if (cdrom_command_buffer[7] == 0x80) { /* data read */
+	if (cdrom_command_buffer[7] & 0x80) { /* data read */
 		cdrom_data_offset = seekpos;
 		cdrom_seek_delay = abs (cdrom_current_sector - cdrom_data_offset);
 		if (cdrom_seek_delay < 100 || currprefs.cd_speed == 0) {
@@ -797,18 +794,19 @@ static int cdrom_command_multi (void)
 				cdrom_seek_delay = 100;
 		}
 		cdrom_result_buffer[1] |= 0x02;
-	} else if (cdrom_command_buffer[10] & 4) { /* play audio */
-		//cdrom_result_buffer[1] |= CDS_PLAYING;
-		cdrom_playing = 1;
-		if (!cd_play_audio (seekpos, endpos, 0)) {
-			// play didn't start, report it in next status packet
-			cdrom_audiotimeout = -3;
-		}
-	} else {
-		if (seekpos < 150)
+	} else { /* play audio */
+		// offset 10, bit 2 set: don't send subchannel data
+		if (seekpos < 0) {
 			cdrom_toc_counter = 0;
-		else
+		} else {
 			cdrom_toc_counter = -1;
+			cdrom_result_buffer[1] = 0x42; // play command starting?
+		  cdrom_playing = 1;
+		  if (!cd_play_audio (seekpos, endpos, 0)) {
+			  // play didn't start, report it in next status packet
+			  cdrom_audiotimeout = -3;
+		  }
+		}
 	}
 	return 2;
 }
@@ -817,11 +815,11 @@ static int cdrom_playend_notify (int status)
 {
 	cdrom_result_buffer[0] = 4;
 	if (status < 0)
-		cdrom_result_buffer[1] = 0x80; // error
+		cdrom_result_buffer[1] = CDS_ERROR; // error
 	else if (status == 0)
-		cdrom_result_buffer[1] = 0x08; // play started
+		cdrom_result_buffer[1] = CDS_PLAYING | 2; // play started
 	else
-		cdrom_result_buffer[1] = 0x00; // play ended
+		cdrom_result_buffer[1] = CDS_PLAYEND; // play ended
 	cdrom_result_buffer[1] |= cdrom_door;
 	return 2;
 }
@@ -835,6 +833,39 @@ static int cdrom_command_subq (void)
 	return 15;
 }
 
+static const int command_lengths[] = { 1, 2, 1, 1, 12, 2, 1, 1, 4, 1, 2, -1, -1, -1, -1, -1 };
+
+static bool cdrom_add_command_byte(uae_u8 b)
+{
+	cdrom_command_buffer[cdrom_command_length++] = b;
+	cdrom_command = cdrom_command_buffer[0];
+	int cmd_len = command_lengths[cdrom_command & 0x0f];
+
+	cdrom_checksum_error = 0;
+	cdrom_unknown_command = 0;
+
+	if (cmd_len < 0) {
+		cdrom_unknown_command = 1;
+		cdrom_command_active = 1;
+		return true;
+	}
+
+	if (cmd_len +  1 > cdrom_command_length)
+		return false;
+
+	uae_u8 checksum = 0;
+
+	for (int i = 0; i < cmd_len + 1; i++) {
+		checksum += cdrom_command_buffer[i];
+	}
+	if (checksum != 0xff) {
+		cdrom_checksum_error = 1;
+	}
+	cdrom_command_active = 1;
+	cdrom_command_length = cmd_len;
+	return true;
+}
+
 /*
 	TX DMA reads bytes from memory and sends them to
 	CDROM hardware if TX DMA enabled, CDROM data transfer
@@ -843,63 +874,46 @@ static int cdrom_command_subq (void)
 	CDINTERRUPT_TXDMADONE triggered when cdromtxinx matches cdcomtx.
 */
 
+static bool can_send_command(void)
+{
+	if (!cd_initialized)
+		return false;
+	if (cdrom_command_active)
+		return false;
+	if (cdrom_receive_length)
+		return false;
+	return true;
+}
+
 static void cdrom_run_command (void)
 {
-	int i, cmd_len;
-	uae_u8 checksum;
-
 	if (!(cdrom_flags & CDFLAG_TXD))
 		return;
-	if ((cdrom_flags & CDFLAG_ENABLE))
-		return;
-	if (!cd_initialized)
-		return;
-	if (cdrom_command_active)
-  	return;
-	if (cdrom_receive_length)
+	if (cdrom_flags & CDFLAG_ENABLE)
 			return;
 	if (cdcomtxinx == cdcomtxcmp)
 		return;
 	if (cdrom_tx_dma_delay > 0)
 		return;
-
-	cdrom_command = get_byte (cdtx_address + cdcomtxinx);
-
-	if (cdrom_command == 0) {
-		cdcomtxinx++;
+	if (!can_send_command())
 		return;
-	}
 
-	cdrom_checksum_error = 0;
-	cdrom_unknown_command = 0;
+	uae_u8 b = get_byte(cdtx_address + cdcomtxinx);
+	cdrom_add_command_byte(b);
+	cdcomtxinx++;
 
-	cmd_len = command_lengths[cdrom_command & 0x0f];
-	if (cmd_len < 0) {
-		cdrom_unknown_command = 1;
-		cdrom_command_active = 1;
-		cdrom_command_length = 1;
+	if (cdcomtxinx == cdcomtxcmp) {
 		set_status (CDINTERRUPT_TXDMADONE);
-		return;
 	}
-
-	checksum = 0;
-	for (i = 0; i < cmd_len + 1; i++) {
-		cdrom_command_buffer[i] = get_byte (cdtx_address + ((cdcomtxinx + i) & 0xff));
-		checksum += cdrom_command_buffer[i];
-	}
-	if (checksum != 0xff) {
-		cdrom_checksum_error = 1;
-	}
-	cdrom_command_active = 1;
-	cdrom_command_length = cmd_len;
-	set_status (CDINTERRUPT_TXDMADONE);
 }
 
 static void cdrom_run_command_run (void)
 {
 	int len;
 
-	cdcomtxinx = cdcomtxinx + cdrom_command_length + 1;
+	cdrom_command_length = 0;
+	cdrom_command_active = 0;
+
 	memset (cdrom_result_buffer, 0, sizeof (cdrom_result_buffer));
 
 	if (cdrom_checksum_error || cdrom_unknown_command) {
@@ -944,8 +958,10 @@ static void cdrom_run_command_run (void)
 		len = 0;
 		break;
 	}
-	if (len == 0)
+	if (len == 0) {
+		set_status(CDINTERRUPT_DRIVEXMIT);
 		return;
+	}
 	cdrom_start_return_data (len);
 }
 
@@ -992,7 +1008,7 @@ static void cdrom_run_read (void)
 			set_status (CDINTERRUPT_PBX);
 
 			if ((cdrom_flags & CDFLAG_RAW) || !(cdrom_flags & CDFLAG_CAS))
-				write_log(_T("Akiko warning: Flags = %08x!\n"), cdrom_flags);
+				write_log(_T("CD32: Akiko warning: Flags = %08x!\n"), cdrom_flags);
 
 			if (cdrom_flags & CDFLAG_SUBCODE) {
 				uae_u8 subbuf[SUB_CHANNEL_SIZE] = { 0 };
@@ -1045,7 +1061,7 @@ static void akiko_handler (bool framesync)
 		return;
 
 	if (mediachanged) {
-		if (cdrom_start_return_data (0) < 0) {
+		if (cdrom_can_return_data()) {
 			cdrom_start_return_data (cdrom_command_media_status ());
 			mediachanged = 0;
 			get_cdrom_toc ();
@@ -1056,9 +1072,12 @@ static void akiko_handler (bool framesync)
 	}
 	if (cdrom_audiotimeout > 1)
 		cdrom_audiotimeout--;
-	if (cdrom_audiotimeout == 1) { // play start
-		cdrom_playing = 1;
-		//cdrom_start_return_data (cdrom_playend_notify (0));
+	if (cdrom_audiotimeout == 1 && cdrom_can_return_data()) { // play start
+		if (!cdrom_playing)
+		  cdrom_playing = 1;
+		if (cdrom_playing == 1)
+			cdrom_start_return_data (cdrom_playend_notify (0));
+		cdrom_playing = 2;
 		cdrom_audiotimeout = 0;
 	}
 	if (cdrom_audiotimeout == -1) { // play finished (or disk end)
@@ -1069,21 +1088,19 @@ static void akiko_handler (bool framesync)
 			cdrom_audiotimeout = 0;
 		}
 	}
-	if (cdrom_audiotimeout == -2) { // play end notification
+	if (cdrom_audiotimeout == -2 && cdrom_can_return_data()) { // play end notification
 		cdrom_start_return_data (cdrom_playend_notify (1));
 		cdrom_audiotimeout = 0;
 	}
 	 // play didn't start notification (illegal address)
-	if (cdrom_audiotimeout == -3) { // return error status
+	if (cdrom_audiotimeout == -3 && cdrom_can_return_data()) { // return error status
 		cdrom_start_return_data (cdrom_playend_notify (-1));
 		cdrom_audiotimeout = 0;
 	}
 
 	/* one toc entry / frame */
-	if (cdrom_toc_counter >= 0 && !cdrom_command_active && framesync) {
-		if (cdrom_start_return_data (-1)) {
-		  cdrom_start_return_data (cdrom_return_toc_entry ());
-		}
+	if (cdrom_toc_counter >= 0 && !cdrom_command_active && framesync && cdrom_can_return_data()) {
+	  cdrom_start_return_data (cdrom_return_toc_entry ());
 	}
 }
 
@@ -1405,7 +1422,16 @@ static uae_u32 akiko_bget2 (uaecptr addr, int msg)
 		  break;
 
 		case 0x28:
-			write_log(_T("Unimplemented Akiko PIO read: %02x PC=%08X\n"), v, M68K_GETPC);
+			if (!(cdrom_flags & CDFLAG_RXD) && cdrom_receive_offset < cdrom_receive_length) {
+				cdrom_last_rx = cdrom_result_buffer[cdrom_receive_offset++];
+				if (cdrom_receive_offset == cdrom_receive_length) {
+					cdrom_intreq &= ~CDINTERRUPT_DRIVERECV;
+					cdrom_receive_length = 0;
+					set_status(CDINTERRUPT_DRIVEXMIT);
+				}
+			} else {
+				cdrom_intreq &= ~CDINTERRUPT_DRIVERECV;
+			}
 			v = cdrom_last_rx;
 			  break;
 
@@ -1567,7 +1593,15 @@ static void akiko_bput2 (uaecptr addr, uae_u32 v, int msg)
 		  cdrom_flags &= 0xff800000;
 		  break;
 	  case 0x28:
-		  write_log(_T("Unimplemented Akiko PIO write: %02x %08X\n"), v, M68K_GETPC);
+		  if (!(cdrom_flags & CDFLAG_TXD)) {
+			  cdrom_intreq &= ~CDINTERRUPT_DRIVEXMIT;
+			  if (can_send_command()) {
+				  cdrom_add_command_byte(v);
+				  if (can_send_command()) {
+					  set_status(CDINTERRUPT_DRIVEXMIT);
+				  }
+			  }
+		  }
 			  break;
 
 	  default:
@@ -1634,11 +1668,11 @@ static void patchrom (void)
 				  p[i + 8] = 0x4e;
 				  p[i + 9] = 0x71;
 				  protect_roms (true);
-				  write_log (_T("extended rom delay loop patched at 0x%08x\n"), i + 6 + 0xe00000);
+					write_log (_T("CD32: extended rom delay loop patched at 0x%08x\n"), i + 6 + 0xe00000);
 				  return;
 			  }
 		  }
-		  write_log (_T("couldn't patch extended rom\n"));
+			write_log (_T("CD32: couldn't patch extended rom\n"));
 	  }
   }
 }

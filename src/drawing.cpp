@@ -46,6 +46,8 @@
 #include "savestate.h"
 #include "statusline.h"
 #include "cd32_fmv.h"
+#include "audio.h"
+#include "devices.h"
 
 extern int sprite_buffer_res;
 int lores_shift;
@@ -138,6 +140,8 @@ union sps_union spixstate;
 static uae_u16 ham_linebuf[MAX_PIXELS_PER_LINE * 2];
 
 static uae_u8 *xlinebuffer;
+
+#define MAX_VIDHEIGHT 270
 
 static int *amiga2aspect_line_map, *native2amiga_line_map;
 static uae_u8 **row_map;
@@ -363,11 +367,12 @@ STATIC_INLINE void fill_line_16 (uae_u8 *buf, int start, int stop)
 	unsigned int i;
 	unsigned int rem = 0;
 	xcolnr col = getbgc (false);
-	if (((uintptr_t)&b[start]) & 1)
+	if (((uintptr_t)&b[start]) & 3) {
 		b[start++] = (uae_u16) col;
+	}
 	if (start >= stop)
 		return;
-	if (((uintptr_t)&b[stop]) & 1) {
+	if (((uintptr_t)&b[stop]) & 3) {
 		rem++;
 		stop--;
 	}
@@ -375,8 +380,9 @@ STATIC_INLINE void fill_line_16 (uae_u8 *buf, int start, int stop)
 		uae_u32 *b2 = (uae_u32 *)&b[i];
 		*b2 = col;
 	}
-	if (rem)
+	if (rem) {
 		b[stop] = (uae_u16)col;
+	}
 }
 
 static void pfield_do_fill_line (int start, int stop)
@@ -2297,7 +2303,7 @@ static void finish_drawing_frame (void)
   screenlocked = false;
 }
 
-STATIC_INLINE void check_picasso (void)
+void check_prefs_picasso(void)
 {
 #ifdef PICASSO96
 	if (picasso_on)
@@ -2322,18 +2328,15 @@ STATIC_INLINE void check_picasso (void)
 #endif
 }
 
-void vsync_handle_check (void)
+bool vsync_handle_check (void)
 {
   int changed = check_prefs_changed_gfx ();
   if (changed) {
     reset_drawing ();
     notice_new_xcolors ();
   }
-	check_prefs_changed_cd ();
-  check_prefs_changed_audio ();
-  check_prefs_changed_custom ();
-  check_prefs_changed_cpu ();
-  check_picasso ();
+	device_check_config();
+	return changed != 0;
 }
 
 void vsync_handle_redraw (void)

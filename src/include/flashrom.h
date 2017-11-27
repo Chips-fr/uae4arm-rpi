@@ -13,7 +13,7 @@ uae_u32 flash_read(void *fdv, uaecptr addr);
 bool flash_active(void *fdv, uaecptr addr);
 int flash_size(void *fdv);
 
-/* EPROM */
+/* I2C EEPROM */
 
 #define BITBANG_I2C_SDA 0
 #define BITBANG_I2C_SCL 1

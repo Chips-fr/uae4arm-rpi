@@ -51,8 +51,12 @@ extern void raise_in_cl_list(blockinfo* bi);
   
 
 #define SHOW_DETAILS 0
-//#define output_log  printf
+
+#ifdef WITH_LOGGING
 #define output_log  write_log
+#else
+#define output_log
+#endif
 
 
 enum transfer_type_t {
@@ -158,7 +162,7 @@ static int handle_exception(unsigned long *pregs, uintptr fault_addr)
     uintptr amiga_addr = (uae_u32) fault_addr - (uae_u32) natmem_offset;
   
     // Check for stupid RAM detection of kickstart
-    if(a3000lmem_bank.allocated > 0 && amiga_addr >= a3000lmem_bank.start - 0x00100000 && amiga_addr < a3000lmem_bank.start - 0x00100000 + 8) {
+    if(a3000lmem_bank.allocated_size > 0 && amiga_addr >= a3000lmem_bank.start - 0x00100000 && amiga_addr < a3000lmem_bank.start - 0x00100000 + 8) {
       output_log(_T("  Stupid kickstart detection for size of ramsey_low at 0x%08x.\n"), amiga_addr);
       pregs[ARM_REG_PC] += 4;
       handled = HANDLE_EXCEPTION_A4000RAM;
@@ -166,7 +170,7 @@ static int handle_exception(unsigned long *pregs, uintptr fault_addr)
     }
   
     // Check for stupid RAM detection of kickstart
-    if(a3000hmem_bank.allocated > 0 && amiga_addr >= a3000hmem_bank.start + a3000hmem_bank.allocated && amiga_addr < a3000hmem_bank.start + a3000hmem_bank.allocated + 8) {
+    if(a3000hmem_bank.allocated_size > 0 && amiga_addr >= a3000hmem_bank.start + a3000hmem_bank.allocated_size && amiga_addr < a3000hmem_bank.start + a3000hmem_bank.allocated_size + 8) {
       output_log(_T("  Stupid kickstart detection for size of ramsey_high at 0x%08x.\n"), amiga_addr);
       pregs[ARM_REG_PC] += 4;
       handled = HANDLE_EXCEPTION_A4000RAM;
@@ -290,10 +294,10 @@ static int handle_exception(unsigned long *pregs, uintptr fault_addr)
 	return handled;
 } 
 
-
 void signal_segv(int signum, siginfo_t* info, void*ptr) 
 {
   ucontext_t *ucontext = (ucontext_t*)ptr;
+  Dl_info dlinfo;
 
   output_log(_T("--- New exception ---\n"));
 
@@ -343,7 +347,6 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
     output_log(_T("Old Mask = 0x%08x\n"), ucontext->uc_mcontext.oldmask);
   
     void *getaddr = (void *)ucontext->uc_mcontext.arm_lr;
-    Dl_info dlinfo;
     if(dladdr(getaddr, &dlinfo))
   	  output_log(_T("LR - 0x%08X: <%s> (%s)\n"), getaddr, dlinfo.dli_sname, dlinfo.dli_fname);
     else
@@ -355,7 +358,7 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
  if(handled != HANDLE_EXCEPTION_A4000RAM) {
   	output_log(_T("Stack trace:\n"));
   
-    #define MAX_BACKTRACE 10
+    #define MAX_BACKTRACE 20
     
     void *array[MAX_BACKTRACE];
     int size = backtrace(array, MAX_BACKTRACE);
@@ -370,6 +373,7 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
   
     void *ip = (void*)ucontext->uc_mcontext.arm_r10;
     void **bp = (void**)ucontext->uc_mcontext.arm_r10;
+    int f = 0;
     while(bp && ip) {
       if (!dladdr(ip, &dlinfo)) {
         output_log(_T("IP out of range\n"));
@@ -386,10 +390,10 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
   
   	output_log(_T("Stack trace (non-dedicated):\n"));
     char **strings;
-    void *bt[20];
-    int sz = backtrace(bt, 20);
+    void *bt[100];
+    int sz = backtrace(bt, 100);
     strings = backtrace_symbols(bt, sz);
-    for(i = 0; i < sz; ++i)
+    for(int i = 0; i < sz; ++i)
       output_log(_T("%s\n"), strings[i]);
   	output_log(_T("End of stack trace.\n"));
   }
@@ -400,7 +404,7 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
   if (handled != HANDLE_EXCEPTION_A4000RAM) {
     --max_signals;
     if(max_signals <= 0) {
-      SetStartupMsg(_T("Exception"), _T("Too many access violations. Please turn off JIT."));
+      target_startup_msg(_T("Exception"), _T("Too many access violations. Please turn off JIT."));
       uae_restart(1, NULL);
       return;
     }
@@ -408,6 +412,103 @@ void signal_segv(int signum, siginfo_t* info, void*ptr)
 
 	if (handled != HANDLE_EXCEPTION_NONE)
 	  return;
+
+  SDL_Quit();
+  exit(1);
+}
+
+
+void signal_buserror(int signum, siginfo_t* info, void*ptr) 
+{
+  ucontext_t *ucontext = (ucontext_t*)ptr;
+  Dl_info dlinfo;
+
+  output_log(_T("--- New exception ---\n"));
+
+#ifdef TRACER
+	trace_end();
+#endif
+
+	mcontext_t *context = &(ucontext->uc_mcontext);
+	unsigned long *regs = &context->arm_r0;
+	uintptr addr = (uintptr)info->si_addr;
+
+  output_log(_T("info.si_signo = %d\n"), signum);
+  output_log(_T("info.si_errno = %d\n"), info->si_errno);
+  output_log(_T("info.si_code = %d\n"), info->si_code);
+  output_log(_T("info.si_addr = %08x\n"), info->si_addr);
+  if(signum == 4)
+    output_log(_T("       value = 0x%08x\n"), *((uae_u32*)(info->si_addr)));
+  output_log(_T("r0  = 0x%08x\n"), ucontext->uc_mcontext.arm_r0);
+  output_log(_T("r1  = 0x%08x\n"), ucontext->uc_mcontext.arm_r1);
+  output_log(_T("r2  = 0x%08x\n"), ucontext->uc_mcontext.arm_r2);
+  output_log(_T("r3  = 0x%08x\n"), ucontext->uc_mcontext.arm_r3);
+  output_log(_T("r4  = 0x%08x\n"), ucontext->uc_mcontext.arm_r4);
+  output_log(_T("r5  = 0x%08x\n"), ucontext->uc_mcontext.arm_r5);
+  output_log(_T("r6  = 0x%08x\n"), ucontext->uc_mcontext.arm_r6);
+  output_log(_T("r7  = 0x%08x\n"), ucontext->uc_mcontext.arm_r7);
+  output_log(_T("r8  = 0x%08x\n"), ucontext->uc_mcontext.arm_r8);
+  output_log(_T("r9  = 0x%08x\n"), ucontext->uc_mcontext.arm_r9);
+  output_log(_T("r10 = 0x%08x\n"), ucontext->uc_mcontext.arm_r10);
+  output_log(_T("FP  = 0x%08x\n"), ucontext->uc_mcontext.arm_fp);
+  output_log(_T("IP  = 0x%08x\n"), ucontext->uc_mcontext.arm_ip);
+  output_log(_T("SP  = 0x%08x\n"), ucontext->uc_mcontext.arm_sp);
+  output_log(_T("LR  = 0x%08x\n"), ucontext->uc_mcontext.arm_lr);
+  output_log(_T("PC  = 0x%08x\n"), ucontext->uc_mcontext.arm_pc);
+  output_log(_T("CPSR = 0x%08x\n"), ucontext->uc_mcontext.arm_cpsr);
+  output_log(_T("Fault Address = 0x%08x\n"), ucontext->uc_mcontext.fault_address);
+  output_log(_T("Trap no = 0x%08x\n"), ucontext->uc_mcontext.trap_no);
+  output_log(_T("Err Code = 0x%08x\n"), ucontext->uc_mcontext.error_code);
+  output_log(_T("Old Mask = 0x%08x\n"), ucontext->uc_mcontext.oldmask);
+
+  void *getaddr = (void *)ucontext->uc_mcontext.arm_lr;
+  if(dladdr(getaddr, &dlinfo))
+	  output_log(_T("LR - 0x%08X: <%s> (%s)\n"), getaddr, dlinfo.dli_sname, dlinfo.dli_fname);
+  else
+    output_log(_T("LR - 0x%08X: symbol not found\n"), getaddr);
+
+	output_log(_T("Stack trace:\n"));
+
+  #define MAX_BACKTRACE 20
+  
+  void *array[MAX_BACKTRACE];
+  int size = backtrace(array, MAX_BACKTRACE);
+  for(int i=0; i<size; ++i)
+  {
+    if (dladdr(array[i], &dlinfo)) {
+      const char *symname = dlinfo.dli_sname;
+  	  output_log(_T("0x%08x <%s + 0x%08x> (%s)\n"), array[i], symname,
+        (unsigned long)array[i] - (unsigned long)dlinfo.dli_saddr, dlinfo.dli_fname);
+    }
+  }
+
+  void *ip = (void*)ucontext->uc_mcontext.arm_r10;
+  void **bp = (void**)ucontext->uc_mcontext.arm_r10;
+  int f = 0;
+  while(bp && ip) {
+    if (!dladdr(ip, &dlinfo)) {
+      output_log(_T("IP out of range\n"));
+      break;
+    }
+    const char *symname = dlinfo.dli_sname;
+	  output_log(_T("%02d: 0x%08x <%s + 0x%08x> (%s)\n"), ++f, ip, symname,
+      (unsigned long)ip - (unsigned long)dlinfo.dli_saddr, dlinfo.dli_fname);
+	  if(dlinfo.dli_sname && !strcmp(dlinfo.dli_sname, "main"))
+      break;
+    ip = bp[1];
+    bp = (void**)bp[0];
+  }
+
+	output_log(_T("Stack trace (non-dedicated):\n"));
+  char **strings;
+  void *bt[100];
+  int sz = backtrace(bt, 100);
+  strings = backtrace_symbols(bt, sz);
+  for(int i = 0; i < sz; ++i)
+    output_log(_T("%s\n"), strings[i]);
+	output_log(_T("End of stack trace.\n"));
+
+  output_log(_T("--- end exception ---\n"));
 
   SDL_Quit();
   exit(1);

@@ -69,7 +69,6 @@ extern unsigned int doMask (int p, int bits, int shift);
 extern unsigned int doMask256 (int p, int bits, int shift);
 extern void alloc_colors64k (int, int, int, int, int, int, int);
 extern void alloc_colors_picasso (int rw, int gw, int bw, int rs, int gs, int bs, int rgbfmt);
-extern float getvsyncrate (float hz, int *mult);
 
 struct vidbuffer
 {
@@ -89,9 +88,5 @@ struct vidbuf_description
 };
 
 extern struct vidbuf_description gfxvidinfo;
-
-/* For ports using tui.c, this should be built by graphics_setup(). */
-extern struct bstring *video_mode_menu;
-extern void vidmode_menu_selected(int);
 
 #endif /* UAE_XWIN_H */

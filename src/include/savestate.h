@@ -11,9 +11,6 @@
 
 #include "uae/types.h"
 
-/* functions to save byte,word or long word
- * independent of CPU's endianess */
-
 extern void save_u64_func (uae_u8 **, uae_u64);
 extern void save_u32_func (uae_u8 **, uae_u32);
 extern void save_u16_func (uae_u8 **, uae_u16);
@@ -90,7 +87,6 @@ extern uae_u8 *restore_blitter (uae_u8 *src);
 extern uae_u8 *save_blitter (int *len, uae_u8 *);
 extern uae_u8 *restore_blitter_new (uae_u8 *src);
 extern uae_u8 *save_blitter_new (int *len, uae_u8 *);
-extern void restore_blitter_finish (void);
 
 extern uae_u8 *restore_audio (int, uae_u8 *);
 extern uae_u8 *save_audio (int, int *, uae_u8 *);
@@ -128,7 +124,6 @@ extern uae_u8 *save_gayle_ide (int num, int *len, uae_u8*);
 
 extern uae_u8 *save_cd (int num, int *len);
 extern uae_u8 *restore_cd (int, uae_u8 *src);
-extern void restore_cd_finish (void);
 
 extern uae_u8 *restore_input (uae_u8 *src);
 extern uae_u8 *save_input (int *len, uae_u8 *dstptr);
@@ -156,6 +151,9 @@ extern uae_u8 *save_a3000hram (int *);
 extern uae_u8 *restore_rom (uae_u8 *);
 extern uae_u8 *save_rom (int, int *, uae_u8 *);
 
+extern uae_u8 *save_expansion_info(int*, uae_u8*);
+extern uae_u8 *restore_expansion_info(uae_u8*);
+
 extern uae_u8 *restore_action_replay (uae_u8 *);
 extern uae_u8 *save_action_replay (int *, uae_u8 *);
 extern uae_u8 *restore_hrtmon (uae_u8 *);
@@ -166,7 +164,6 @@ extern int save_state (const TCHAR *filename, const TCHAR *description);
 extern void restore_state (const TCHAR *filename);
 extern void savestate_restore_finish (void);
 
-extern void custom_save_state (void);
 extern void custom_prepare_savestate (void);
 
 extern bool savestate_check (void);

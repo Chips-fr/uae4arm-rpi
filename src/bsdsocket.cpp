@@ -587,7 +587,7 @@ static uae_u32 REGPARAM2 bsdsocklib_connect (TrapContext *ctx)
 static uae_u32 REGPARAM2 bsdsocklib_sendto (TrapContext *ctx)
 {
 	struct socketbase *sb = get_socketbase (ctx);
-	host_sendto(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), trap_get_dreg(ctx, 1),
+	host_sendto(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), NULL, trap_get_dreg(ctx, 1),
 		trap_get_dreg(ctx, 2), trap_get_areg(ctx, 1), trap_get_dreg(ctx, 3));
 	return sb->resultval;
 }
@@ -596,7 +596,7 @@ static uae_u32 REGPARAM2 bsdsocklib_sendto (TrapContext *ctx)
 static uae_u32 REGPARAM2 bsdsocklib_send (TrapContext *ctx)
 {
 	struct socketbase *sb = get_socketbase (ctx);
-	host_sendto(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), trap_get_dreg(ctx, 1),
+	host_sendto(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), NULL, trap_get_dreg(ctx, 1),
 		trap_get_dreg(ctx, 2), 0, 0);
 	return sb->resultval;
 }
@@ -605,7 +605,7 @@ static uae_u32 REGPARAM2 bsdsocklib_send (TrapContext *ctx)
 static uae_u32 REGPARAM2 bsdsocklib_recvfrom (TrapContext *ctx)
 {
 	struct socketbase *sb = get_socketbase (ctx);
-	host_recvfrom(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), trap_get_dreg(ctx, 1),
+	host_recvfrom(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), NULL, trap_get_dreg(ctx, 1),
 		trap_get_dreg(ctx, 2), trap_get_areg(ctx, 1), trap_get_areg(ctx, 2));
 	return sb->resultval;
 }
@@ -614,7 +614,7 @@ static uae_u32 REGPARAM2 bsdsocklib_recvfrom (TrapContext *ctx)
 static uae_u32 REGPARAM2 bsdsocklib_recv (TrapContext *ctx)
 {
 	struct socketbase *sb = get_socketbase (ctx);
-	host_recvfrom(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), trap_get_dreg(ctx, 1),
+	host_recvfrom(ctx, sb, trap_get_dreg(ctx, 0), trap_get_areg(ctx, 0), NULL, trap_get_dreg(ctx, 1),
 		trap_get_dreg(ctx, 2), 0, 0);
 	return sb->resultval;
 }
@@ -1048,16 +1048,114 @@ static uae_u32 REGPARAM2 bsdsocklib_Dup2Socket (TrapContext *ctx)
 	return host_dup2socket(ctx, sb, trap_get_dreg(ctx, 0), trap_get_dreg(ctx, 1));
 }
 
+#define MSG_EOR		0x08	/* data completes record */
+#define	MSG_TRUNC	0x10	/* data discarded before delivery */
+
 static uae_u32 REGPARAM2 bsdsocklib_sendmsg (TrapContext *ctx)
 {
-	write_log (_T("bsdsocket: UNSUPPORTED: sendmsg()\n"));
-	return 0;
+	struct socketbase *sb = get_socketbase (ctx);
+	uaecptr sd = trap_get_dreg(ctx, 0);
+	uaecptr msg = trap_get_areg(ctx, 0);
+	uae_u32 flags = trap_get_dreg(ctx, 1);
+
+	SOCKET s = getsock (ctx, sb, sd + 1);
+	if (s == INVALID_SOCKET)
+		return -1;
+
+	int iovlen = trap_get_long(ctx, msg + 12);
+	int total = 0;
+	uaecptr iovec = trap_get_long(ctx, msg + 8);
+	for (int i = 0; i < iovlen; i++) {
+		uaecptr iovecp = iovec + i * 8;
+		int cnt = trap_get_long(ctx, iovecp + 4);
+		if (total + cnt < total)
+			return -1;
+		total += cnt;
+	}
+	if (total < 0) {
+		bsdsocklib_seterrno(ctx, sb, 22); // EINVAL
+		return -1;
+	}
+	if (trap_get_long(ctx, msg + 16)) { // msg_control
+		if (trap_get_long(ctx, msg + 20) < 10) { // msg_controllen
+			bsdsocklib_seterrno(ctx, sb, 22); // EINVAL
+			return -1;
+		}
+		// control is not supported
+	}
+	uae_u8 *data = xmalloc(uae_u8, total);
+	if (!data) {
+		bsdsocklib_seterrno(ctx, sb, 55); // ENOBUFS
+		return -1;
+	}
+	uae_u8 *p = data;
+	for (int i = 0; i < iovlen; i++) {
+		uaecptr iovecp = iovec + i * 8;
+		int cnt = trap_get_long(ctx, iovecp + 4);
+		trap_get_bytes(ctx, p, trap_get_long(ctx, iovecp), cnt);
+		p += cnt;
+	}
+	uaecptr to = trap_get_long(ctx, msg + 0);
+	host_sendto(ctx, sb, sd, 0, data, total, flags, to, msg + 4);
+	xfree(data);
+	return sb->resultval;
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_recvmsg (TrapContext *ctx)
 {
-	write_log (_T("bsdsocket: UNSUPPORTED: recvmsg()\n"));
-	return 0;
+	struct socketbase *sb = get_socketbase (ctx);
+	uaecptr sd = trap_get_dreg(ctx, 0);
+	uaecptr msg = trap_get_areg(ctx, 0);
+	uae_u32 flags = trap_get_dreg(ctx, 1);
+
+	SOCKET s = getsock (ctx, sb, sd + 1);
+	if (s == INVALID_SOCKET)
+		return -1;
+
+	uae_u32 msg_flags = trap_get_long(ctx, msg + 24);
+	int iovlen = trap_get_long(ctx, msg + 12);
+	int total = 0;
+	uaecptr iovec = trap_get_long(ctx, msg + 8);
+	for (int i = 0; i < iovlen; i++) {
+		uaecptr iovecp = iovec + i * 8;
+		int cnt = trap_get_long(ctx, iovecp + 4);
+		if (total + cnt < total)
+			return -1;
+		total += cnt;
+	}
+	if (total < 0) {
+		bsdsocklib_seterrno(ctx, sb, 22); // EINVAL
+		return -1;
+	}
+	uae_u8 *data = xmalloc(uae_u8, total);
+	if (!data) {
+		bsdsocklib_seterrno(ctx, sb, 55); // ENOBUFS
+		return -1;
+	}
+	uaecptr from = trap_get_long(ctx, msg + 0);
+	host_recvfrom(ctx, sb, sd, 0, data, total, flags, from, msg + 4);
+	if (sb->resultval > 0) {
+		uae_u8 *p = data;
+		int total2 = 0;
+		total = sb->resultval;
+		for (int i = 0; i < iovlen && total > 0; i++) {
+			uaecptr iovecp = iovec + i * 8;
+			int cnt = trap_get_long(ctx, iovecp + 4);
+			if (cnt > total)
+				cnt = total;
+			trap_put_bytes(ctx, p, trap_get_long(ctx, iovecp), cnt);
+			p += cnt;
+			total -= cnt;
+			total2 += cnt;
+		}
+		if (total2 == sb->resultval)
+			msg_flags |= MSG_EOR;
+		if (total > 0 && (sb->ftable[sd - 1] & SF_DGRAM))
+			msg_flags |= MSG_TRUNC;
+		trap_put_long(ctx, msg + 24, msg_flags);
+	}
+	xfree(data);
+	return sb->resultval;
 }
 
 static uae_u32 REGPARAM2 bsdsocklib_gethostname (TrapContext *ctx)
@@ -1556,6 +1654,7 @@ static uae_u32 REGPARAM2 bsdsocklib_init(TrapContext *ctx)
 		write_log (_T("bsdoscket: FATAL: Cannot create bsdsocket.library!\n"));
 		return 0;
 	}
+	
 #if NEWTRAP
 	trap_call_add_areg(ctx, 1, tmp1);
 	trap_call_lib(ctx, trap_get_areg(ctx, 6), -0x18c); /* AddLibrary */
@@ -1563,6 +1662,7 @@ static uae_u32 REGPARAM2 bsdsocklib_init(TrapContext *ctx)
 	trap_get_areg(ctx, 1) = tmp1;
 	CallLib (ctx, trap_get_areg(ctx, 6), -0x18c); /* AddLibrary */
 #endif
+
 	SockLibBase = tmp1;
 
 	/* Install error strings in Amiga memory */

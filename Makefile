@@ -81,7 +81,7 @@ LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
-MORE_CFLAGS += -Ofast -fomit-frame-pointer
+MORE_CFLAGS += -Ofast -fomit-frame-pointer -fsingle-precision-constant
 MORE_CFLAGS += -finline -fno-builtin
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING
@@ -138,6 +138,11 @@ OBJS =	\
 	src/filesys.o \
 	src/flashrom.o \
 	src/fpp.o \
+	src/fpp_native.o \
+	src/fpp_softfloat.o \
+	src/softfloat/softfloat.o \
+	src/softfloat/softfloat_decimal.o \
+	src/softfloat/softfloat_fpsp.o \
 	src/fsdb.o \
 	src/fsdb_unix.o \
 	src/fsusage.o \
@@ -153,6 +158,7 @@ OBJS =	\
 	src/memory.o \
 	src/native2amiga.o \
 	src/rommgr.o \
+	src/rtc.o \
 	src/savestate.o \
 	src/scsi.o \
 	src/statusline.o \

@@ -10,6 +10,7 @@
 #include "autoconf.h"
 #include "akiko.h"
 #include "ar.h"
+#include "uae/mman.h"
 #include <sys/mman.h>
 #include <SDL.h>
 
@@ -60,7 +61,7 @@ void alloc_AmigaMem(void)
 	int max_allowed_mman;
 
   free_AmigaMem();
-	set_expamem_z3_hack_override(false);
+	set_expamem_z3_hack_mode(Z3MAPPING_AUTO);
 
   // First attempt: allocate 16 MB for all memory in 24-bit area 
   // and additional mem for Z3 and RTG at correct offset
@@ -78,8 +79,9 @@ void alloc_AmigaMem(void)
     // Allocation successful -> we can use natmem_offset for entire memory access at real address
     changed_prefs.z3autoconfig_start = currprefs.z3autoconfig_start = Z3BASE_REAL;
     z3base_adr = Z3BASE_REAL;
-    write_log("Allocated 16 MB for 24-bit area and %d MB for Z3 and RTG at real address\n", ADDITIONAL_MEMSIZE / (1024 * 1024));
-    set_expamem_z3_hack_override(true);
+    write_log("Allocated 16 MB for 24-bit area (0x%08x) and %d MB for Z3 and RTG at real address (0x%08x - 0x%08x)\n", 
+      natmem_offset, ADDITIONAL_MEMSIZE / (1024 * 1024), additional_mem, additional_mem + ADDITIONAL_MEMSIZE + BARRIER);
+    set_expamem_z3_hack_mode(Z3MAPPING_REAL);
     return;
   }
 
@@ -90,7 +92,9 @@ void alloc_AmigaMem(void)
     // Allocation successful -> we can use natmem_offset for entire memory access at fake address
     changed_prefs.z3autoconfig_start = currprefs.z3autoconfig_start = Z3BASE_UAE;
     z3base_adr = Z3BASE_UAE;
-    write_log("Allocated 16 MB for 24-bit area and %d MB for Z3 and RTG at fake address\n", ADDITIONAL_MEMSIZE / (1024 * 1024));
+    write_log("Allocated 16 MB for 24-bit area (0x%08x) and %d MB for Z3 and RTG at fake address (0x%08x - 0x%08x)\n", 
+      natmem_offset, ADDITIONAL_MEMSIZE / (1024 * 1024), additional_mem, additional_mem + ADDITIONAL_MEMSIZE + BARRIER);
+    set_expamem_z3_hack_mode(Z3MAPPING_UAE);
     return;
   }
   free(natmem_offset);
@@ -168,7 +172,7 @@ bool A3000MemAvailable(void)
 static uae_u32 getz2rtgaddr (int rtgsize)
 {
 	uae_u32 start;
-	start = currprefs.fastmem_size;
+	start = currprefs.fastmem[0].size;
 	start += rtgsize - 1;
 	start &= ~(rtgsize - 1);
 	while (start & (currprefs.rtgboards[0].rtgmem_size - 1) && start < 4 * 1024 * 1024)
@@ -177,80 +181,195 @@ static uae_u32 getz2rtgaddr (int rtgsize)
 }
 
 
+bool uae_mman_info(addrbank *ab, struct uae_mman_data *md)
+{
+	bool got = false;
+	bool readonly = false;
+	uaecptr start;
+	uae_u32 size = ab->reserved_size;
+	uae_u32 readonlysize = size;
+	bool barrier = false;
+
+	if (!_tcscmp(ab->label, _T("*"))) {
+		start = ab->start;
+		got = true;
+		if (expansion_get_autoconfig_by_address(&currprefs, ab->start) && !expansion_get_autoconfig_by_address(&currprefs, ab->start + size))
+			barrier = true;
+	} else if (!_tcscmp(ab->label, _T("*B"))) {
+		start = ab->start;
+		got = true;
+		barrier = true;
+	} else if (!_tcscmp(ab->label, _T("chip"))) {
+		start = 0;
+		got = true;
+		if (!expansion_get_autoconfig_by_address(&currprefs, 0x00200000) && currprefs.chipmem_size == 2 * 1024 * 1024)
+			barrier = true;
+		if (currprefs.chipmem_size > 2 * 1024 * 1024)
+			barrier = true;
+	} else if (!_tcscmp(ab->label, _T("kick"))) {
+		start = 0xf80000;
+		got = true;
+		barrier = true;
+		readonly = true;
+	} else if (!_tcscmp(ab->label, _T("rom_a8"))) {
+		start = 0xa80000;
+		got = true;
+		readonly = true;
+	} else if (!_tcscmp(ab->label, _T("rom_e0"))) {
+		start = 0xe00000;
+		got = true;
+		readonly = true;
+	} else if (!_tcscmp(ab->label, _T("rom_f0"))) {
+		start = 0xf00000;
+		got = true;
+		readonly = true;
+	} else if (!_tcscmp(ab->label, _T("rom_f0_ppc"))) {
+		// this is flash and also contains IO
+		start = 0xf00000;
+		got = true;
+		readonly = false;
+	} else if (!_tcscmp(ab->label, _T("rtarea"))) {
+		start = rtarea_base;
+		got = true;
+		readonly = true;
+		readonlysize = RTAREA_TRAPS;
+	} else if (!_tcscmp(ab->label, _T("ramsey_low")) && A3000MemAvailable()) {
+		start = a3000lmem_bank.start;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("csmk1_maprom"))) {
+		start = 0x07f80000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("25bitram"))) {
+		start = 0x01000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("ramsey_high")) && A3000MemAvailable()) {
+		start = 0x08000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("dkb"))) {
+		start = 0x10000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("fusionforty"))) {
+		start = 0x11000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("blizzard_40"))) {
+		start = 0x40000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("blizzard_48"))) {
+		start = 0x48000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("blizzard_68"))) {
+		start = 0x68000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("blizzard_70"))) {
+		start = 0x70000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("cyberstorm"))) {
+		start = 0x0c000000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("cyberstormmaprom"))) {
+		start = 0xfff00000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("bogo"))) {
+		start = 0x00C00000;
+		got = true;
+		if (currprefs.bogomem_size <= 0x100000)
+			barrier = true;
+	} else if (!_tcscmp(ab->label, _T("custmem1"))) {
+		start = currprefs.custom_memory_addrs[0];
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("custmem2"))) {
+		start = currprefs.custom_memory_addrs[1];
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("hrtmem"))) {
+		start = 0x00a10000;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("arhrtmon"))) {
+		start = 0x00800000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("xpower_e2"))) {
+		start = 0x00e20000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("xpower_f2"))) {
+		start = 0x00f20000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("nordic_f0"))) {
+		start = 0x00f00000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("nordic_f4"))) {
+		start = 0x00f40000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("nordic_f6"))) {
+		start = 0x00f60000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("superiv_b0"))) {
+		start = 0x00b00000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("superiv_d0"))) {
+		start = 0x00d00000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("superiv_e0"))) {
+		start = 0x00e00000;
+		barrier = true;
+		got = true;
+	} else if (!_tcscmp(ab->label, _T("ram_a8"))) {
+		start = 0x00a80000;
+		barrier = true;
+		got = true;
+	}
+	if (got) {
+		md->start = start;
+		md->size = size;
+		md->readonly = readonly;
+		md->readonlysize = readonlysize;
+		md->hasbarrier = barrier;
+
+		if (md->hasbarrier) {
+			md->size += BARRIER;
+		}
+	}
+	return got;
+}
+
+
 bool mapped_malloc (addrbank *ab)
 {
-  ab->startmask = ab->start;
+	if (ab->allocated_size) {
+		write_log(_T("mapped_malloc with memory bank '%s' already allocated!?\n"), ab->name);
+	}
+	ab->allocated_size = 0;
+
+	if (ab->label && ab->label[0] == '*') {
+		if (ab->start == 0 || ab->start == 0xffffffff) {
+			write_log(_T("mapped_malloc(*) without start address!\n"));
+			return false;
+		}
+	}
+
+	struct uae_mman_data md = { 0 };
+	uaecptr start = ab->start;
+	if (uae_mman_info(ab, &md)) {
+		start = md.start;
+    ab->baseaddr = natmem_offset + start;
+	}
+
+	if (ab->baseaddr) {
+		if (md.hasbarrier) {
+			// fill end of ram with ILLEGAL to catch direct PC falling out of RAM.
+			put_long_host(ab->baseaddr + ab->reserved_size, 0x4afc4afc);
+		}
+		ab->allocated_size = ab->reserved_size;
+	  write_log("mapped_malloc(): 0x%08x - 0x%08x -> %s (%s)\n", ab->baseaddr - natmem_offset, ab->baseaddr - natmem_offset + ab->allocated_size, ab->name, ab->label);
+	}
   ab->flags |= ABFLAG_DIRECTMAP;
   
-  if(ab->label != NULL) {
-    if(!strcmp(ab->label, "chip"))
-      ab->baseaddr = natmem_offset + chipmem_start_addr;
-
-    if(!strcmp(ab->label, "fast"))
-      ab->baseaddr = natmem_offset + 0x200000;
-
-    if(!strcmp(ab->label, "bogo"))
-      ab->baseaddr = natmem_offset + bogomem_start_addr;
-
-    if(!strcmp(ab->label, "custmem1"))
-      ab->baseaddr = natmem_offset + currprefs.custom_memory_addrs[0];
-
-    if(!strcmp(ab->label, "custmem2"))
-      ab->baseaddr = natmem_offset + currprefs.custom_memory_addrs[1];
-
-    if(!strcmp(ab->label, "rom_f0"))
-      ab->baseaddr = natmem_offset + 0xf00000;
-      
-    if(!strcmp(ab->label, "rom_e0"))
-      ab->baseaddr = natmem_offset + 0xe00000;
-
-    if(!strcmp(ab->label, "rom_a8"))
-      ab->baseaddr = natmem_offset + 0xa80000;
-
-    if(!strcmp(ab->label, "kick"))
-      ab->baseaddr = natmem_offset + kickmem_start_addr;
-
-#ifdef PICASSO96
-    if(!strcmp(ab->label, "z3"))
-      ab->baseaddr = natmem_offset + z3fastmem_bank.start;
-
-    if(!strcmp(ab->label, "z3_gfx")) {
-      gfxmem_bank.start = z3base_adr + currprefs.z3fastmem_size;
-      ab->baseaddr = natmem_offset + gfxmem_bank.start;
-    }
-
-    if(!strcmp(ab->label, "z2_gfx")) {
-      gfxmem_bank.start = getz2rtgaddr(currprefs.rtgboards[0].rtgmem_size);
-      ab->baseaddr = natmem_offset + gfxmem_bank.start;
-    }
-#endif
-
-    if(!strcmp(ab->label, "rtarea"))
-      ab->baseaddr = natmem_offset + rtarea_base;
-
-    if(!strcmp(ab->label, "hrtmem") || !strcmp(ab->label, "xpower_e2") || !strcmp(ab->label, "nordic_f0") || !strcmp(ab->label, "superiv_d0"))
-      ab->baseaddr = natmem_offset + hrtmem_start;
-
-    if(!strcmp(ab->label, "xpower_f2") || !strcmp(ab->label, "nordic_f4") || !strcmp(ab->label, "superiv_b0"))
-      ab->baseaddr = natmem_offset + hrtmem2_start;
-
-    if(!strcmp(ab->label, "nordic_f6") || !strcmp(ab->label, "superiv_e0"))
-      ab->baseaddr = natmem_offset + hrtmem3_start;
-
-    if(!strcmp(ab->label, "filesys"))
-      ab->baseaddr = (uae_u8 *) malloc (0x10000 + 4);
-      
-    if(!strcmp(ab->label, "ramsey_low") && A3000MemAvailable())
-      ab->baseaddr = natmem_offset + ab->start;
-    if(!strcmp(ab->label, "ramsey_high") && A3000MemAvailable())
-      ab->baseaddr = natmem_offset + ab->start;
-
-    if(!strcmp(ab->label, "fmv_rom"))
-      ab->baseaddr = natmem_offset + 0x200000;
-      
-    if(!strcmp(ab->label, "fmv_ram"))
-      ab->baseaddr = natmem_offset + 0x280000;
-  }
   return (ab->baseaddr != NULL);
 }
 
@@ -260,6 +379,7 @@ void mapped_free (addrbank *ab)
   if(ab->label != NULL && !strcmp(ab->label, "filesys") && ab->baseaddr != NULL)
     free(ab->baseaddr);
   ab->baseaddr = NULL;
+  ab->allocated_size = 0;
 }
 
 
@@ -286,4 +406,53 @@ void protect_roms (bool protect)
   if(filesysory != NULL)
     mprotect(filesysory, 0x10000, protect ? PROT_READ : PROT_READ | PROT_WRITE);
 */
+}
+
+
+static int doinit_shm (void)
+{
+	expansion_scan_autoconfig(&currprefs, true);
+
+	return 1;
+}
+
+
+static uae_u32 oz3fastmem_size[MAX_RAM_BOARDS];
+static uae_u32 ofastmem_size[MAX_RAM_BOARDS];
+static uae_u32 ortgmem_size[MAX_RTG_BOARDS];
+static int ortgmem_type[MAX_RTG_BOARDS];
+
+bool init_shm (void)
+{
+	bool changed = false;
+
+	for (int i = 0; i < MAX_RAM_BOARDS; i++) {
+		if (oz3fastmem_size[i] != changed_prefs.z3fastmem[i].size)
+			changed = true;
+		if (ofastmem_size[i] != changed_prefs.fastmem[i].size)
+			changed = true;
+	}
+	for (int i = 0; i < MAX_RTG_BOARDS; i++) {
+		if (ortgmem_size[i] != changed_prefs.rtgboards[i].rtgmem_size)
+			changed = true;
+		if (ortgmem_type[i] != changed_prefs.rtgboards[i].rtgmem_type)
+			changed = true;
+	}
+	if (!changed)
+		return true;
+
+	for (int i = 0; i < MAX_RAM_BOARDS;i++) {
+		oz3fastmem_size[i] = changed_prefs.z3fastmem[i].size;
+		ofastmem_size[i] = changed_prefs.fastmem[i].size;
+	}
+	for (int i = 0; i < MAX_RTG_BOARDS; i++) {
+		ortgmem_size[i] = changed_prefs.rtgboards[i].rtgmem_size;
+		ortgmem_type[i] = changed_prefs.rtgboards[i].rtgmem_type;
+	}
+
+	if (doinit_shm () < 0)
+		return false;
+
+	memory_hardreset (2);
+	return true;
 }

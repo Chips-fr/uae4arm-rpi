@@ -22,6 +22,10 @@ extern SDL_Surface *prSDLScreen;
  * Some code to put status information on the screen.
  */
 
+#define HDLED_OFF		0
+#define HDLED_READ		1
+#define HDLED_WRITE		2
+
 static const char *numbers = { /* ugly  0123456789CHD%+-P */
 	"+++++++--++++-+++++++++++++++++-++++++++++++++++++++++++++++++++++++++++++++-++++++-++++----++---+--------------+++++++"
 	"+xxxxx+--+xx+-+xxxxx++xxxxx++x+-+x++xxxxx++xxxxx++xxxxx++xxxxx++xxxxx++xxxx+-+x++x+-+xxx++-+xx+-+x---+----------+xxxxx+"

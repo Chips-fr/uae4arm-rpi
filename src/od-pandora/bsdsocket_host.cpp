@@ -961,7 +961,7 @@ void host_connect (TrapContext *ctx, SB, uae_u32 sd, uae_u32 name, uae_u32 namel
   WAITSIGNAL;
 }
 
-void host_sendto (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen)
+void host_sendto (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u8* hmsg, uae_u32 len, uae_u32 flags, uae_u32 to, uae_u32 tolen)
 {
   sb->s = getsock (ctx, sb, sd + 1);
   if (sb->s == -1) {
@@ -969,7 +969,10 @@ void host_sendto (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, ua
 		bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */
 		return;
   }
-  sb->buf    = get_real_address (msg);
+  if(hmsg == NULL)
+    sb->buf    = get_real_address (msg);
+  else
+    sb->buf = hmsg;
   sb->len    = len;
   sb->flags  = flags;
   sb->to     = to;
@@ -982,7 +985,7 @@ void host_sendto (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, ua
   WAITSIGNAL;
 }
 
-void host_recvfrom (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen)
+void host_recvfrom (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u8* hmsg, uae_u32 len, uae_u32 flags, uae_u32 addr, uae_u32 addrlen)
 {
   int s = getsock (ctx, sb, sd + 1);
 
@@ -996,7 +999,10 @@ void host_recvfrom (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u32 len, 
   }
 
   sb->s      = s;
-  sb->buf    = get_real_address (msg);
+  if(hmsg == NULL)
+    sb->buf    = get_real_address (msg);
+  else
+    sb->buf = hmsg;
   sb->len    = len;
   sb->flags  = flags;
   sb->from   = addr;

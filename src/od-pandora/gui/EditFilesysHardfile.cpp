@@ -30,7 +30,7 @@ struct controller_map {
 };
 static struct controller_map controller[] = {
   { HD_CONTROLLER_TYPE_UAE,     "UAE" },
-  { HD_CONTROLLER_TYPE_IDE_MB,  "A600/A1200/A4000 IDE" },
+  { HD_CONTROLLER_TYPE_IDE_FIRST,  "A600/A1200/A4000 IDE" },
   { -1 }
 };
 
@@ -152,7 +152,7 @@ class FilesysHardfileActionListener : public gcn::ActionListener
             cboUnit->setSelected(0);
             cboUnit->setEnabled(false);
             break;
-          case HD_CONTROLLER_TYPE_IDE_MB:
+          default:
             cboUnit->setEnabled(true);
             break;
         }
@@ -181,6 +181,18 @@ static FilesysHardfileActionListener* filesysHardfileActionListener;
 
 static void InitEditFilesysHardfile(void)
 {
+	for (int i = 0; expansionroms[i].name; i++) {
+		const struct expansionromtype *erc = &expansionroms[i];
+		if (erc->deviceflags & EXPANSIONTYPE_IDE) {
+		  for (int j = 0; controller[j].type >= 0; ++j) {
+		    if(!strcmp(erc->friendlyname, controller[j].display)) {
+		      controller[j].type = HD_CONTROLLER_TYPE_IDE_EXPANSION_FIRST + i;
+		      break;
+		    }
+		  }   
+		}
+	}
+	
   wndEditFilesysHardfile = new gcn::Window("Edit");
   wndEditFilesysHardfile->setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
   wndEditFilesysHardfile->setPosition((GUI_WIDTH - DIALOG_WIDTH) / 2, (GUI_HEIGHT - DIALOG_HEIGHT) / 2);
@@ -491,6 +503,7 @@ bool EditFilesysHardfile(int unit_no)
     strncpy(ci.rootdir, (char *) txtPath->getText().c_str(), MAX_DPATH);
     ci.type = UAEDEV_HDF;
     ci.controller_type = controller[cboController->getSelected()].type;
+    ci.controller_type_unit = 0;
     ci.controller_unit = cboUnit->getSelected();
     ci.controller_media_type = 0;
     ci.unit_feature_level = 1;

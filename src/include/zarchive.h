@@ -11,7 +11,6 @@ struct zfile {
   TCHAR *name;
   TCHAR *zipname;
   TCHAR *mode;
-	TCHAR *originalname;
   FILE *f; // real file handle if physical file
   uae_u8 *data; // unpacked data
   int dataseek; // use seek position even if real file

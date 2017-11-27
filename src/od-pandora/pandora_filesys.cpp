@@ -5,6 +5,7 @@
 #include "sysdeps.h"
 #include "config.h"
 #include "zfile.h"
+#include "options.h"
 
 
 int my_setcurrentdir (const TCHAR *curdir, TCHAR *oldcur)
@@ -217,8 +218,8 @@ const TCHAR *my_getfilepart(const TCHAR *filename)
 
 
 /* Returns 1 if an actual volume-name was found, 2 if no volume-name (so uses some defaults) */
-int target_get_volume_name(struct uaedev_mount_info *mtinf, const char *volumepath, char *volumename, int size, bool inserted, bool fullcheck)
+int target_get_volume_name(struct uaedev_mount_info *mtinf, struct uaedev_config_info *ci, bool inserted, bool fullcheck, int cnt)
 {
-	sprintf(volumename, "DH_%c", volumepath[0]);
+	sprintf(ci->volname, "DH_%c", ci->rootdir[0]);
   return 2;
 }

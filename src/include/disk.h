@@ -18,8 +18,7 @@ typedef enum { DRV_NONE = -1, DRV_35_DD = 0, DRV_35_HD, DRV_525_SD, DRV_35_DD_ES
 #define HISTORY_DIR 2
 #define HISTORY_HDF 3
 #define HISTORY_FS 4
-#define HISTORY_TAPE 5
-#define HISTORY_MAX 6
+#define HISTORY_MAX 5
 
 struct diskinfo
 {
@@ -52,7 +51,7 @@ extern void DISK_hsync (void);
 extern void DISK_reset (void);
 extern int disk_getwriteprotect (struct uae_prefs *p, const TCHAR *name);
 extern int disk_setwriteprotect (struct uae_prefs *p, int num, const TCHAR *name, bool writeprotected);
-extern bool disk_creatediskfile (const TCHAR *name, int type, drive_type adftype, const TCHAR *disk_name, bool ffs, bool bootable, struct zfile *copyfrom);
+extern bool disk_creatediskfile (struct uae_prefs *p, const TCHAR *name, int type, drive_type adftype, int hd, const TCHAR *disk_name, bool ffs, bool bootable, struct zfile *copyfrom);
 extern int DISK_history_add (const TCHAR *name, int idx, int type, int donotcheck);
 extern TCHAR *DISK_history_get (int idx, int type);
 int DISK_examine_image (struct uae_prefs *p, int num, struct diskinfo *di);

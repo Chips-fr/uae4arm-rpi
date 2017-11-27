@@ -31,6 +31,8 @@ static gcn::UaeRadioButton* optFPUnone;
 static gcn::UaeRadioButton* optFPU68881;
 static gcn::UaeRadioButton* optFPU68882;
 static gcn::UaeRadioButton* optFPUinternal;
+static gcn::UaeCheckBox* chkFPUstrict;
+static gcn::UaeCheckBox* chkSoftFloat;
 static gcn::Window *grpCPUSpeed;
 static gcn::UaeRadioButton* opt7Mhz;
 static gcn::UaeRadioButton* opt14Mhz;
@@ -48,7 +50,7 @@ class CPUButtonActionListener : public gcn::ActionListener
   		  changed_prefs.cpu_model = 68000;
   		  changed_prefs.fpu_model = 0;
   		  changed_prefs.address_space_24 = true;
-  		  changed_prefs.z3fastmem_size = 0;
+  		  changed_prefs.z3fastmem[0].size = 0;
   		  changed_prefs.rtgboards[0].rtgmem_size = 0;
       }
       else if (actionEvent.getSource() == optCPU68010)
@@ -56,7 +58,7 @@ class CPUButtonActionListener : public gcn::ActionListener
   		  changed_prefs.cpu_model = 68010;
   		  changed_prefs.fpu_model = 0;
   		  changed_prefs.address_space_24 = true;
-  		  changed_prefs.z3fastmem_size = 0;
+  		  changed_prefs.z3fastmem[0].size = 0;
   		  changed_prefs.rtgboards[0].rtgmem_size = 0;
       }
       else if (actionEvent.getSource() == optCPU68020)
@@ -185,12 +187,31 @@ class JITActionListener : public gcn::ActionListener
 static JITActionListener* jitActionListener;
 
 
+class FPUActionListener : public gcn::ActionListener
+{
+  public:
+    void action(const gcn::ActionEvent& actionEvent)
+    {
+      if (actionEvent.getSource() == chkFPUstrict) {
+        changed_prefs.fpu_strict = chkFPUstrict->isSelected();
+      
+      } else if(actionEvent.getSource() == chkSoftFloat) {
+        changed_prefs.fpu_softfloat = chkSoftFloat->isSelected();
+         
+      }
+      RefreshPanelCPU();
+    }
+};
+static FPUActionListener* fpuActionListener;
+
+
 void InitPanelCPU(const struct _ConfigCategory& category)
 {
   cpuButtonActionListener = new CPUButtonActionListener();
   cpu24BitActionListener = new CPU24BitActionListener();
   cpuCompActionListener = new CPUCompActionListener();
   jitActionListener = new JITActionListener();
+  fpuActionListener = new FPUActionListener();
   
 	optCPU68000 = new gcn::UaeRadioButton("68000", "radiocpugroup");
 	optCPU68000->addActionListener(cpuButtonActionListener);
@@ -246,14 +267,24 @@ void InitPanelCPU(const struct _ConfigCategory& category)
 	optFPUinternal = new gcn::UaeRadioButton("CPU internal", "radiofpugroup");
 	optFPUinternal->addActionListener(fpuButtonActionListener);
 
+	chkFPUstrict = new gcn::UaeCheckBox("More compatible", true);
+	chkFPUstrict->setId("FPUstrict");
+  chkFPUstrict->addActionListener(fpuActionListener);
+
+	chkSoftFloat = new gcn::UaeCheckBox("Softfloat FPU emul.", true);
+	chkSoftFloat->setId("SoftFloat");
+  chkSoftFloat->addActionListener(fpuActionListener);
+
 	grpFPU = new gcn::Window("FPU");
 	grpFPU->setPosition(DISTANCE_BORDER + grpCPU->getWidth() + DISTANCE_NEXT_X, DISTANCE_BORDER);
 	grpFPU->add(optFPUnone,  5, 10);
 	grpFPU->add(optFPU68881, 5, 40);
 	grpFPU->add(optFPU68882, 5, 70);
 	grpFPU->add(optFPUinternal, 5, 100);
+	grpFPU->add(chkFPUstrict, 5, 140);
+	grpFPU->add(chkSoftFloat, 5, 170);
 	grpFPU->setMovable(false);
-	grpFPU->setSize(140, 145);
+	grpFPU->setSize(180, 215);
   grpFPU->setBaseColor(gui_baseCol);
   
   category.panel->add(grpFPU);
@@ -303,13 +334,16 @@ void ExitPanelCPU(void)
   delete cpu24BitActionListener;
   delete cpuCompActionListener;
   delete jitActionListener;
-
+  
   delete optFPUnone;
   delete optFPU68881;
   delete optFPU68882;
   delete optFPUinternal;
+  delete chkFPUstrict;
+  delete chkSoftFloat;
   delete grpFPU;
   delete fpuButtonActionListener;
+  delete fpuActionListener;
   
   delete opt7Mhz;
   delete opt14Mhz;
@@ -357,6 +391,9 @@ void RefreshPanelCPU(void)
   optFPU68881->setEnabled(changed_prefs.cpu_model >= 68020 && changed_prefs.cpu_model < 68040);
   optFPU68882->setEnabled(changed_prefs.cpu_model >= 68020 && changed_prefs.cpu_model < 68040);
   optFPUinternal->setEnabled(changed_prefs.cpu_model == 68040);
+  
+  chkFPUstrict->setSelected(changed_prefs.fpu_strict);
+  chkSoftFloat->setSelected(changed_prefs.fpu_softfloat);
   
 	if (changed_prefs.m68k_speed == M68K_SPEED_7MHZ_CYCLES)
     opt7Mhz->setSelected(true);

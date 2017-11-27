@@ -12,13 +12,6 @@
 
 #include "options.h"
 #include "uae.h"
-#include "memory.h"
-#include "custom.h"
-#include "newcpu.h"
-#include "picasso96.h"
-#include "statusline.h"
-#include "rommgr.h"
-#include "zfile.h"
 #include "gfxboard.h"
 
 const TCHAR *gfxboard_get_name(int type)
@@ -36,7 +29,7 @@ const TCHAR *gfxboard_get_configname(int type)
 		return _T("ZorroII");
 	if (type == GFXBOARD_UAE_Z3)
 		return _T("ZorroIII");
-	return _T("");
+	return NULL;
 }
 
 int gfxboard_get_configtype(struct rtgboardconfig *rbc)

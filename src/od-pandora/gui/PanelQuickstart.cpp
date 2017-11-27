@@ -153,6 +153,8 @@ static void SetControlState(int model)
 
 static void AdjustPrefs(void)
 {
+  int old_cs = changed_prefs.cs_compatible;
+  
   if (quickstart_model > 0)
     built_in_prefs (&changed_prefs, quickstart_model, quickstart_conf, 0, 0);
   switch(quickstart_model) {
@@ -177,6 +179,9 @@ static void AdjustPrefs(void)
       changed_prefs.cdslots[0].type = SCSI_UNIT_IMAGE;
       break;
   }
+  
+  if(emulating && old_cs != changed_prefs.cs_compatible)
+    uae_restart(-1, NULL);
 }
 
 
@@ -197,7 +202,7 @@ static void SetModelFromConfig(void)
       quickstart_model = 1;
       if(changed_prefs.chipmem_size == 0x200000)
         quickstart_conf = 1;
-      else if(changed_prefs.fastmem_size == 0x400000)
+      else if(changed_prefs.fastmem[0].size == 0x400000)
         quickstart_conf = 2;
       else
         quickstart_conf = 1;
@@ -207,7 +212,7 @@ static void SetModelFromConfig(void)
       quickstart_model = 2;
       if(changed_prefs.chipmem_size == 0x200000)
         quickstart_conf = 1;
-      else if(changed_prefs.fastmem_size == 0x400000)
+      else if(changed_prefs.fastmem[0].size == 0x400000)
         quickstart_conf = 2;
       else
         quickstart_conf = 1;
@@ -215,7 +220,7 @@ static void SetModelFromConfig(void)
       
     case CP_A1200:
       quickstart_model = 3;
-      if(changed_prefs.fastmem_size == 0x400000)
+      if(changed_prefs.fastmem[0].size == 0x400000)
         quickstart_conf = 1;
       else
         quickstart_conf = 0;
@@ -489,6 +494,7 @@ class QSDFxCheckActionListener : public gcn::ActionListener
             // Failed to change write protection -> maybe filesystem doesn't support this
             ShowMessage("Set/Clear write protect", "Failed to change write permission.", "Maybe underlying filesystem doesn't support this.", "Ok", "");
           }
+          DISK_reinsert(i);
         }
       }
 

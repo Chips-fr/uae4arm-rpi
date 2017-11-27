@@ -190,7 +190,7 @@ extern int inputdevice_get_device_status (int devnum);
 extern void inputdevice_set_device_status (int devnum, int enabled);
 extern int inputdevice_get_device_total (int type);
 extern int inputdevice_get_widget_num (int devnum);
-extern int inputdevice_get_widget_type (int devnum, int num, TCHAR *name);
+extern int inputdevice_get_widget_type (int devnum, int num, TCHAR *name, bool inccode);
 
 extern int input_get_default_mouse (struct uae_input_device *uid, int num, int port, int af, bool gp, bool wheel, bool joymouseswap);
 extern int input_get_default_joystick (struct uae_input_device *uid, int num, int port, int af, int mode, bool gp, bool joymouseswap);
@@ -263,7 +263,6 @@ extern void inputdevice_joyport_config_store(struct uae_prefs *p, const TCHAR *v
 extern int inputdevice_getjoyportdevice (int port, int val);
 extern void inputdevice_validate_jports (struct uae_prefs *p, int changedport, bool *fixedports);
 extern void inputdevice_fix_prefs(struct uae_prefs *p, bool userconfig);
-extern void inputdevice_config_load_start(struct uae_prefs *p);
 
 extern void inputdevice_init (void);
 extern void inputdevice_close (void);

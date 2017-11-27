@@ -23,7 +23,7 @@ static TCHAR startup_title[MAX_STARTUP_TITLE] = _T("");
 static TCHAR startup_message[MAX_STARTUP_MESSAGE] = _T("");
 
 
-void SetStartupMsg(TCHAR *title, TCHAR *msg)
+void target_startup_msg(TCHAR *title, TCHAR *msg)
 {
   _tcsncpy(startup_title, title, MAX_STARTUP_TITLE);
   _tcsncpy(startup_message, msg, MAX_STARTUP_MESSAGE);
@@ -650,6 +650,8 @@ void run_gui(void)
 {
   gui_running = true;
   gui_rtarea_flags_onenter = gui_create_rtarea_flag(&currprefs);
+  
+  expansion_generate_autoconfig_info(&changed_prefs);
 
   try
   {
@@ -682,6 +684,10 @@ void run_gui(void)
     std::cout << "Unknown exception" << std::endl;
     uae_quit();
   }
+
+  expansion_generate_autoconfig_info(&changed_prefs);
+  cfgfile_compatibility_romtype(&changed_prefs);
+  
   if(quit_program > UAE_QUIT || quit_program < -UAE_QUIT)
   {
   	//--------------------------------------------------
@@ -693,7 +699,8 @@ void run_gui(void)
 		if(gui_rtarea_flags_onenter != gui_create_rtarea_flag(&changed_prefs))
 	    quit_program = -UAE_RESET_HARD; // Hardreset required...
 	    
-	  if(!A3000MemAvailable() && (changed_prefs.mbresmem_low_size || changed_prefs.mbresmem_high_size))
+	  bool a3000changed = (currprefs.mbresmem_low_size != changed_prefs.mbresmem_low_size) || (currprefs.mbresmem_high_size != changed_prefs.mbresmem_high_size);
+	  if(a3000changed)
 	    HandleA3000Mem(changed_prefs.mbresmem_low_size, changed_prefs.mbresmem_high_size);
   }
 

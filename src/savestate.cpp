@@ -95,9 +95,6 @@ static void state_incompatible_warn(void)
   }
 }
 
-/* functions for reading/writing bytes, shorts and longs in big-endian
- * format independent of host machine's endianess */
-
 void save_u32_func (uae_u8 **dstp, uae_u32 v)
 {
   uae_u8 *dst = *dstp;
@@ -424,6 +421,7 @@ void restore_state (const TCHAR *filename)
   TCHAR name[5];
 	unsigned int len, totallen;
   size_t filepos, filesize;
+	int z3num, z2num;
 
   chunk = 0;
 	f = zfile_fopen (filename, _T("rb"), ZFD_NORMAL);
@@ -445,6 +443,7 @@ void restore_state (const TCHAR *filename)
   restore_header (chunk);
   xfree (chunk);
 	devices_restore_start();
+	z2num = z3num = 0;
   for (;;) {
   	name[0] = 0;
   	chunk = end = restore_chunk (f, name, &len, &totallen, &filepos);
@@ -466,10 +465,10 @@ void restore_state (const TCHAR *filename)
 			continue;
 #ifdef AUTOCONFIG
 		} else if (!_tcscmp (name, _T("FRAM"))) {
-	    restore_fram (totallen, filepos, 0);
+			restore_fram (totallen, filepos, z2num++);
 	    continue;
 		} else if (!_tcscmp (name, _T("ZRAM"))) {
-	    restore_zram (totallen, filepos, 0);
+			restore_zram (totallen, filepos, z3num++);
 	    continue;
   	} else if (!_tcscmp (name, _T("BORO"))) {
 	    restore_bootrom (totallen, filepos);
@@ -580,6 +579,8 @@ void restore_state (const TCHAR *filename)
 			end = restore_gayle_ide (chunk);
 		else if (!_tcsncmp (name, _T("CDU"), 3))
 			end = restore_cd (name[3] - '0', chunk);
+		else if (!_tcsncmp (name, _T("EXPI"), 4))
+			end = restore_expansion_info(chunk);
 
 	  else {
 	    end = chunk + len;
@@ -614,7 +615,6 @@ void savestate_restore_finish (void)
   restore_cpu_finish();
 	restore_audio_finish ();
 	restore_disk_finish ();
-	restore_blitter_finish ();
 	restore_akiko_finish ();
 #ifdef PICASSO96
 	restore_p96_finish ();
@@ -654,10 +654,14 @@ static void save_rams (struct zfile *f, int comp)
 	dst = save_a3000hram (&len);
 	save_chunk (f, dst, len, _T("A3K2"), comp);
 #ifdef AUTOCONFIG
-  dst = save_fram (&len, 0);
-	save_chunk (f, dst, len, _T("FRAM"), comp);
-  dst = save_zram (&len, 0);
-  save_chunk (f, dst, len, _T("ZRAM"), comp);
+	for (int i = 0; i < MAX_RAM_BOARDS; i++) {
+    dst = save_fram (&len, i);
+	  save_chunk (f, dst, len, _T("FRAM"), comp);
+	}
+	for (int i = 0; i < MAX_RAM_BOARDS; i++) {
+    dst = save_zram (&len, i);
+    save_chunk (f, dst, len, _T("ZRAM"), comp);
+	}
   dst = save_bootrom (&len);
 	save_chunk (f, dst, len, _T("BORO"), comp);
 #endif
@@ -778,6 +782,8 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
   xfree (dst);
 
 #ifdef AUTOCONFIG
+	dst = save_expansion_info(&len, 0);
+	save_chunk(f, dst, len, _T("EXPI"), 0);
   dst = save_expansion (&len, 0);
   save_chunk (f, dst, len, _T("EXPA"), 0);
   xfree (dst);

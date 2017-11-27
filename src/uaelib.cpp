@@ -173,7 +173,7 @@ static uae_u32 REGPARAM2 emulib_ChgFMemSize(TrapContext *ctx, uae_u32 memsize)
 			write_log (_T("Unsupported fastmem size!\n"));
   }
 	trap_set_dreg(ctx, 0, 0);
-  changed_prefs.fastmem_size = memsize;
+  changed_prefs.fastmem[0].size = memsize;
 	uae_reset (1, 1);
   return 0;
 }
@@ -215,9 +215,9 @@ static uae_u32 emulib_ExitEmu (void)
 static uae_u32 emulib_GetUaeConfig(TrapContext *ctx, uaecptr place)
 {
 	trap_put_long(ctx, place, version);
-	trap_put_long(ctx, place + 4, chipmem_bank.allocated);
-	trap_put_long(ctx, place + 8, bogomem_bank.allocated);
-	trap_put_long(ctx, place + 12, fastmem_bank.allocated);
+	trap_put_long(ctx, place + 4, chipmem_bank.allocated_size);
+	trap_put_long(ctx, place + 8, bogomem_bank.allocated_size);
+	trap_put_long(ctx, place + 12, fastmem_bank[0].allocated_size);
 	trap_put_long(ctx, place + 16, currprefs.gfx_framerate);
 	trap_put_long(ctx, place + 20, currprefs.produce_sound);
 	trap_put_long(ctx, place + 24, currprefs.jports[0].id | (currprefs.jports[1].id << 8));
@@ -270,15 +270,6 @@ static uae_u32 emulib_GetDisk(TrapContext *ctx, uae_u32 drive, uaecptr name)
 	xfree(n);
   return 1;
 }
-
-/*
- * Enter debugging state
- */
-static uae_u32 emulib_Debug (void)
-{
-  return 0;
-}
-
 
 #define CREATE_NATIVE_FUNC_PTR uae_u32 (* native_func)( uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, \
 	 uae_u32, uae_u32, uae_u32, uae_u32, uae_u32, uae_u32)
@@ -335,7 +326,7 @@ static uae_u32 uaelib_demux_common(TrapContext *ctx, uae_u32 ARG0, uae_u32 ARG1,
    	  /* The next call brings bad luck */
     case 13: return emulib_ExitEmu ();
 		case 14: return emulib_GetDisk(ctx, ARG1, ARG2);
-    case 15: return emulib_Debug ();
+    case 15: return 0;
 
     case 68: return emulib_Minimize ();
     case 69: return emulib_ExecuteNativeCode ();
@@ -347,7 +338,6 @@ static uae_u32 uaelib_demux_common(TrapContext *ctx, uae_u32 ARG0, uae_u32 ARG1,
 		case 81: return cfgfile_uaelib(ctx, ARG1, ARG2, ARG3, ARG4);
 		case 82: return cfgfile_uaelib_modify(ctx, ARG1, ARG2, ARG3, ARG4, ARG5);
     case 83: return 0;
-    case 84: return 0;
 		case 85: return native_dos_op(ctx, ARG1, ARG2, ARG3, ARG4);
     case 86:
    	  if (valid_address(ARG1, 1)) {

@@ -52,8 +52,6 @@ static void generate_func(void)
     printf("void blitdofast_%x (uaecptr pta, uaecptr ptb, uaecptr ptc, uaecptr ptd, struct bltinfo *b)\n",blttbl[i]);
     printf("{\n");
     printf("int i,j;\n");
-    if (a_is_on) printf("uae_u32 preva = 0;\n");
-    if (b_is_on) printf("uae_u32 prevb = 0;\n");
     printf("uae_u32 totald = 0;\n");
     if (b_is_on) printf("uae_u32 srcb = b->bltbhold;\n");
     if (c_is_on) printf("uae_u32 srcc = b->bltcdat;\n");
@@ -64,12 +62,12 @@ static void generate_func(void)
     printf("\tfor (i = b->hblitsize; i--;) {\n\t\tuae_u32 bltadat, srca;\n\n");
     if (c_is_on) printf("\t\tif (ptc) { srcc = do_get_mem_word ((uae_u16 *)ptc); ptc += 2; }\n");
     if (b_is_on) printf("\t\tif (ptb) {\n\t\t\tuae_u32 bltbdat; b->bltbdat = bltbdat = do_get_mem_word ((uae_u16 *)ptb); ptb += 2;\n");
-    if (b_is_on) printf("\t\t\tsrcb = (((uae_u32)prevb << 16) | bltbdat) >> b->blitbshift;\n");
-    if (b_is_on) printf("\t\t\tprevb = bltbdat;\n\t\t}\n");
+	  if (b_is_on) printf("\t\t\tsrcb = (((uae_u32)b->bltbold << 16) | bltbdat) >> b->blitbshift;\n");
+	  if (b_is_on) printf("\t\t\tb->bltbold = bltbdat;\n\t\t}\n");
     if (a_is_on) printf("\t\tif (pta) { b->bltadat = bltadat = do_get_mem_word ((uae_u16 *)pta); pta += 2; } else { bltadat = b->bltadat; }\n");
     if (a_is_on) printf("\t\tbltadat &= blit_masktable_p[i];\n");
-    if (a_is_on) printf("\t\tsrca = (((uae_u32)preva << 16) | bltadat) >> b->blitashift;\n");
-    if (a_is_on) printf("\t\tpreva = bltadat;\n");
+	  if (a_is_on) printf("\t\tsrca = (((uae_u32)b->bltaold << 16) | bltadat) >> b->blitashift;\n");
+	  if (a_is_on) printf("\t\tb->bltaold = bltadat;\n");
     printf("\t\tif (dstp)\n\t\t\tchipmem_agnus_wput (dstp, dstd);\n");
     printf("\t\tdstd = (%s);\n", blitops[blttbl[i]].s);
     printf("\t\ttotald |= dstd;\n");
@@ -91,8 +89,6 @@ static void generate_func(void)
     printf("uae_u32 totald = 0;\n");
     printf("int i,j;\n");
 
-    if (a_is_on) printf("uae_u32 preva = 0;\n");
-    if (b_is_on) printf("uae_u32 prevb = 0;\n");
     if (b_is_on) printf("uae_u32 srcb = b->bltbhold;\n");
     if (c_is_on) printf("uae_u32 srcc = b->bltcdat;\n");
     printf("uae_u32 dstd = 0;\n");
@@ -102,12 +98,12 @@ static void generate_func(void)
     printf("\tfor (i = b->hblitsize; i--;) {\n\t\tuae_u32 bltadat, srca;\n");
     if (c_is_on) printf("\t\tif (ptc) { srcc = do_get_mem_word ((uae_u16 *)ptc); ptc -= 2; }\n");
     if (b_is_on) printf("\t\tif (ptb) {\n\t\t\tuae_u32 bltbdat; b->bltbdat = bltbdat = do_get_mem_word ((uae_u16 *)ptb); ptb -= 2;\n");
-    if (b_is_on) printf("\t\t\tsrcb = ((bltbdat << 16) | prevb) >> b->blitdownbshift;\n");
-    if (b_is_on) printf("\t\t\tprevb = bltbdat;\n\t\t}\n");
+	  if (b_is_on) printf("\t\t\tsrcb = ((bltbdat << 16) | b->bltbold) >> b->blitdownbshift;\n");
+	  if (b_is_on) printf("\t\t\tb->bltbold = bltbdat;\n\t\t}\n");
     if (a_is_on) printf("\t\tif (pta) { b->bltadat = bltadat = do_get_mem_word ((uae_u16 *)pta); pta -= 2; } else { bltadat = b->bltadat; }\n");
     if (a_is_on) printf("\t\tbltadat &= blit_masktable_p[i];\n");
-    if (a_is_on) printf("\t\tsrca = (((uae_u32)bltadat << 16) | preva) >> b->blitdownashift;\n");
-    if (a_is_on) printf("\t\tpreva = bltadat;\n");
+	  if (a_is_on) printf("\t\tsrca = (((uae_u32)bltadat << 16) | b->bltaold) >> b->blitdownashift;\n");
+	  if (a_is_on) printf("\t\tb->bltaold = bltadat;\n");
     printf("\t\tif (dstp)\n\t\t\tchipmem_agnus_wput (dstp, dstd);\n");
     printf("\t\tdstd = (%s);\n", blitops[blttbl[i]].s);
     printf("\t\ttotald |= dstd;\n");

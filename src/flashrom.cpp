@@ -1,7 +1,9 @@
 /*
 * UAE - The Un*x Amiga Emulator
 *
-* Simple 29F010 flash ROM chip emulator
+* Simple 29Fxxx flash ROM chip emulator
+* I2C EEPROM (24C08)
+* MICROWIRE EEPROM (9346)
 *
 * (c) 2014 Toni Wilen
 */
@@ -248,7 +250,7 @@ int eeprom_i2c_set(void *fdv, int line, int level)
 		}
         return bitbang_i2c_ret(i2c, 1);
     }
-    SetStartupMsg(_T("Internal error"), _T("eeprom_i2c_set: Unhandled case."));
+    target_startup_msg(_T("Internal error"), _T("eeprom_i2c_set: Unhandled case."));
     uae_restart(1, NULL);
 }
 

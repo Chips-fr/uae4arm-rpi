@@ -98,7 +98,7 @@ int fsdb_set_file_attrs (a_inode *aino)
 {
   struct stat statbuf;
   int mode;
-  uae_u32 tmpmask = aino->amigaos_mode;
+  uae_u32 mask = aino->amigaos_mode;
 
 	if (aino->vfso)
 		return 1;
@@ -108,17 +108,17 @@ int fsdb_set_file_attrs (a_inode *aino)
 	
     mode = statbuf.st_mode;
 
-	if (tmpmask & A_FIBF_READ)
+	if (mask & A_FIBF_READ)
 	    mode &= ~S_IRUSR;
 	else
 	    mode |= S_IRUSR;
 
-	if (tmpmask & A_FIBF_WRITE)
+	if (mask & A_FIBF_WRITE)
 	    mode &= ~S_IWUSR;
 	else
 	    mode |= S_IWUSR;
 
-	if (tmpmask & A_FIBF_EXECUTE)
+	if (mask & A_FIBF_EXECUTE)
 	    mode &= ~S_IXUSR;
 	else
 	    mode |= S_IXUSR;
