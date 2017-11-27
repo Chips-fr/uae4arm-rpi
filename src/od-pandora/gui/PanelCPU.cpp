@@ -10,6 +10,8 @@
 #include "sysdeps.h"
 #include "config.h"
 #include "options.h"
+#include "memory.h"
+#include "newcpu.h"
 #include "uae.h"
 #include "gui.h"
 #include "gui_handling.h"
@@ -47,7 +49,7 @@ class CPUButtonActionListener : public gcn::ActionListener
   		  changed_prefs.fpu_model = 0;
   		  changed_prefs.address_space_24 = true;
   		  changed_prefs.z3fastmem_size = 0;
-  		  changed_prefs.rtgmem_size = 0;
+  		  changed_prefs.rtgboards[0].rtgmem_size = 0;
       }
       else if (actionEvent.getSource() == optCPU68010)
       {
@@ -55,7 +57,7 @@ class CPUButtonActionListener : public gcn::ActionListener
   		  changed_prefs.fpu_model = 0;
   		  changed_prefs.address_space_24 = true;
   		  changed_prefs.z3fastmem_size = 0;
-  		  changed_prefs.rtgmem_size = 0;
+  		  changed_prefs.rtgboards[0].rtgmem_size = 0;
       }
       else if (actionEvent.getSource() == optCPU68020)
       {
@@ -171,7 +173,7 @@ class JITActionListener : public gcn::ActionListener
 	    if (chkJIT->isSelected())
       {
 	      changed_prefs.cpu_compatible = 0;
-	      changed_prefs.cachesize = DEFAULT_JIT_CACHE_SIZE;
+	      changed_prefs.cachesize = MAX_JIT_CACHE;
       }
       else
       {

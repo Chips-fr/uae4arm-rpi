@@ -5,6 +5,7 @@
 #include "SelectorEntry.hpp"
 #include "UaeRadioButton.hpp"
 #include "UaeCheckBox.hpp"
+#include "UaeDropDown.hpp"
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -17,13 +18,14 @@
 #include "custom.h"
 #include "gui_handling.h"
 
-
 static gcn::Window *grpChipset;
 static gcn::UaeRadioButton* optOCS;
 static gcn::UaeRadioButton* optECSAgnus;
 static gcn::UaeRadioButton* optECS;
 static gcn::UaeRadioButton* optAGA;
 static gcn::UaeCheckBox* chkNTSC;
+static gcn::Label *lblChipset;
+static gcn::UaeDropDown* cboChipset;
 static gcn::Window *grpBlitter;
 static gcn::UaeRadioButton* optBlitNormal;
 static gcn::UaeRadioButton* optBlitImmed;
@@ -35,6 +37,70 @@ static gcn::UaeRadioButton* optCollNone;
 static gcn::UaeRadioButton* optCollSprites;
 static gcn::UaeRadioButton* optCollPlayfield;
 static gcn::UaeRadioButton* optCollFull;
+
+
+struct chipset {
+	int compatible;
+	char name[32];
+};
+static struct chipset chipsets [] = {
+  { CP_GENERIC, "Generic" },
+  { CP_CD32,    "CD32" },
+  { CP_A500,    "A500" },
+  { CP_A500P,   "A500+" },
+  { CP_A600,    "A600" },
+  { CP_A1200,   "A1200" },
+  { CP_A2000,   "A2000" },
+  { CP_A4000,   "A4000" },
+  { -1, "" }
+};
+static const int numChipsets = 8;
+
+
+class ChipsetListModel : public gcn::ListModel
+{
+  public:
+    ChipsetListModel()
+    {
+    }
+    
+    int getNumberOfElements()
+    {
+      return numChipsets;
+    }
+
+    std::string getElementAt(int i)
+    {
+      if(i < 0 || i >= numChipsets)
+        return "---";
+      return chipsets[i].name;
+    }
+};
+static ChipsetListModel chipsetList;
+static bool bIgnoreListChange = true;
+
+
+class ChipsetActionListener : public gcn::ActionListener
+{
+  public:
+    void action(const gcn::ActionEvent& actionEvent)
+    {
+      if (!bIgnoreListChange) {
+        if (actionEvent.getSource() == cboChipset) {
+    	    //---------------------------------------
+          // Chipset selected
+    	    //---------------------------------------
+    	    int cs = chipsets[cboChipset->getSelected()].compatible;
+    	    if(changed_prefs.cs_compatible != cs) {
+      	    changed_prefs.cs_compatible = cs;
+      	    built_in_chipset_prefs (&changed_prefs);
+      	    RefreshPanelChipset();
+      	  }
+        }
+      }
+    }
+};
+static ChipsetActionListener* chipsetActionListener;
 
 
 class ChipsetButtonActionListener : public gcn::ActionListener
@@ -70,6 +136,7 @@ class NTSCButtonActionListener : public gcn::ActionListener
 	      changed_prefs.ntscmode = false;
 	      changed_prefs.chipset_refreshrate = 50;
       }
+      RefreshPanelQuickstart();
     }
 };
 static NTSCButtonActionListener* ntscButtonActionListener;
@@ -118,6 +185,7 @@ static CollisionButtonActionListener* collisionButtonActionListener;
 
 void InitPanelChipset(const struct _ConfigCategory& category)
 {
+  chipsetActionListener = new ChipsetActionListener();
   chipsetButtonActionListener = new ChipsetButtonActionListener();
   ntscButtonActionListener = new NTSCButtonActionListener();
   
@@ -136,6 +204,15 @@ void InitPanelChipset(const struct _ConfigCategory& category)
 	chkNTSC = new gcn::UaeCheckBox("NTSC");
   chkNTSC->addActionListener(ntscButtonActionListener);
 
+  lblChipset = new gcn::Label("Extra:");
+  lblChipset->setSize(40, LABEL_HEIGHT);
+  lblChipset->setAlignment(gcn::Graphics::RIGHT);
+	cboChipset = new gcn::UaeDropDown(&chipsetList);
+  cboChipset->setSize(75, DROPDOWN_HEIGHT);
+  cboChipset->setBaseColor(gui_baseCol);
+  cboChipset->setId("ChipsetExtra");
+  cboChipset->addActionListener(chipsetActionListener);
+  
 	grpChipset = new gcn::Window("Chipset");
 	grpChipset->setPosition(DISTANCE_BORDER, DISTANCE_BORDER);
 	grpChipset->add(optOCS, 5, 10);
@@ -143,8 +220,11 @@ void InitPanelChipset(const struct _ConfigCategory& category)
 	grpChipset->add(optECS, 5, 70);
 	grpChipset->add(optAGA, 5, 100);
 	grpChipset->add(chkNTSC, 5, 140);
+	grpChipset->add(lblChipset, 115, 10);
+	grpChipset->add(cboChipset, 115 + lblChipset->getWidth() + 8, 10);
+
 	grpChipset->setMovable(false);
-	grpChipset->setSize(120, 185);
+	grpChipset->setSize(255, 185);
   grpChipset->setBaseColor(gui_baseCol);
   
   category.panel->add(grpChipset);
@@ -179,7 +259,7 @@ void InitPanelChipset(const struct _ConfigCategory& category)
   chkFastCopper->addActionListener(fastCopperActionListener);
 
 	grpCopper = new gcn::Window("Copper");
-	grpCopper->setPosition(grpBlitter->getX() + grpBlitter->getWidth() + DISTANCE_NEXT_X, DISTANCE_BORDER);
+	grpCopper->setPosition(DISTANCE_BORDER + grpChipset->getWidth() + DISTANCE_NEXT_X, grpBlitter->getY() + grpBlitter->getHeight() + DISTANCE_NEXT_Y);
 	grpCopper->add(chkFastCopper, 5, 10);
 	grpCopper->setMovable(false);
 	grpCopper->setSize(120, 55);
@@ -227,9 +307,12 @@ void ExitPanelChipset(void)
   delete optECS;
   delete optAGA;
   delete chkNTSC;
+  delete lblChipset;
+  delete cboChipset;
   delete grpChipset;
   delete chipsetButtonActionListener;
   delete ntscButtonActionListener;
+  delete chipsetActionListener;
 
   delete optBlitNormal;
   delete optBlitImmed;
@@ -252,6 +335,19 @@ void ExitPanelChipset(void)
 
 void RefreshPanelChipset(void)
 {
+	int i, idx;
+	
+	bIgnoreListChange = true;
+	idx = 0;
+	for(i = 0; i<numChipsets; ++i) {
+	  if(chipsets[i].compatible == changed_prefs.cs_compatible) {
+	    idx = i;
+	    break;
+	  }
+	}
+	cboChipset->setSelected(idx);
+	bIgnoreListChange = false;
+	
 	if (changed_prefs.chipset_mask == 0)
     optOCS->setSelected(true);
 	else if (changed_prefs.chipset_mask == CSMASK_ECS_AGNUS)

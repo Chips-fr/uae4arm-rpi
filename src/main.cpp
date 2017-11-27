@@ -9,6 +9,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
+
 #include "options.h"
 #include "td-sdl/thread.h"
 #include "uae.h"
@@ -19,27 +20,20 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "disk.h"
-#include "debug.h"
 #include "xwin.h"
 #include "inputdevice.h"
 #include "keybuf.h"
 #include "gui.h"
 #include "zfile.h"
 #include "autoconf.h"
-#include "traps.h"
-#include "osemu.h"
 #include "picasso96.h"
-#include "bsdsocket.h"
 #include "native2amiga.h"
-#include "akiko.h"
 #include "savestate.h"
 #include "filesys.h"
 #include "blkdev.h"
-#include "uaeresource.h"
 #include "gfxboard.h"
-#ifdef JIT
+#include "devices.h"
 #include "jit/compemu.h"
-#endif
 #ifdef USE_SDL
 #include "SDL.h"
 #endif
@@ -53,6 +47,7 @@
 long int version = 256*65536L*UAEMAJOR + 65536L*UAEMINOR + UAESUBREV;
 
 struct uae_prefs currprefs, changed_prefs; 
+int config_changed;
 
 bool no_gui = 0;
 bool cloanto_rom = 0;
@@ -98,6 +93,8 @@ void discard_prefs (struct uae_prefs *p, int type)
 	  xfree (s->option);
 	  xfree (s);
   }
+	p->all_lines = NULL;
+	currprefs.all_lines = changed_prefs.all_lines = NULL;
 #ifdef FILESYS
   filesys_cleanup ();
   p->mountitems = 0;
@@ -126,28 +123,40 @@ static void fixup_prefs_dim2 (struct wh *wh)
 
 void fixup_prefs_dimensions (struct uae_prefs *prefs)
 {
-  fixup_prefs_dim2(&prefs->gfx_size_fs);
-  fixup_prefs_dim2(&prefs->gfx_size_win);
+  fixup_prefs_dim2(&prefs->gfx_size);
+
+	for (int i = 0; i < 2; i++) {
+		struct apmode *ap = &prefs->gfx_apmode[i];
+		ap->gfx_vflip = 0;
+		if (ap->gfx_vsync > 0) {
+			// legacy vsync: always wait for flip
+			ap->gfx_vflip = -1;
+		} else {
+			// no vsync: wait if triple bufferirng
+    }
+  }
 }
 
 void fixup_cpu(struct uae_prefs *p)
 {
-	if (p->cpu_model >= 68030 && p->address_space_24) {
-		error_log (_T("24-bit address space is not supported in 68030/040/060 configurations."));
+	if (p->cpu_model >= 68040 && p->address_space_24) {
+		error_log (_T("24-bit address space is not supported with 68040/060 configurations."));
 		p->address_space_24 = 0;
 	}
 	if (p->cpu_model < 68020 && p->fpu_model && (p->cpu_compatible)) {
-		error_log (_T("FPU is not supported in 68000/010 configurations."));
+		error_log (_T("FPU is not supported with 68000/010 configurations."));
 		p->fpu_model = 0;
 	}
+  if (p->cpu_model > 68010 && p->cpu_compatible) {
+    error_log(_T("CPU Compatible is only supported with 68000/010 configurations."));
+    p->cpu_compatible = 0;
+  }
 
   switch(p->cpu_model)
   {
     case 68000:
-    	p->address_space_24 = 1;
       break;
   	case 68010:
-    	p->address_space_24 = 1;
     	break;
   	case 68020:
     	break;
@@ -159,8 +168,13 @@ void fixup_cpu(struct uae_prefs *p)
     	break;
   }
 
-	if (p->cpu_model >= 68040 && p->cachesize && p->cpu_compatible)
+	if (p->cpu_model >= 68020 && p->cachesize && p->cpu_compatible)
 		p->cpu_compatible = false;
+
+	if (p->cachesize && (p->fpu_no_unimplemented)) {
+		error_log (_T("JIT is not compatible with unimplemented FPU instruction emulation."));
+		p->fpu_no_unimplemented = false;
+	}
 
 	if (p->immediate_blits && p->waiting_blits) {
 		error_log (_T("Immediate blitter and waiting blits can't be enabled simultaneously.\n"));
@@ -168,11 +182,11 @@ void fixup_cpu(struct uae_prefs *p)
   }
 }
 
-
-void fixup_prefs (struct uae_prefs *p)
+void fixup_prefs (struct uae_prefs *p, bool userconfig)
 {
   int err = 0;
 
+	built_in_chipset_prefs (p);
   fixup_cpu(p);
 
   if (((p->chipmem_size & (p->chipmem_size - 1)) != 0 && p->chipmem_size != 0x180000)
@@ -185,24 +199,29 @@ void fixup_prefs (struct uae_prefs *p)
   }
 
   if ((p->fastmem_size & (p->fastmem_size - 1)) != 0
-	|| (p->fastmem_size != 0 && (p->fastmem_size < 0x100000 || p->fastmem_size > 0x800000)))
+	|| (p->fastmem_size != 0 && (p->fastmem_size < 0x10000 || p->fastmem_size > 0x800000)))
   {
 		error_log (_T("Unsupported fastmem size %d (0x%x)."), p->fastmem_size, p->fastmem_size);
 		p->fastmem_size = 0;
 	  err = 1;
   }
-	if (p->rtgmem_size > 0x1000000 && p->rtgmem_type == GFXBOARD_UAE_Z3) {
-		error_log (_T("Graphics card memory size %d (0x%x) larger than maximum reserved %d (0x%x)."), p->rtgmem_size, p->rtgmem_size, 0x1000000, 0x1000000);
-		p->rtgmem_size = 0x1000000;
-		err = 1;
-	}
-  if ((p->rtgmem_size & (p->rtgmem_size - 1)) != 0 || (p->rtgmem_size != 0 && (p->rtgmem_size < 0x100000))) {
-	  error_log (_T("Unsupported graphics card memory size %d (0x%x)."), p->rtgmem_size, p->rtgmem_size);
-		if (p->rtgmem_size > 0x1000000)
-			p->rtgmem_size = 0x1000000;
-		else
-	    p->rtgmem_size = 0;
-	  err = 1;
+
+	for (int i = 0; i < MAX_RTG_BOARDS; i++) {
+		struct rtgboardconfig *rbc = &p->rtgboards[i];
+	  if (rbc->rtgmem_size > 0x1000000 && rbc->rtgmem_type == GFXBOARD_UAE_Z3) {
+		  error_log (_T("Graphics card memory size %d (0x%x) larger than maximum reserved %d (0x%x)."), rbc->rtgmem_size, rbc->rtgmem_size, 0x1000000, 0x1000000);
+		  rbc->rtgmem_size = 0x1000000;
+	    err = 1;
+    }
+
+    if ((rbc->rtgmem_size & (rbc->rtgmem_size - 1)) != 0 || (rbc->rtgmem_size != 0 && (rbc->rtgmem_size < 0x100000))) {
+	    error_log (_T("Unsupported graphics card memory size %d (0x%x)."), rbc->rtgmem_size, rbc->rtgmem_size);
+		  if (rbc->rtgmem_size > 0x1000000)
+			  rbc->rtgmem_size = 0x1000000;
+	    else
+	      rbc->rtgmem_size = 0;
+      err = 1;
+    }
   }
   
   if (p->z3fastmem_size > max_z3fastmem) {
@@ -217,13 +236,13 @@ void fixup_prefs (struct uae_prefs *p)
 	  err = 1;
   }
 
-  p->z3fastmem_start &= ~0xffff;
-	if (p->z3fastmem_start < 0x1000000)
-		p->z3fastmem_start = 0x1000000;
+  p->z3autoconfig_start &= ~0xffff;
+	if (p->z3autoconfig_start != 0 && p->z3autoconfig_start < 0x1000000)
+		p->z3autoconfig_start = 0x1000000;
     
   if (p->address_space_24 && (p->z3fastmem_size != 0)) {
   	p->z3fastmem_size = 0;
-  	error_log (_T("Can't use a Z3 graphics card or 32-bit memory when using a 24 bit address space."));
+  	error_log (_T("Can't use 32-bit memory when using a 24 bit address space."));
   }
 
   if (p->bogomem_size != 0 && p->bogomem_size != 0x80000 && p->bogomem_size != 0x100000 && p->bogomem_size != 0x180000 && p->bogomem_size != 0x1c0000) {
@@ -232,23 +251,44 @@ void fixup_prefs (struct uae_prefs *p)
 	  err = 1;
   }
 
-  if (p->bogomem_size > 0x180000 && ((p->chipset_mask & CSMASK_AGA) || p->cpu_model >= 68020)) {
+	if (p->bogomem_size > 0x180000 && (p->cs_fatgaryrev >= 0 || p->cs_ide || p->cs_ramseyrev >= 0)) {
 	  p->bogomem_size = 0x180000;
 		error_log (_T("Possible Gayle bogomem conflict fixed."));
   }
-  if (p->chipmem_size > 0x200000 && p->fastmem_size != 0) {
+	if (p->chipmem_size > 0x200000 && p->fastmem_size > 262144) {
 		error_log (_T("You can't use fastmem and more than 2MB chip at the same time."));
-	  p->fastmem_size = 0;
+		p->chipmem_size = 0x200000;
 	  err = 1;
   }
+	if (p->mbresmem_low_size > 0x01000000 || (p->mbresmem_low_size & 0xfffff)) {
+		p->mbresmem_low_size = 0;
+		error_log (_T("Unsupported Mainboard RAM size"));
+	}
+	if (p->mbresmem_high_size > 0x02000000 || (p->mbresmem_high_size & 0xfffff)) {
+		p->mbresmem_high_size = 0;
+		error_log (_T("Unsupported CPU Board RAM size."));
+	}
 
-	if (p->address_space_24 && p->rtgmem_size && p->rtgmem_type == GFXBOARD_UAE_Z3) {
-		error_log (_T("Z3 RTG and 24bit address space are not compatible."));
-		p->rtgmem_type = GFXBOARD_UAE_Z2;
-  }
-	if (p->rtgmem_type == GFXBOARD_UAE_Z2 && (p->chipmem_size > 2 * 1024 * 1024 || getz2size (p) > 8 * 1024 * 1024 || getz2size (p) < 0)) {
-		p->rtgmem_size = 0;
-		error_log (_T("Too large Z2 RTG memory size."));
+	for (int i = 0; i < MAX_RTG_BOARDS; i++) {
+		struct rtgboardconfig *rbc = &p->rtgboards[i];
+		if (p->chipmem_size > 0x200000 && rbc->rtgmem_size && gfxboard_get_configtype(rbc) == 2) {
+			error_log(_T("You can't use Zorro II RTG and more than 2MB chip at the same time."));
+			p->chipmem_size = 0x200000;
+			err = 1;
+		}
+	  if (p->address_space_24 && rbc->rtgmem_size && rbc->rtgmem_type == GFXBOARD_UAE_Z3) {
+	    error_log (_T("Z3 RTG and 24bit address space are not compatible."));
+		  rbc->rtgmem_type = GFXBOARD_UAE_Z2;
+    }
+		if (rbc->rtgmem_size && rbc->rtgmem_type == GFXBOARD_UAE_Z2 && (p->chipmem_size > 2 * 1024 * 1024 || getz2size (p) > 8 * 1024 * 1024 || getz2size (p) < 0)) {
+		  rbc->rtgmem_size = 0;
+	    error_log (_T("Too large Z2 RTG memory size."));
+    }
+	}
+
+	if (p->cs_z3autoconfig && p->address_space_24) {
+		p->cs_z3autoconfig = false;
+		error_log (_T("Z3 autoconfig and 24bit address space are not compatible."));
 	}
 
   if (p->produce_sound < 0 || p->produce_sound > 3) {
@@ -261,16 +301,19 @@ void fixup_prefs (struct uae_prefs *p)
 	  p->cachesize = 0;
 	  err = 1;
   }
-  if (p->z3fastmem_size && (p->address_space_24 || p->cpu_model < 68020)) {
-		error_log (_T("Z3 fast memory can't be used with a 68000/68010 emulation. Turning off Z3 fast memory."));
+  if ((p->z3fastmem_size) && p->address_space_24) {
+		error_log (_T("Z3 fast memory can't be used if address space is 24-bit."));
 	  p->z3fastmem_size = 0;
 	  err = 1;
   }
-  if (p->rtgmem_size > 0 && p->rtgmem_type == GFXBOARD_UAE_Z3 && (p->cpu_model < 68020 || p->address_space_24)) {
-		error_log (_T("UAEGFX RTG can't be used with a 68000/68010 or 68EC020 emulation. Turning off RTG."));
-	  p->rtgmem_size = 0;
-	  err = 1;
+	for (int i = 0; i < MAX_RTG_BOARDS; i++) {
+		if ((p->rtgboards[i].rtgmem_size > 0 && p->rtgboards[i].rtgmem_type == GFXBOARD_UAE_Z3) && p->address_space_24) {
+			error_log (_T("UAEGFX Z3 RTG can't be used if address space is 24-bit."));
+			p->rtgboards[i].rtgmem_size = 0;
+      err = 1;
+		}
   }
+
 #if !defined (BSDSOCKET)
 	if (p->socket_emu) {
 		write_log (_T("Compile-time option of BSDSOCKET_SUPPORTED was not enabled.  You can't use bsd-socket emulation.\n"));
@@ -298,6 +341,22 @@ void fixup_prefs (struct uae_prefs *p)
 	  p->collision_level = 1;
 	  err = 1;
   }
+	if (p->cs_compatible == CP_GENERIC) {
+		p->cs_fatgaryrev = p->cs_ramseyrev = -1;
+		p->cs_ide = 0;
+		if (p->cpu_model >= 68020) {
+			p->cs_fatgaryrev = 0;
+			p->cs_ide = -1;
+			p->cs_ramseyrev = 0x0f;
+    }
+	} else if (p->cs_compatible == 0) {
+		if (p->cs_ide == IDE_A4000) {
+			if (p->cs_fatgaryrev < 0)
+				p->cs_fatgaryrev = 0;
+			if (p->cs_ramseyrev < 0)
+				p->cs_ramseyrev = 0x0f;
+    }
+  }
 
   fixup_prefs_dimensions (p);
 
@@ -314,13 +373,15 @@ void fixup_prefs (struct uae_prefs *p)
 #ifndef AUTOCONFIG
 	p->z3fastmem_size = 0;
 	p->fastmem_size = 0;
-	p->rtgmem_size = 0;
+	p->rtgboards[0].rtgmem_size = 0;
 #endif
 #if !defined (BSDSOCKET)
 	p->socket_emu = 0;
 #endif
 
+  built_in_chipset_prefs (p);
 	blkdev_fix_prefs (p);
+	inputdevice_fix_prefs(p, userconfig);
   target_fixup_options (p);
 }
 
@@ -366,6 +427,8 @@ void uae_restart (int opengui, const TCHAR *cfgfile)
 	target_restart ();
 }
 
+#ifndef DONT_PARSE_CMDLINE
+
 static void parse_cmdline_2 (int argc, TCHAR **argv)
 {
   int i;
@@ -382,7 +445,6 @@ static void parse_cmdline_2 (int argc, TCHAR **argv)
     }
   }
 }
-
 
 static TCHAR *parsetext (const TCHAR *s)
 {
@@ -441,6 +503,14 @@ void  print_usage()
 static void parse_cmdline (int argc, TCHAR **argv)
 {
   int i;
+	static bool started;
+	bool firstconfig = true;
+	bool loaded = false;
+
+	// only parse command line when starting for the first time
+	if (started)
+		return;
+	started = true;
 
   for (i = 1; i < argc; i++) {
 	  if (_tcscmp (argv[i], _T("-cfgparam")) == 0) {
@@ -449,13 +519,16 @@ static void parse_cmdline (int argc, TCHAR **argv)
 		} else if (_tcsncmp (argv[i], _T("-config="), 8) == 0) {
 	    TCHAR *txt = parsetextpath (argv[i] + 8);
 	    currprefs.mountitems = 0;
-	    target_cfgfile_load (&currprefs, txt, -1, 0);
+			target_cfgfile_load (&currprefs, txt, firstconfig ? CONFIG_TYPE_ALL : CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST | CONFIG_TYPE_NORESET, 0);
 	    xfree (txt);
+			firstconfig = false;
+			loaded = true;
 		} else if (_tcsncmp (argv[i], _T("-statefile="), 11) == 0) {
 	    TCHAR *txt = parsetextpath (argv[i] + 11);
 	    savestate_state = STATE_DORESTORE;
 	    _tcscpy (savestate_fname, txt);
 	    xfree (txt);
+			loaded = true;
 		} else if (_tcscmp (argv[i], _T("-f")) == 0) {
 	  /* Check for new-style "-f xxx" argument, where xxx is config-file */
 	    if (i + 1 == argc) {
@@ -463,34 +536,65 @@ static void parse_cmdline (int argc, TCHAR **argv)
 	    } else {
 				TCHAR *txt = parsetextpath (argv[++i]);
         currprefs.mountitems = 0;
-		    target_cfgfile_load (&currprefs, txt, -1, 0);
+				target_cfgfile_load (&currprefs, txt, firstconfig ? CONFIG_TYPE_ALL : CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST | CONFIG_TYPE_NORESET, 0);
 				xfree (txt);
+				firstconfig = false;
 	    }
+			loaded = true;
 		} else if (_tcscmp (argv[i], _T("-s")) == 0) {
 	    if (i + 1 == argc)
 				write_log (_T("Missing argument for '-s' option.\n"));
 	    else
 		    cfgfile_parse_line (&currprefs, argv[++i], 0);
-	  } else {
-	    if (argv[i][0] == '-' && argv[i][1] != '\0' && argv[i][2] == '\0') {
-		    int ret;
-		    const TCHAR *arg = argv[i] + 2;
-		    int extra_arg = *arg == '\0';
-		    if (extra_arg)
-		      arg = i + 1 < argc ? argv[i + 1] : 0;
+		} else if (_tcsncmp (argv[i], _T("-cdimage="), 9) == 0) {
+			TCHAR *txt = parsetextpath (argv[i] + 9);
+			TCHAR *txt2 = xmalloc(TCHAR, _tcslen(txt) + 2);
+			_tcscpy(txt2, txt);
+			if (_tcsrchr(txt2, ',') != NULL)
+				_tcscat(txt2, _T(","));
+			cfgfile_parse_option (&currprefs, _T("cdimage0"), txt2, 0);
+			xfree(txt2);
+			xfree(txt);
+			loaded = true;
+		} else if (argv[i][0] == '-' && argv[i][1] != '\0') {
+	    int ret;
+	    const TCHAR *arg = argv[i] + 2;
+	    int extra_arg = *arg == '\0';
+	    if (extra_arg)
+	      arg = i + 1 < argc ? argv[i + 1] : 0;
 		    ret = parse_cmdline_option (&currprefs, argv[i][1], arg);
 		    if (ret == -1)
 		      print_usage();
 		    if (ret && extra_arg)
-		      i++;
-	    } else
+	      i++;
+		} else if (i == argc - 1) {
+			// if last config entry is an orphan and nothing else was loaded:
+			// check if it is config file or statefile
+			if (!loaded) {
+				TCHAR *txt = parsetextpath(argv[i]);
+				struct zfile *z = zfile_fopen(txt, _T("rb"), ZFD_NORMAL);
+				if (z) {
+					int type = zfile_gettype(z);
+					zfile_fclose(z);
+					if (type == ZFILE_CONFIGURATION) {
+						currprefs.mountitems = 0;
+						target_cfgfile_load(&currprefs, txt, CONFIG_TYPE_ALL, 0);
+					} else if (type == ZFILE_STATEFILE) {
+						savestate_state = STATE_DORESTORE;
+						_tcscpy(savestate_fname, txt);
+					}
+				}
+				xfree(txt);
+			}
+	  }
+	else
 	    {
 	      printf("Unknown option %s\n",argv[i]);
 	      print_usage();
 	    }
-	  }
   }
 }
+#endif
 
 static void parse_cmdline_and_init_file (int argc, TCHAR **argv)
 {
@@ -500,34 +604,12 @@ static void parse_cmdline_and_init_file (int argc, TCHAR **argv)
 
 	_tcscat (optionsfile, restart_config);
 
-  if (! target_cfgfile_load (&currprefs, optionsfile, 0, default_config)) {
+	if (! target_cfgfile_load (&currprefs, optionsfile, CONFIG_TYPE_DEFAULT, default_config)) {
   	write_log (_T("failed to load config '%s'\n"), optionsfile);
   }
-  fixup_prefs (&currprefs);
+	fixup_prefs (&currprefs, false);
 
   parse_cmdline (argc, argv);
-}
-
-void reset_all_systems (void)
-{
-  init_eventtab ();
-
-#ifdef PICASSO96
-  picasso_reset ();
-#endif
-#ifdef FILESYS
-  filesys_prepare_reset ();
-  filesys_reset ();
-#endif
-  memory_reset ();
-#if defined (BSDSOCKET)
-	bsdlib_reset ();
-#endif
-#ifdef FILESYS
-  filesys_start_threads ();
-  hardfile_reset ();
-#endif
-  native2amiga_reset ();
 }
 
 /* Okay, this stuff looks strange, but it is here to encourage people who
@@ -550,39 +632,6 @@ void do_start_program (void)
 	m68k_go (1);
 }
 
-void do_leave_program (void)
-{
-#ifdef JIT
-  compiler_exit();
-#endif
-  graphics_leave ();
-  inputdevice_close ();
-  DISK_free ();
-  close_sound ();
-	dump_counts ();
-#ifdef CD32
-	akiko_free ();
-#endif
- 	gui_exit ();
-#ifdef USE_SDL
-  SDL_Quit ();
-#endif
-  hardfile_reset();
-#ifdef AUTOCONFIG
-  expansion_cleanup ();
-#endif
-#ifdef FILESYS
-  filesys_cleanup ();
-#endif
-#ifdef BSDSOCKET
-  bsdlib_reset ();
-#endif
-	device_func_reset ();
-  memory_cleanup ();
-  cfgfile_addcfgparam (0);
-  machdep_free ();
-}
-
 void start_program (void)
 {
   #ifdef CAPSLOCK_DEBIAN_WORKAROUND
@@ -603,28 +652,6 @@ void leave_program (void)
     do_leave_program ();
 }
 
-void virtualdevice_init (void)
-{
-#ifdef AUTOCONFIG
-	rtarea_setup ();
-#endif
-#ifdef FILESYS
-	rtarea_init ();
-	uaeres_install ();
-	hardfile_install ();
-#endif
-#ifdef AUTOCONFIG
-	expansion_init ();
-	emulib_install ();
-#endif
-#ifdef FILESYS
-	filesys_install ();
-#endif
-#if defined (BSDSOCKET)
-	bsdlib_install ();
-#endif
-}
-
 static int real_main2 (int argc, TCHAR **argv)
 {
   printf("Uae4arm v0.5 for Raspberry Pi by Chips\n");
@@ -635,13 +662,13 @@ static int real_main2 (int argc, TCHAR **argv)
   SDL_Init(SDL_INIT_NOPARACHUTE | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 #endif
 #endif
-
+  set_config_changed ();
  
   keyboard_settrans();
 
   if (restart_config[0]) {
-	  default_prefs (&currprefs, 0);
-	  fixup_prefs (&currprefs);
+	  default_prefs (&currprefs, true, 0);
+		fixup_prefs (&currprefs, true);
   }
 
   if (! graphics_setup ()) {
@@ -662,11 +689,9 @@ static int real_main2 (int argc, TCHAR **argv)
 		write_log (_T("Sound driver unavailable: Sound output disabled\n"));
   	currprefs.produce_sound = 0;
   }
-
   inputdevice_init();
 
   changed_prefs = currprefs;
-
   no_gui = ! currprefs.start_gui;
   if (restart_program == 2)
   	no_gui = 1;
@@ -676,6 +701,7 @@ static int real_main2 (int argc, TCHAR **argv)
   if (! no_gui) {
 	  int err = gui_init ();
 	  currprefs = changed_prefs;
+		set_config_changed ();
 	  if (err == -1) {
 			write_log (_T("Failed to initialize the GUI\n"));
       return -1;
@@ -689,8 +715,6 @@ static int real_main2 (int argc, TCHAR **argv)
     update_display(&currprefs);
   }
 
-
-
 	memset (&gui_data, 0, sizeof gui_data);
 	gui_data.cd = -1;
 	gui_data.hd = -1;
@@ -699,7 +723,7 @@ static int real_main2 (int argc, TCHAR **argv)
 	picasso_reset ();
 #endif
 
-  fixup_prefs (&currprefs);
+  fixup_prefs (&currprefs, true);
   changed_prefs = currprefs;
 	target_run ();
   /* force sound settings change */
@@ -713,7 +737,6 @@ static int real_main2 (int argc, TCHAR **argv)
 #ifdef AUTOCONFIG
   native2amiga_install ();
 #endif
-
   custom_init (); /* Must come after memory_init */
   DISK_init ();
 
@@ -739,6 +762,7 @@ static int real_main2 (int argc, TCHAR **argv)
 void real_main (int argc, TCHAR **argv)
 {
   restart_program = 1;
+
   fetch_configurationpath (restart_config, sizeof (restart_config) / sizeof (TCHAR));
   _tcscat (restart_config, OPTIONSFILENAME);
   _tcscat (restart_config, ".uae");

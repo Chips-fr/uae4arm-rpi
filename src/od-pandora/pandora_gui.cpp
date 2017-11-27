@@ -40,8 +40,6 @@
 
 int emulating = 0;
 
-extern int screen_is_picasso;
-
 struct gui_msg {
   int num;
   const char *msg;
@@ -202,7 +200,7 @@ static struct romdata *scan_single_rom (char *path)
     char tmp[MAX_DPATH];
     struct romdata *rd;
 
-    strcpy (tmp, path);
+    strncpy (tmp, path, MAX_PATH);
     rd = getromdatabypath(path);
     if (rd && rd->crc32 == 0xffffffff)
 	return rd;
@@ -249,17 +247,11 @@ static int scan_rom_2 (struct zfile *f, void *dummy)
 
 static void scan_rom(char *path)
 {
-  struct romdata *rd;
-
   if (!isromext(path)) {
 	  //write_log("ROMSCAN: skipping file '%s', unknown extension\n", path);
 	  return;
   }
-  rd = getarcadiarombyname(path);
-  if (rd) 
-    addrom(rd, path);
-  else
-    zfile_zopen (path, scan_rom_2, 0);
+  zfile_zopen (path, scan_rom_2, 0);
 }
 
 
@@ -290,6 +282,9 @@ void RescanROMs(void)
 			break;
 		if (rd->crc32 == 0xffffffff && strncmp(rd->model, "AROS", 4) == 0)
 			addrom (rd, ":AROS");
+    if (rd->crc32 == 0xffffffff && rd->id == 63) {
+      addrom (rd, ":HRTMon");
+    }
 		id++;
 	}
 }
@@ -311,34 +306,9 @@ void ReadConfigFileList(void)
   std::vector<std::string> files;
   const char *filter_rp9[] = { ".rp9", "\0" };
   const char *filter_uae[] = { ".uae", "\0" };
-  const char *filter_conf[] = { ".conf", "\0" };
     
   ClearConfigFileList();
   
-  // Add built-in configs: A500
-  ConfigFileInfo *buildin = new ConfigFileInfo();
-  strcpy(buildin->FullPath, "");
-  strcpy(buildin->Name, "Amiga 500");
-  strcpy(buildin->Description, _T("Built-in, A500, OCS, 512KB"));
-  buildin->BuildInID = BUILDINID_A500;
-  ConfigFilesList.push_back(buildin);
-
-  // A1200
-  buildin = new ConfigFileInfo();
-  strcpy(buildin->FullPath, "");
-  strcpy(buildin->Name, "Amiga 1200");
-  strcpy(buildin->Description, _T("Built-in, A1200"));
-  buildin->BuildInID = BUILDINID_A1200;
-  ConfigFilesList.push_back(buildin);
-  
-  // CD32
-  buildin = new ConfigFileInfo();
-  strcpy(buildin->FullPath, "");
-  strcpy(buildin->Name, "CD32");
-  strcpy(buildin->Description, _T("Built-in"));
-  buildin->BuildInID = BUILDINID_CD32;
-  ConfigFilesList.push_back(buildin);
-
   // Read rp9 files
   fetch_rp9path(path, MAX_PATH);
   ReadDirectory(path, NULL, &files);
@@ -347,11 +317,10 @@ void ReadConfigFileList(void)
   {
     ConfigFileInfo *tmp = new ConfigFileInfo();
     strncpy(tmp->FullPath, path, MAX_DPATH);
-    strcat(tmp->FullPath, files[i].c_str());
+    strncat(tmp->FullPath, files[i].c_str(), MAX_DPATH);
     strncpy(tmp->Name, files[i].c_str(), MAX_DPATH);
     removeFileExtension(tmp->Name);
-    strcpy(tmp->Description, _T("rp9"));
-    tmp->BuildInID = BUILDINID_NONE;
+    strncpy(tmp->Description, _T("rp9"), MAX_PATH);
     ConfigFilesList.push_back(tmp);
   }
   
@@ -363,41 +332,11 @@ void ReadConfigFileList(void)
   {
     ConfigFileInfo *tmp = new ConfigFileInfo();
     strncpy(tmp->FullPath, path, MAX_DPATH);
-    strcat(tmp->FullPath, files[i].c_str());
+    strncat(tmp->FullPath, files[i].c_str(), MAX_DPATH);
     strncpy(tmp->Name, files[i].c_str(), MAX_DPATH);
     removeFileExtension(tmp->Name);
     cfgfile_get_description(tmp->FullPath, tmp->Description);
-    tmp->BuildInID = BUILDINID_NONE;
     ConfigFilesList.push_back(tmp);
-  }
-
-  // Read also old style configs
-  ReadDirectory(path, NULL, &files);
-  FilterFiles(&files, filter_conf);
-  for (int i=0; i<files.size(); ++i)
-  {
-    if(strcmp(files[i].c_str(), "adfdir.conf"))
-    { 
-      ConfigFileInfo *tmp = new ConfigFileInfo();
-      strncpy(tmp->FullPath, path, MAX_DPATH);
-      strcat(tmp->FullPath, files[i].c_str());
-      strncpy(tmp->Name, files[i].c_str(), MAX_DPATH);
-      removeFileExtension(tmp->Name);
-      strcpy(tmp->Description, "Old style configuration file");
-      tmp->BuildInID = BUILDINID_NONE;
-      for(int j=0; j<ConfigFilesList.size(); ++j)
-      {
-        if(!strcmp(ConfigFilesList[j]->Name, tmp->Name))
-        {
-          // Config in new style already in list
-          delete tmp;
-          tmp = NULL;
-          break;
-        }
-      }
-      if(tmp != NULL)
-        ConfigFilesList.push_back(tmp);
-    }
   }
 }
 
@@ -425,6 +364,7 @@ static void gui_to_prefs (void)
   /* filesys hack */
   currprefs.mountitems = changed_prefs.mountitems;
   memcpy(&currprefs.mountconfig, &changed_prefs.mountconfig, MOUNT_CONFIG_SIZE * sizeof (struct uaedev_config_info));
+	fixup_prefs (&changed_prefs, true);
 }
 
 
@@ -523,20 +463,20 @@ int gui_update (void)
   switch(currentStateNum)
   {
     case 1:
-  		strcat(savestate_fname,"-1.uss");
-	    strcat(screenshot_filename,"-1.png");
+  		strncat(savestate_fname,"-1.uss", MAX_PATH);
+	    strncat(screenshot_filename,"-1.png", MAX_PATH);
 	    break;
     case 2:
-  		strcat(savestate_fname,"-2.uss");
-  		strcat(screenshot_filename,"-2.png");
+  		strncat(savestate_fname,"-2.uss", MAX_PATH);
+  		strncat(screenshot_filename,"-2.png", MAX_PATH);
   		break;
     case 3:
-  		strcat(savestate_fname,"-3.uss");
-  		strcat(screenshot_filename,"-3.png");
+  		strncat(savestate_fname,"-3.uss", MAX_PATH);
+  		strncat(screenshot_filename,"-3.png", MAX_PATH);
   		break;
     default: 
-  	   	strcat(savestate_fname,".uss");
-    		strcat(screenshot_filename,".png");
+	   	strncat(savestate_fname,".uss", MAX_PATH);
+  		strncat(screenshot_filename,".png", MAX_PATH);
   }
   return 0;
 }
@@ -581,10 +521,10 @@ void gui_display (int shortcut)
 void moveVertical(int value)
 {
 	changed_prefs.pandora_vertical_offset += value;
-	if(changed_prefs.pandora_vertical_offset < -16)
-		changed_prefs.pandora_vertical_offset = -16;
-	else if(changed_prefs.pandora_vertical_offset > 16)
-		changed_prefs.pandora_vertical_offset = 16;
+	if(changed_prefs.pandora_vertical_offset < -16 + OFFSET_Y_ADJUST)
+		changed_prefs.pandora_vertical_offset = -16 + OFFSET_Y_ADJUST;
+	else if(changed_prefs.pandora_vertical_offset > 16 + OFFSET_Y_ADJUST)
+		changed_prefs.pandora_vertical_offset = 16 + OFFSET_Y_ADJUST;
 }
 
 
@@ -661,6 +601,27 @@ void gui_led (int led, int on)
 
 void gui_flicker_led (int led, int unitnum, int status)
 {
+  static int hd_resetcounter;
+
+  switch(led)
+  {
+    case -1: // Reset HD and CD
+      gui_data.hd = 0;
+      break;
+      
+    case LED_POWER:
+      break;
+
+    case LED_HD:
+      if (status == 0) {
+  	    hd_resetcounter--;
+  	    if (hd_resetcounter > 0)
+  	      return;
+      }
+      gui_data.hd = status;
+      hd_resetcounter = 2;
+      break;
+  }
 #ifdef RASPBERRY
    gui_led(led, status);
 #endif
@@ -705,7 +666,7 @@ int translate_message (int msg,	TCHAR *out)
   {
     if(gui_msglist[i].num == msg)
     {
-      strcpy(out, gui_msglist[i].msg);
+      strncpy(out, gui_msglist[i].msg, MAX_DPATH);
       return 1;
     }
     ++i;

@@ -1,7 +1,6 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "config.h"
-#include "autoconf.h"
 #include "uae.h"
 #include "options.h"
 #include "gui.h"
@@ -11,6 +10,7 @@
 #include "newcpu.h"
 #include "custom.h"
 #include "filesys.h"
+#include "autoconf.h"
 #include "zfile.h"
 #include "archivers/zip/unzip.h"
 #include <libxml/tree.h>
@@ -86,7 +86,7 @@ static bool get_value(xmlNode *node, const char *key, char *value, int max_size)
 
 static void set_default_system(struct uae_prefs *p, const char *system, int rom)
 {
-  default_prefs(p, 0);
+  default_prefs(p, true, 0);
   del_tmpFiles();
   
   if(strcmp(system, "a-500") == 0)
@@ -184,7 +184,7 @@ static void parse_clip(struct uae_prefs *p, xmlNode *node)
       if(attr != NULL)
       {
         top = atoi((const char *)attr) / 2;
-        p->pandora_vertical_offset = top - 41; // VBLANK_ENDLINE_PAL + OFFSET_Y_ADJUST
+        p->pandora_vertical_offset = top - 41 + OFFSET_Y_ADJUST;
         xmlFree(attr);
       }
       attr = xmlGetProp(curr_node, (const xmlChar *) _T("width"));
@@ -349,15 +349,18 @@ static void parse_boot(struct uae_prefs *p, xmlNode *node)
               
               fclose(f);
 
-              if(hardfile_testrdb (target_file))                        
+              if(hardfile_testrdb (target_file)) {
+                ci.physical_geometry = true;                   
                 uci_set_defaults(&ci, true);
-              else
+              } else {
+                ci.physical_geometry = false;
                 uci_set_defaults(&ci, false);
-              
+              }
+                            
               ci.type = UAEDEV_HDF;
               sprintf(ci.devname, "DH%d", add_HDF_DHnum);
               ++add_HDF_DHnum;
-              strcpy(ci.rootdir, target_file);
+              strncpy(ci.rootdir, target_file, MAX_DPATH);
               
               xmlChar *ro = xmlGetProp(curr_node, (const xmlChar *) _T("readonly"));
               if(ro != NULL)
@@ -464,15 +467,18 @@ static void extract_media(struct uae_prefs *p, unzFile uz, xmlNode *node)
                         struct uaedev_config_data *uci;
                       	struct uaedev_config_info ci;
           
-                        if(hardfile_testrdb (target_file))                        
+                        if(hardfile_testrdb (target_file)) {
+                          ci.physical_geometry = true;                   
                           uci_set_defaults(&ci, true);
-                        else
+                        } else {
+                          ci.physical_geometry = false;
                           uci_set_defaults(&ci, false);
+                        }
                         
                         ci.type = UAEDEV_HDF;
                         sprintf(ci.devname, "DH%d", add_HDF_DHnum);
                         ++add_HDF_DHnum;
-                        strcpy(ci.rootdir, target_file);
+                        strncpy(ci.rootdir, target_file, MAX_DPATH);
                         
                         ci.bootpri = 0;
                         

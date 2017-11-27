@@ -9,12 +9,12 @@
 #ifndef UAE_UAE_H
 #define UAE_UAE_H
 
+#include "uae/types.h"
+
 extern void do_start_program (void);
-extern void do_leave_program (void);
 extern void start_program (void);
 extern void leave_program (void);
 extern void real_main (int, TCHAR **);
-extern void virtualdevice_init (void);
 extern void sleep_millis (int ms);
 extern void sleep_millis_main (int ms);
 
@@ -29,6 +29,7 @@ extern void host_shutdown(void);
 extern void uae_restart (int, const TCHAR*);
 extern void reset_all_systems (void);
 extern void target_reset (void);
+extern void target_addtorecent (const TCHAR*, int);
 extern void target_run (void);
 extern void target_quit (void);
 extern void target_restart (void);
@@ -61,4 +62,4 @@ extern void fetch_datapath (TCHAR *out, int size);
 extern void fetch_rompath (TCHAR *out, int size);
 #define uaerand() rand()
 
-#endif //UAE_UAE_H
+#endif /* UAE_UAE_H */

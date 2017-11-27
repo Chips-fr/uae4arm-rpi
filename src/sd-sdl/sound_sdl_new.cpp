@@ -69,6 +69,8 @@ int init_sound (void) { return 0; }
 
 void pause_sound (void) { }
 
+void pause_sound_buffer (void) { }
+
 void resume_sound (void) { }
 
 void update_sound (float) { }
@@ -84,6 +86,12 @@ void uae4all_pause_music(void) { }
 void uae4all_resume_music(void) { }
 
 void restart_sound_buffer(void) { }
+
+void finish_cdaudio_buffer (void) { }
+
+bool cdaudio_catchup(void) { }
+
+void sound_volume (int dir) { }
 
 #else 
 

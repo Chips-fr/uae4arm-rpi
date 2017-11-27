@@ -195,6 +195,8 @@ static void ExitCreateFilesysHardfile(void)
 
 static void CreateFilesysHardfileLoop(void)
 {
+  FocusBugWorkaround(wndCreateFilesysHardfile);  
+
   while(!dialogFinished)
   {
     SDL_Event event;
@@ -302,8 +304,8 @@ bool CreateFilesysHardfile(void)
   	struct uaedev_config_info ci;
 
     uci_set_defaults(&ci, false);
-    strcpy(ci.devname, (char *) txtDevice->getText().c_str());
-    strcpy(ci.rootdir, (char *) txtPath->getText().c_str());
+    strncpy(ci.devname, (char *) txtDevice->getText().c_str(), MAX_DPATH);
+    strncpy(ci.rootdir, (char *) txtPath->getText().c_str(), MAX_DPATH);
     ci.type = UAEDEV_HDF;
     ci.surfaces = (size / 1024) + 1;
     ci.bootpri = bp;

@@ -79,18 +79,18 @@ static DirListModel dirList(".");
 static void checkfoldername (char *current)
 {
 	char *ptr;
-	char actualpath [PATH_MAX];
+	char actualpath [MAX_PATH];
 	DIR *dir;
 	
 	if (dir = opendir(current))
 	{ 
 	  dirList = current;
 	  ptr = realpath(current, actualpath);
-	  strcpy(workingDir, ptr);
+	  strncpy(workingDir, ptr, MAX_PATH);
 	  closedir(dir);
 	}
   else
-    strcpy(workingDir, start_path_data);
+    strncpy(workingDir, start_path_data, MAX_PATH);
   txtCurrent->setText(workingDir);
 }
 
@@ -101,12 +101,12 @@ class ListBoxActionListener : public gcn::ActionListener
     void action(const gcn::ActionEvent& actionEvent)
     {
       int selected_item;
-      char foldername[256] = "";
+      char foldername[MAX_PATH] = "";
 
       selected_item = lstFolders->getSelected();
-      strcpy(foldername, workingDir);
-      strcat(foldername, "/");
-      strcat(foldername, dirList.getElementAt(selected_item).c_str());
+      strncpy(foldername, workingDir, MAX_PATH);
+      strncat(foldername, "/", MAX_PATH);
+      strncat(foldername, dirList.getElementAt(selected_item).c_str(), MAX_PATH);
       checkfoldername(foldername);
     }
 };
@@ -189,6 +189,8 @@ static void ExitSelectFolder(void)
 
 static void SelectFolderLoop(void)
 {
+  FocusBugWorkaround(wndSelectFolder);  
+
   while(!dialogFinished)
   {
     SDL_Event event;
@@ -268,7 +270,7 @@ bool SelectFolder(const char *title, char *value)
   {
     strncpy(value, workingDir, MAX_PATH);
     if(value[strlen(value) - 1] != '/')
-      strcat(value, "/");
+      strncat(value, "/", MAX_PATH);
   }
   return dialogResult;
 }

@@ -117,8 +117,7 @@ int hdf_open_target (struct hardfiledata *hfd, const TCHAR *pname)
 		write_log (_T("HDF '%s' failed to open.\n"), name);
 	}
 	if (hfd->handle_valid || hfd->drive_empty) {
-		write_log (_T("HDF '%s' %p opened, size=%dK mode=%d empty=%d\n"),
-			name, hfd, hfd->physsize / 1024, hfd->handle_valid, hfd->drive_empty);
+		write_log (_T("HDF '%s' opened, size=%lld mode=%d empty=%d\n"), name, hfd->physsize / 1024, hfd->handle_valid, hfd->drive_empty);
 		return 1;
 	}
 

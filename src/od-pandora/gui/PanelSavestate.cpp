@@ -11,7 +11,6 @@
 #include "sysdeps.h"
 #include "config.h"
 #include "options.h"
-#include "autoconf.h"
 #include "memory.h"
 #include "newcpu.h"
 #include "custom.h"
@@ -19,6 +18,7 @@
 #include "drawing.h"
 #include "uae.h"
 #include "gui.h"
+#include "autoconf.h"
 #include "savestate.h"
 #include "gui_handling.h"
 

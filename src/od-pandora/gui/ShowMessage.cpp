@@ -97,6 +97,8 @@ static void ExitShowMessage(void)
 
 static void ShowMessageLoop(void)
 {
+  FocusBugWorkaround(wndShowMessage);  
+
   while(!dialogFinished)
   {
     SDL_Event event;

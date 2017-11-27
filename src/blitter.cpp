@@ -15,13 +15,13 @@
 #include "options.h"
 #include "uae.h"
 #include "memory.h"
-#include "newcpu.h"
 #include "custom.h"
-#include "events.h"
+#include "newcpu.h"
 #include "savestate.h"
 #include "blitter.h"
 #include "blit.h"
 
+static int immediate_blits;
 static int blt_statefile_type;
 
 uae_u16 bltcon0, bltcon1;
@@ -52,6 +52,8 @@ static int blit_nod;
 static const int *blit_diag;
 static int blit_faulty;
 static int ddat1use;
+
+int blit_interrupt;
 
 /*
 Blitter Idle Cycle:
@@ -243,11 +245,28 @@ STATIC_INLINE int channel_state (int cycles)
 	return blit_diag[1 + blit_diag[0] + cycles];
 }
 
+// blitter interrupt is set (and busy bit cleared) when
+// last "main" cycle has been finished, any non-linedraw
+// D-channel blit still needs 2 more cycles before final
+// D is written (idle cycle, final D write)
+//
+// line draw interrupt triggers when last D is written
+// (or cycle where last D write would have been if
+// ONEDOT was active)
+
+static void blitter_interrupt (void)
+{
+	if (blit_interrupt)
+		return;
+	blit_interrupt = 1;
+	send_interrupt (6);
+}
+
 static void blitter_done (void)
 {
 	ddat1use = 0;
 	bltstate = BLT_done;
-	send_interrupt (6);
+	blitter_interrupt ();
 	blitter_done_notify ();
   event_remevent(ev_blitter);
 	unset_special (SPCFLAG_BLTNASTY);
@@ -577,6 +596,10 @@ static void actually_do_blit(void)
 
 static void blitter_doit (void)
 {
+	if (blt_info.vblitsize == 0 || (blitline && blt_info.hblitsize != 2)) {
+		blitter_done ();
+		return;
+	}
 	actually_do_blit ();
 	blitter_done ();
 }
@@ -588,14 +611,14 @@ void blitter_handler(void)
 	if (!dmaen (DMA_BLITTER)) {
 	  event_newevent (ev_blitter, 10);
 		blitter_stuck++;
-		if (blitter_stuck < 20000 || !currprefs.immediate_blits)
+		if (blitter_stuck < 20000 || !immediate_blits)
 			return; /* gotta come back later. */
 		/* "free" blitter in immediate mode if it has been "stuck" ~3 frames
 		* fixes some JIT game incompatibilities
 		*/
 	}
 	blitter_stuck = 0;
-	if (blit_slowdown > 0 && !currprefs.immediate_blits) {
+	if (blit_slowdown > 0 && !immediate_blits) {
 	  event_newevent (ev_blitter, blit_slowdown);
 		blit_slowdown = -1;
 		return;
@@ -656,6 +679,7 @@ static void blit_bltset (int con)
 	if (!savestate_state && bltstate != BLT_done && bltstate != BLT_init && blitline && blitline_started) {
 		blitline = 0;
 		bltstate = BLT_done;
+		blit_interrupt = 1;
 		write_log (_T("BLITTER: register modification during linedraw! %08x\n"), M68K_GETPC);
 	}
 
@@ -727,6 +751,7 @@ static void blitter_start_init (void)
 
 	blit_bltset (1 | 2);
 	ddat1use = 0;
+	blit_interrupt = 0;
 
 	if (blitline) {
     blinea_shift = bltcon0 >> 12;
@@ -751,6 +776,7 @@ void do_blitter ()
 
 	bltstate = BLT_done;
 
+	immediate_blits = currprefs.immediate_blits;
 	blit_firstline_cycles = blit_first_cycle = get_cycles ();
 	blit_last_cycle = 0;
 	blit_cyclecounter = 0;
@@ -788,9 +814,8 @@ void do_blitter ()
 
 	bltstate = BLT_work;
 
-	if (currprefs.immediate_blits) {
-		if (dmaen (DMA_BLITTER))
-	    blitter_doit ();
+	if (immediate_blits) {
+    blitter_doit ();
     return;
 	}
 
@@ -811,7 +836,7 @@ void blitter_check_start (void)
 	blitter_start_init ();
 	bltstate = BLT_work;
 
-	if (currprefs.immediate_blits) {
+	if (immediate_blits) {
 		blitter_doit ();
 	} else {
     event_newevent(ev_blitter, blit_cyclecounter);
@@ -834,7 +859,7 @@ void maybe_blit2 (int hack)
 		}
 	}
 
-  if (hack == 1 && get_cycles() < blit_firstline_cycles)
+  if (hack == 1 && (int)get_cycles() - (int)blit_firstline_cycles < 0)
   	return;
 
   blitter_handler ();
@@ -885,6 +910,17 @@ void blitter_slowdown (int ddfstrt, int ddfstop, int totalcycles, int freecycles
 }
 
 #ifdef SAVESTATE
+
+void restore_blitter_finish (void)
+{
+	if (blt_statefile_type == 0) {
+		blit_interrupt = 1;
+		if (bltstate == BLT_init) {
+			write_log (_T("blitter was started but DMA was inactive during save\n"));
+			//do_blitter (0);
+		}
+	}
+}
 
 uae_u8 *restore_blitter (uae_u8 *src)
 {
@@ -954,6 +990,7 @@ uae_u8 *restore_blitter_new (uae_u8 *src)
 	blinea_shift = restore_u8 ();
 	blitonedot = restore_u8 ();
 	blitsing = restore_u8 ();
+	blit_interrupt = restore_u8 ();
 	blt_info.blitzero = restore_u8 ();
 
 	blit_faulty = restore_u8 ();
@@ -1019,6 +1056,7 @@ uae_u8 *save_blitter_new (int *len, uae_u8 *dstptr)
 	save_u8 (blinea_shift);
 	save_u8 (blitonedot);
 	save_u8 (blitsing);
+	save_u8 (blit_interrupt);
 	save_u8 (blt_info.blitzero);
 	
 	save_u8 (blit_faulty);

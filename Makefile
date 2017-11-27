@@ -52,7 +52,7 @@ PANDORA=1
 SDL_CFLAGS = `sdl-config --cflags`
 
 DEFS +=  `xml2-config --cflags`
-DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DPANDORA
+DEFS += -DCPU_arm -DARMV6_ASSEMBLY -DPANDORA
 DEFS += -DWITH_INGAME_WARNING
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
 DEFS += -DUSE_SDL
@@ -67,10 +67,10 @@ endif
 
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 
-MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
+MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/archivers -Isrc/od-pandora -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
 MORE_CFLAGS += -fexceptions -fpermissive
 
-LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl
+LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl -lmpeg2convert -lmpeg2
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
@@ -100,6 +100,7 @@ endif
 
 OBJS =	\
 	src/akiko.o \
+	src/ar.o \
 	src/aros.rom.o \
 	src/audio.o \
 	src/autoconf.o \
@@ -110,24 +111,33 @@ OBJS =	\
 	src/blkdev_cdimage.o \
 	src/bsdsocket.o \
 	src/calc.o \
+	src/cd32_fmv.o \
+	src/cd32_fmv_genlock.o \
 	src/cdrom.o \
 	src/cfgfile.o \
 	src/cia.o \
 	src/crc32.o \
 	src/custom.o \
+	src/def_icons.o \
+	src/devices.o \
 	src/disk.o \
 	src/diskutil.o \
 	src/drawing.o \
 	src/events.o \
 	src/expansion.o \
+	src/fdi2raw.o \
 	src/filesys.o \
+	src/flashrom.o \
 	src/fpp.o \
 	src/fsdb.o \
 	src/fsdb_unix.o \
 	src/fsusage.o \
+	src/gayle.o \
 	src/gfxboard.o \
 	src/gfxutil.o \
 	src/hardfile.o \
+	src/hrtmon.rom.o \
+	src/ide.o \
 	src/inputdevice.o \
 	src/keybuf.o \
 	src/main.o \
@@ -135,25 +145,31 @@ OBJS =	\
 	src/native2amiga.o \
 	src/rommgr.o \
 	src/savestate.o \
+	src/scsi.o \
 	src/statusline.o \
 	src/traps.o \
 	src/uaelib.o \
 	src/uaeresource.o \
 	src/zfile.o \
 	src/zfile_archive.o \
-	src/archivers/7z/Archive/7z/7zAlloc.o \
-	src/archivers/7z/Archive/7z/7zDecode.o \
-	src/archivers/7z/Archive/7z/7zExtract.o \
-	src/archivers/7z/Archive/7z/7zHeader.o \
-	src/archivers/7z/Archive/7z/7zIn.o \
-	src/archivers/7z/Archive/7z/7zItem.o \
+	src/archivers/7z/7zAlloc.o \
 	src/archivers/7z/7zBuf.o \
 	src/archivers/7z/7zCrc.o \
+	src/archivers/7z/7zCrcOpt.o \
+	src/archivers/7z/7zDec.o \
+	src/archivers/7z/7zIn.o \
 	src/archivers/7z/7zStream.o \
 	src/archivers/7z/Bcj2.o \
 	src/archivers/7z/Bra.o \
 	src/archivers/7z/Bra86.o \
 	src/archivers/7z/LzmaDec.o \
+	src/archivers/7z/Lzma2Dec.o \
+	src/archivers/7z/BraIA64.o \
+	src/archivers/7z/Delta.o \
+	src/archivers/7z/Sha256.o \
+	src/archivers/7z/Xz.o \
+	src/archivers/7z/XzCrc64.o \
+	src/archivers/7z/XzDec.o \
 	src/archivers/dms/crc_csum.o \
 	src/archivers/dms/getbits.o \
 	src/archivers/dms/maketbl.o \
@@ -177,6 +193,7 @@ OBJS =	\
 	src/archivers/lha/uae_lha.o \
 	src/archivers/lha/util.o \
 	src/archivers/lzx/unlzx.o \
+	src/archivers/mp2/kjmp2.o \
 	src/archivers/wrp/warp.o \
 	src/archivers/zip/unzip.o \
 	src/md-pandora/support.o \
@@ -195,7 +212,6 @@ OBJS =	\
 	src/od-pandora/pandora_rp9.o \
 	src/od-pandora/pandora_mem.o \
 	src/od-pandora/sigsegv_handler.o \
-	src/od-pandora/menu/menu_config.o \
 	src/sd-sdl/sound_sdl_new.o \
 	src/od-pandora/gui/UaeRadioButton.o \
 	src/od-pandora/gui/UaeDropDown.o \
@@ -210,6 +226,7 @@ OBJS =	\
 	src/od-pandora/gui/EditFilesysVirtual.o \
 	src/od-pandora/gui/EditFilesysHardfile.o \
 	src/od-pandora/gui/PanelPaths.o \
+	src/od-pandora/gui/PanelQuickstart.o \
 	src/od-pandora/gui/PanelConfig.o \
 	src/od-pandora/gui/PanelCPU.o \
 	src/od-pandora/gui/PanelChipset.o \
@@ -240,7 +257,12 @@ OBJS += src/od-gles/gl_platform.o
 OBJS += src/od-gles/gles_gfx.o
 MORE_CFLAGS += -I/opt/vc/include/
 MORE_CFLAGS += -DHAVE_GLES
-LDFLAGS +=  -ldl -lEGL -lGLESv1_CM
+LDFLAGS +=  -ldl
+ifneq (,$(wildcard /opt/vc/lib/libbrcmGLESv2.so))
+LDFLAGS += -lbrcmEGL -lbrcmGLESv2
+else
+LDFLAGS += -lEGL -lGLESv2
+endif
 endif
 
 
@@ -267,6 +289,8 @@ OBJS += src/cpustbl.o
 OBJS += src/cpuemu_0.o
 OBJS += src/cpuemu_4.o
 OBJS += src/cpuemu_11.o
+OBJS += src/cpuemu_40.o
+OBJS += src/cpuemu_44.o
 OBJS += src/jit/compemu.o
 OBJS += src/jit/compstbl.o
 OBJS += src/jit/compemu_fpp.o

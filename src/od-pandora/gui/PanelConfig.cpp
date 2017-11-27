@@ -47,27 +47,6 @@ bool LoadConfigByName(const char *name)
   return false;
 }
 
-void load_buildin_config(int id)
-{
-  if(changed_prefs.cdslots[0].inuse)
-    gui_force_rtarea_hdchange();
-  discard_prefs(&changed_prefs, 0);
-  default_prefs(&changed_prefs, 0);
-  switch(id) {
-    case BUILDINID_A500:
-      bip_a500(&changed_prefs, -1);
-      break;
-    
-    case BUILDINID_A1200:
-      bip_a1200(&changed_prefs, -1);
-      break;
-      
-    case BUILDINID_CD32:
-      bip_cd32(&changed_prefs, -1);
-      break;
-  }
-}
-
 void SetLastActiveConfig(const char *filename)
 {
   extractFileName(filename, last_active_config);
@@ -128,12 +107,7 @@ class ConfigButtonActionListener : public gcn::ActionListener
         // Load selected configuration
         //-----------------------------------------------
         i = lstConfigs->getSelected();
-        if(ConfigFilesList[i]->BuildInID != BUILDINID_NONE) {
-          load_buildin_config(ConfigFilesList[i]->BuildInID);
-          strcpy(changed_prefs.description, ConfigFilesList[i]->Description);
-        } else {
-          target_cfgfile_load(&changed_prefs, ConfigFilesList[i]->FullPath, 0, 0);
-        }
+        target_cfgfile_load(&changed_prefs, ConfigFilesList[i]->FullPath, 0, 0);
         strncpy(last_active_config, ConfigFilesList[i]->Name, MAX_PATH);
         DisableResume();
         RefreshAllPanels();
@@ -167,7 +141,7 @@ class ConfigButtonActionListener : public gcn::ActionListener
         //-----------------------------------------------
         char msg[256];
         i = lstConfigs->getSelected();
-        if(i >= 0 && ConfigFilesList[i]->BuildInID == BUILDINID_NONE && strcmp(ConfigFilesList[i]->Name, OPTIONSFILENAME))
+        if(i >= 0 && strcmp(ConfigFilesList[i]->Name, OPTIONSFILENAME))
         {
           snprintf(msg, 256, "Do you want to delete '%s' ?", ConfigFilesList[i]->Name);
           if(ShowMessage("Delete Configuration", msg, "", "Yes", "No"))
@@ -202,12 +176,7 @@ class ConfigsListActionListener : public gcn::ActionListener
         //-----------------------------------------------
         // Selected same config again -> load and start it
         //-----------------------------------------------
-        if(ConfigFilesList[selected_item]->BuildInID != BUILDINID_NONE) {
-          load_buildin_config(ConfigFilesList[selected_item]->BuildInID);
-          strcpy(changed_prefs.description, ConfigFilesList[selected_item]->Description);
-        } else {
-          target_cfgfile_load(&changed_prefs, ConfigFilesList[selected_item]->FullPath, 0, 0);
-        }
+        target_cfgfile_load(&changed_prefs, ConfigFilesList[selected_item]->FullPath, 0, 0);
         strncpy(last_active_config, ConfigFilesList[selected_item]->Name, MAX_PATH);
         DisableResume();
         RefreshAllPanels();

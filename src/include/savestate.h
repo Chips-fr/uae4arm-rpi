@@ -6,6 +6,10 @@
   * (c) 1999-2001 Toni Wilen
   */
 
+#ifndef UAE_SAVESTATE_H
+#define UAE_SAVESTATE_H
+
+#include "uae/types.h"
 
 /* functions to save byte,word or long word
  * independent of CPU's endianess */
@@ -86,6 +90,7 @@ extern uae_u8 *restore_blitter (uae_u8 *src);
 extern uae_u8 *save_blitter (int *len, uae_u8 *);
 extern uae_u8 *restore_blitter_new (uae_u8 *src);
 extern uae_u8 *save_blitter_new (int *len, uae_u8 *);
+extern void restore_blitter_finish (void);
 
 extern uae_u8 *restore_audio (int, uae_u8 *);
 extern uae_u8 *save_audio (int, int *, uae_u8 *);
@@ -116,6 +121,11 @@ extern uae_u8 *restore_filesys_common (uae_u8 *src);
 extern uae_u8 *save_filesys_common (int *len);
 extern int save_filesys_cando(void);
 
+extern uae_u8 *restore_gayle(uae_u8 *src);
+extern uae_u8 *save_gayle (int *len, uae_u8*);
+extern uae_u8 *restore_gayle_ide (uae_u8 *src);
+extern uae_u8 *save_gayle_ide (int num, int *len, uae_u8*);
+
 extern uae_u8 *save_cd (int num, int *len);
 extern uae_u8 *restore_cd (int, uae_u8 *src);
 extern void restore_cd_finish (void);
@@ -125,21 +135,31 @@ extern uae_u8 *save_input (int *len, uae_u8 *dstptr);
 
 extern void restore_cram (int, size_t);
 extern void restore_bram (int, size_t);
-extern void restore_fram (int, size_t);
+extern void restore_fram (int, size_t, int);
 extern void restore_zram (int, size_t, int);
 extern void restore_bootrom (int, size_t);
 extern void restore_pram (int, size_t);
+extern void restore_a3000lram (int, size_t);
+extern void restore_a3000hram (int, size_t);
+
 extern void restore_ram (size_t, uae_u8*);
 
 extern uae_u8 *save_cram (int *);
 extern uae_u8 *save_bram (int *);
-extern uae_u8 *save_fram (int *);
+extern uae_u8 *save_fram (int *, int);
 extern uae_u8 *save_zram (int *, int);
 extern uae_u8 *save_bootrom (int *);
 extern uae_u8 *save_pram (int *);
+extern uae_u8 *save_a3000lram (int *);
+extern uae_u8 *save_a3000hram (int *);
 
 extern uae_u8 *restore_rom (uae_u8 *);
 extern uae_u8 *save_rom (int, int *, uae_u8 *);
+
+extern uae_u8 *restore_action_replay (uae_u8 *);
+extern uae_u8 *save_action_replay (int *, uae_u8 *);
+extern uae_u8 *restore_hrtmon (uae_u8 *);
+extern uae_u8 *save_hrtmon (int *, uae_u8 *);
 
 extern void savestate_initsave (const TCHAR *filename, int docompress, int nodialogs, bool save);
 extern int save_state (const TCHAR *filename, const TCHAR *description);
@@ -166,3 +186,5 @@ STATIC_INLINE bool isrestore (void)
 {
 	return savestate_state == STATE_RESTORE;
 }
+
+#endif /* UAE_SAVESTATE_H */

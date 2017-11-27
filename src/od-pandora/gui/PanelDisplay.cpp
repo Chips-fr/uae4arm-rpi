@@ -67,9 +67,9 @@ class AmigaScreenActionListener : public gcn::ActionListener
       }
       else if (actionEvent.getSource() == sldVertPos) 
       {
-        if(changed_prefs.pandora_vertical_offset != (int)(sldVertPos->getValue()))
+        if(changed_prefs.pandora_vertical_offset != (int)(sldVertPos->getValue()) + OFFSET_Y_ADJUST)
         {
-      		changed_prefs.pandora_vertical_offset = (int)(sldVertPos->getValue());
+      		changed_prefs.pandora_vertical_offset = (int)(sldVertPos->getValue()) + OFFSET_Y_ADJUST;
       		RefreshPanelDisplay();
     	  }
       }
@@ -265,8 +265,8 @@ void RefreshPanelDisplay(void)
   chkAspect->setSelected(changed_prefs.gfx_correct_aspect);
 #endif
 
-  sldVertPos->setValue(changed_prefs.pandora_vertical_offset);
-  snprintf(tmp, 32, "%d", changed_prefs.pandora_vertical_offset);
+  sldVertPos->setValue(changed_prefs.pandora_vertical_offset - OFFSET_Y_ADJUST);
+  snprintf(tmp, 32, "%d", changed_prefs.pandora_vertical_offset - OFFSET_Y_ADJUST);
   lblVertPosInfo->setCaption(tmp);
   
   chkFrameskip->setSelected(changed_prefs.gfx_framerate);

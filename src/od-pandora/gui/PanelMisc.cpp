@@ -28,6 +28,7 @@ static gcn::Label* lblPandoraSpeedInfo;
 static gcn::Slider* sldPandoraSpeed;
 #endif
 static gcn::UaeCheckBox* chkBSDSocket;
+static gcn::UaeCheckBox* chkMasterWP;
 
 #ifdef RASPBERRY
 class StringListModel : public gcn::ListModel
@@ -82,8 +83,12 @@ class MiscActionListener : public gcn::ActionListener
 
       else if (actionEvent.getSource() == chkBSDSocket)
         changed_prefs.socket_emu = chkBSDSocket->isSelected();
-
-
+        
+      else if (actionEvent.getSource() == chkMasterWP) {
+        changed_prefs.floppy_read_only = chkMasterWP->isSelected();
+        RefreshPanelQuickstart();
+        RefreshPanelFloppy();
+      }
 #ifdef PANDORA_SPECIFIC
       else if (actionEvent.getSource() == sldPandoraSpeed)
       {
@@ -160,6 +165,10 @@ void InitPanelMisc(const struct _ConfigCategory& category)
   chkBSDSocket->setId("BSDSocket");
   chkBSDSocket->addActionListener(miscActionListener);
 
+	chkMasterWP = new gcn::UaeCheckBox("Master floppy write protection");
+  chkMasterWP->setId("MasterWP");
+  chkMasterWP->addActionListener(miscActionListener);
+
   int posY = DISTANCE_BORDER;
   category.panel->add(chkStatusLine, DISTANCE_BORDER, posY);
   posY += chkStatusLine->getHeight() + DISTANCE_NEXT_Y;
@@ -175,6 +184,8 @@ void InitPanelMisc(const struct _ConfigCategory& category)
 #endif
   category.panel->add(chkBSDSocket, DISTANCE_BORDER, posY);
   posY += chkBSDSocket->getHeight() + DISTANCE_NEXT_Y;
+  category.panel->add(chkMasterWP, DISTANCE_BORDER, posY);
+  posY += chkMasterWP->getHeight() + DISTANCE_NEXT_Y;
 
 #ifdef RASPBERRY
   lblNumLock = new gcn::Label("NumLock LED");
@@ -206,12 +217,12 @@ void InitPanelMisc(const struct _ConfigCategory& category)
 
   category.panel->add(lblNumLock, DISTANCE_BORDER, posY);
 //  category.panel->add(lblCapLock, lblNumLock->getX() + lblNumLock->getWidth() + DISTANCE_NEXT_X, posY);
-  category.panel->add(lblScrLock, lblCapLock->getX() + lblCapLock->getWidth() + DISTANCE_NEXT_X, posY);
+  category.panel->add(lblScrLock, lblCapLock->getX() + lblCapLock->getWidth() + DISTANCE_NEXT_X * 2, posY);
   posY += lblNumLock->getHeight() + 4;
 
   category.panel->add(cboKBDLed_num, DISTANCE_BORDER, posY);
 //  category.panel->add(cboKBDLed_cap, cboKBDLed_num->getX() + cboKBDLed_num->getWidth() + DISTANCE_NEXT_X, posY);
-  category.panel->add(cboKBDLed_scr, cboKBDLed_cap->getX() + cboKBDLed_cap->getWidth() + DISTANCE_NEXT_X, posY);
+  category.panel->add(cboKBDLed_scr, cboKBDLed_cap->getX() + cboKBDLed_cap->getWidth() + DISTANCE_NEXT_X * 2, posY);
 
   posY += cboKBDLed_scr->getHeight() + DISTANCE_NEXT_Y;
 #endif  
@@ -240,6 +251,7 @@ void ExitPanelMisc(void)
   delete cboKBDLed_cap;
   delete cboKBDLed_scr;
 #endif
+  delete chkMasterWP;
   delete miscActionListener;
 }
 
@@ -258,6 +270,7 @@ void RefreshPanelMisc(void)
 #endif
   
   chkBSDSocket->setSelected(changed_prefs.socket_emu);
+  chkMasterWP->setSelected(changed_prefs.floppy_read_only);
 #ifdef RASPBERRY
 	cboKBDLed_num->setSelected(changed_prefs.kbd_led_num);
 	cboKBDLed_scr->setSelected(changed_prefs.kbd_led_scr);

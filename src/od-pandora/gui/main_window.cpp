@@ -15,11 +15,12 @@
 #include "autoconf.h"
 
 bool gui_running = false;
-static int last_active_panel = 1;
+static int last_active_panel = 2;
 
 
 ConfigCategory categories[] = {
   { "Paths",            "data/paths.ico",     NULL, NULL, InitPanelPaths,     ExitPanelPaths,   RefreshPanelPaths },
+  { "Quickstart",       "data/quickstart.ico",  NULL, NULL, InitPanelQuickstart,  ExitPanelQuickstart,  RefreshPanelQuickstart },
   { "Configurations",   "data/file.ico",      NULL, NULL, InitPanelConfig,    ExitPanelConfig,  RefreshPanelConfig },
   { "CPU and FPU",      "data/cpu.ico",       NULL, NULL, InitPanelCPU,       ExitPanelCPU,     RefreshPanelCPU },
   { "Chipset",          "data/cpu.ico",       NULL, NULL, InitPanelChipset,   ExitPanelChipset, RefreshPanelChipset },
@@ -34,7 +35,7 @@ ConfigCategory categories[] = {
   { "Savestates",       "data/savestate.png", NULL, NULL, InitPanelSavestate, ExitPanelSavestate, RefreshPanelSavestate },
   { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
-enum { PANEL_PATHS, PANEL_CONFIGURATIONS, PANEL_CPU, PANEL_CHIPSET, PANEL_ROM, PANEL_RAM,
+enum { PANEL_PATHS, PANEL_QUICKSTART, PANEL_CONFIGURATIONS, PANEL_CPU, PANEL_CHIPSET, PANEL_ROM, PANEL_RAM,
        PANEL_FLOPPY, PANEL_HD, PANEL_DISPLAY, PANEL_SOUND, PANEL_INPUT, PANEL_MISC, PANEL_SAVESTATES, 
        NUM_PANELS };
 
@@ -88,7 +89,7 @@ static int gui_create_rtarea_flag(struct uae_prefs *p)
   if (p->input_tablet > 0)
     flag |= 8;
 
-  if(p->rtgmem_size)
+  if(p->rtgboards[0].rtgmem_size)
     flag |= 16;
 
   if (p->chipmem_size > 2 * 1024 * 1024)
@@ -109,6 +110,21 @@ void RegisterRefreshFunc(void (*func)(void))
   refreshFuncAfterDraw = func;
 }
 
+void FocusBugWorkaround(gcn::Window *wnd)
+{
+  // When modal dialog opens via mouse, the dialog will not
+  // has the focus unless one mouse click. We simulate the click...
+  SDL_Event event;
+  event.type = SDL_MOUSEBUTTONDOWN;
+  event.button.button = SDL_BUTTON_LEFT;
+  event.button.state = SDL_PRESSED;
+  event.button.x = wnd->getX() + 2;
+  event.button.y = wnd->getY() + 2;
+  gui_input->pushInput(event);
+  event.type = SDL_MOUSEBUTTONUP;
+  gui_input->pushInput(event);
+}
+
 
 namespace sdl
 {
@@ -126,7 +142,7 @@ namespace sdl
     //-------------------------------------------------
     // Create new screen for GUI
     //-------------------------------------------------
-    #if defined (RASPBERRY)
+    #if defined(RASPBERRY) && !defined(DEBUG)
     const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
     printf("Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
     gui_screen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
@@ -366,11 +382,11 @@ namespace widgets
           char tmp[MAX_PATH];
           fetch_configurationpath (tmp, sizeof (tmp));
           if(strlen(last_loaded_config) > 0)
-            strcat (tmp, last_loaded_config);
+            strncat (tmp, last_loaded_config, MAX_PATH);
           else
           {
-            strcat (tmp, OPTIONSFILENAME);
-            strcat (tmp, ".uae");
+            strncat (tmp, OPTIONSFILENAME, MAX_PATH);
+            strncat (tmp, ".uae", MAX_PATH);
           }
     			uae_restart(0, tmp);
     			gui_running = false;
@@ -552,6 +568,8 @@ namespace widgets
   	//--------------------------------------------------
   	// Activate last active panel
   	//--------------------------------------------------
+  	if(!emulating && quickstart_start)
+  	  last_active_panel = 1;
   	categories[last_active_panel].selector->requestFocus();
   }
 
@@ -648,8 +666,12 @@ void run_gui(void)
     // Prepare everything for Reset of Amiga
   	//--------------------------------------------------
 		currprefs.nr_floppies = changed_prefs.nr_floppies;
+		screen_is_picasso = 0;
 		
 		if(gui_rtarea_flags_onenter != gui_create_rtarea_flag(&changed_prefs))
 	    quit_program = -UAE_RESET_HARD; // Hardreset required...
+	    
+	  if(!A3000MemAvailable() && (changed_prefs.mbresmem_low_size || changed_prefs.mbresmem_high_size))
+	    HandleA3000Mem(changed_prefs.mbresmem_low_size, changed_prefs.mbresmem_high_size);
   }
 }

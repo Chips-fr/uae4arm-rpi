@@ -17,7 +17,6 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "config.h"
-#include "autoconf.h"
 #include "uae.h"
 #include "options.h"
 #include "td-sdl/thread.h"
@@ -27,6 +26,7 @@
 #include "custom.h"
 #include "xwin.h"
 #include "drawing.h"
+#include "autoconf.h"
 #include "inputdevice.h"
 #include "keybuf.h"
 #include "keyboard.h"
@@ -40,59 +40,18 @@
 #include "uaeresource.h"
 #include "rommgr.h"
 #include "akiko.h"
+#include "zfile.h"
+#include "gfxboard.h"
 #include <SDL.h>
 #include "pandora_rp9.h"
 
-/*
-#define DBG_MAX_THREADS 128
-uae_thread_id running_threads[DBG_MAX_THREADS];
-char running_threads_name[DBG_MAX_THREADS][64];
+#ifdef WITH_LOGGING
+extern FILE *debugfile;
+#endif
 
-void dbg_add_thread(uae_thread_id id, const char *name)
-{
-  int i;
-  for(i=0; i<DBG_MAX_THREADS; ++i)
-  {
-    if(running_threads[i] == 0)
-    {
-      running_threads[i] = id;
-      if(name != NULL)
-        strncpy(running_threads_name[i], name, 64);
-      else
-        strncpy(running_threads_name[i], "<empty>", 64);
-      write_log("dbg_add_thread: id = %d, name = %s, pos = %d\n", id, running_threads_name[i], i);
-      return;
-    }
-  }
-  write_log("dbg_add_thread: no more free entries\n");
-}
-
-void dbg_rem_thread(uae_thread_id id)
-{
-  int i;
-  for(i=0; i<DBG_MAX_THREADS; ++i)
-  {
-    if(running_threads[i] == id)
-    {
-      write_log("dbg_rem_thread: id = %d, name = %s, pos = %d\n", id, running_threads_name[i], i);
-      running_threads[i] = 0;
-      return;
-    }
-  }
-}
-
-void dbg_list_threads(void)
-{
-  int i;
-  for(i=0; i<DBG_MAX_THREADS; ++i)
-  {
-    if(running_threads[i] != 0)
-    {
-      write_log("dbg_list_threads: id = %d, name = %s, pos = %d\n", running_threads[i], running_threads_name[i], i);
-    }
-  }
-}
-*/
+int quickstart_start = 1;
+int quickstart_model = 0;
+int quickstart_conf = 0;
 
 extern void signal_segv(int signum, siginfo_t* info, void*ptr);
 extern void gui_force_rtarea_hdchange(void);
@@ -100,7 +59,6 @@ extern void gui_force_rtarea_hdchange(void);
 static int delayed_mousebutton = 0;
 static int doStylusRightClick;
 
-extern int loadconfig_old(struct uae_prefs *p, const char *orgpath);
 extern void SetLastActiveConfig(const char *filename);
 
 /* Keyboard */
@@ -155,10 +113,14 @@ void reinit_amiga(void)
 //  write_log("Threads in reinit_amiga():\n");
 //  dbg_list_threads();
 
+  init_mem_banks ();
+
   currprefs = changed_prefs;
   /* force sound settings change */
   currprefs.produce_sound = 0;
 
+  HandleA3000Mem(currprefs.mbresmem_low_size, currprefs.mbresmem_high_size);
+  
   framecnt = 1;
 #ifdef AUTOCONFIG
   rtarea_setup ();
@@ -289,21 +251,66 @@ void target_quit (void)
 }
 
 
+static void fix_apmodes(struct uae_prefs *p)
+{
+  if(p->ntscmode)
+  {
+    p->gfx_apmode[0].gfx_refreshrate = 60;
+    p->gfx_apmode[1].gfx_refreshrate = 60;
+  }  
+  else
+  {
+    p->gfx_apmode[0].gfx_refreshrate = 50;
+    p->gfx_apmode[1].gfx_refreshrate = 50;
+  }  
+
+  p->gfx_apmode[0].gfx_vsync = 2;
+  p->gfx_apmode[1].gfx_vsync = 2;
+  p->gfx_apmode[0].gfx_vflip = -1;
+  p->gfx_apmode[1].gfx_vflip = -1;
+  
+	fixup_prefs_dimensions (p);
+}
+
+
 void target_fixup_options (struct uae_prefs *p)
 {
-	p->rtgmem_type = 1;
-  if (p->z3fastmem_start != z3_start_adr)
-  	p->z3fastmem_start = z3_start_adr;
+	p->rtgboards[0].rtgmem_type = GFXBOARD_UAE_Z3;
 
+	if(z3base_adr == Z3BASE_REAL) {
+  	// map Z3 memory at real address (0x40000000)
+  	p->z3_mapping_mode = Z3MAPPING_REAL;
+    p->z3autoconfig_start = z3base_adr;
+	} else {
+	  // map Z3 memory at UAE address (0x10000000)
+  	p->z3_mapping_mode = Z3MAPPING_UAE;
+    p->z3autoconfig_start = z3base_adr;
+	}
+
+  if(p->cs_cd32cd && p->cs_cd32nvram && (p->cs_compatible == CP_GENERIC || p->cs_compatible == 0)) {
+    // Old config without cs_compatible, but other cd32-flags
+    p->cs_compatible == CP_CD32;
+  }
+
+  if(p->cs_cd32cd && p->cartfile[0]) {
+    p->cs_cd32fmv = 1;
+  }
+  
 	p->picasso96_modeflags = RGBFF_CLUT | RGBFF_R5G6B5 | RGBFF_R8G8B8A8;
   p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
+  
+  if(p->cachesize > 0)
+    p->fpu_no_unimplemented = 0;
+  else
+    p->fpu_no_unimplemented = 1;
+  
+  fix_apmodes(p);
 }
 
 
 void target_default_options (struct uae_prefs *p, int type)
 {
-  p->pandora_horizontal_offset = 0;
-  p->pandora_vertical_offset = 0;
+  p->pandora_vertical_offset = OFFSET_Y_ADJUST;
   p->pandora_cpu_speed = defaultCpuSpeed;
   p->pandora_hide_idle_led = 0;
   
@@ -313,6 +320,24 @@ void target_default_options (struct uae_prefs *p, int type)
 	p->picasso96_modeflags = RGBFF_CLUT | RGBFF_R5G6B5 | RGBFF_R8G8B8A8;
 	
 	memset(customControlMap, 0, sizeof(customControlMap));
+	
+	p->cr[CHIPSET_REFRESH_PAL].locked = true;
+	p->cr[CHIPSET_REFRESH_PAL].vsync = 1;
+
+	p->cr[CHIPSET_REFRESH_NTSC].locked = true;
+	p->cr[CHIPSET_REFRESH_NTSC].vsync = 1;
+	
+	p->cr[0].index = 0;
+	p->cr[0].horiz = -1;
+	p->cr[0].vert = -1;
+	p->cr[0].lace = -1;
+	p->cr[0].vsync = 1;
+	p->cr[0].framelength = -1;
+	p->cr[0].rate = 50.0;
+	p->cr[0].ntsc = 0;
+	p->cr[0].locked = true;
+	p->cr[0].rtg = true;
+	_tcscpy (p->cr[0].label, _T("RTG"));
 }
 
 
@@ -332,8 +357,7 @@ void target_save_options (struct zfile *f, struct uae_prefs *p)
   cfgfile_write (f, "pandora.custom_y", "%d", customControlMap[VK_Y]);
   cfgfile_write (f, "pandora.custom_l", "%d", customControlMap[VK_L]);
   cfgfile_write (f, "pandora.custom_r", "%d", customControlMap[VK_R]);
-  cfgfile_write (f, "pandora.move_x", "%d", p->pandora_horizontal_offset);
-  cfgfile_write (f, "pandora.move_y", "%d", p->pandora_vertical_offset);
+  cfgfile_write (f, "pandora.move_y", "%d", p->pandora_vertical_offset - OFFSET_Y_ADJUST);
 }
 
 
@@ -363,9 +387,14 @@ int target_parse_option (struct uae_prefs *p, const char *option, const char *va
     || cfgfile_intval (option, value, "custom_y", &customControlMap[VK_Y], 1)
     || cfgfile_intval (option, value, "custom_l", &customControlMap[VK_L], 1)
     || cfgfile_intval (option, value, "custom_r", &customControlMap[VK_R], 1)
-    || cfgfile_intval (option, value, "move_x", &p->pandora_horizontal_offset, 1)
-    || cfgfile_intval (option, value, "move_y", &p->pandora_vertical_offset, 1)
     );
+  if(!result) {
+    result = cfgfile_intval (option, value, "move_y", &p->pandora_vertical_offset, 1);
+    if(result)
+      p->pandora_vertical_offset += OFFSET_Y_ADJUST;
+  }
+
+  return result;
 }
 
 
@@ -436,7 +465,7 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
     gui_force_rtarea_hdchange();
 
   discard_prefs(p, type);
-  default_prefs(p, 0);
+  default_prefs(p, true, 0);
   
 	char *ptr = strstr(filename, ".rp9");
   if(ptr > 0)
@@ -456,8 +485,6 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
     }
     if(result)
       extractFileName(filename, last_loaded_config);
-    else 
-      result = loadconfig_old(p, filename);
   }
 
   if(result)
@@ -495,12 +522,12 @@ int check_configfile(char *file)
     return 1;
   }
   
-  strcpy(tmp, file);
+  strncpy(tmp, file, MAX_PATH);
 	char *ptr = strstr(tmp, ".uae");
 	if(ptr > 0)
   {
     *(ptr + 1) = '\0';
-    strcat(tmp, "conf");
+    strncat(tmp, "conf", MAX_PATH);
     f = fopen(tmp, "rt");
     if(f)
     {
@@ -519,13 +546,13 @@ void extractFileName(const char * str,char *buffer)
 	while(*p != '/' && p > str)
 		p--;
 	p++;
-	strcpy(buffer,p);
+	strncpy(buffer,p, MAX_PATH);
 }
 
 
 void extractPath(char *str, char *buffer)
 {
-	strcpy(buffer, str);
+	strncpy(buffer, str, MAX_PATH);
 	char *p = buffer + strlen(buffer) - 1;
 	while(*p != '/' && p > buffer)
 		p--;
@@ -628,6 +655,9 @@ void saveAdfDir(void)
     fputs(buffer, f);
   }
 
+  snprintf(buffer, MAX_DPATH, "Quickstart=%d\n", quickstart_start);
+  fputs(buffer, f);
+
 	fclose(f);
 	return;
 }
@@ -645,77 +675,81 @@ void get_string(FILE *f, char *dst, int size)
 }
 
 
+static void trimwsa (char *s)
+{
+  /* Delete trailing whitespace.  */
+  int len = strlen (s);
+  while (len > 0 && strcspn (s + len - 1, "\t \r\n") == 0)
+    s[--len] = '\0';
+}
+
+
 void loadAdfDir(void)
 {
 	char path[MAX_DPATH];
   int i;
 
-	strcpy(currentDir, start_path_data);
+	strncpy(currentDir, start_path_data, MAX_DPATH);
 	snprintf(config_path, MAX_DPATH, "%s/conf/", start_path_data);
 	snprintf(rom_path, MAX_DPATH, "%s/kickstarts/", start_path_data);
 	snprintf(rp9_path, MAX_DPATH, "%s/rp9/", start_path_data);
 
 	snprintf(path, MAX_DPATH, "%s/conf/adfdir.conf", start_path_data);
-	FILE *f1=fopen(path,"rt");
-	if(f1)
-	{
-		fscanf(f1, "path=");
-		get_string(f1, currentDir, sizeof(currentDir));
-		if(!feof(f1))
-		{
-		  fscanf(f1, "config_path=");
-		  get_string(f1, config_path, sizeof(config_path));
-		  fscanf(f1, "rom_path=");
-      get_string(f1, rom_path, sizeof(rom_path));
-      
-      int numROMs;
-      fscanf(f1, "ROMs=%d\n", &numROMs);
-      for(i=0; i<numROMs; ++i)
-      {
-        AvailableROM *tmp;
-        tmp = new AvailableROM();
-        fscanf(f1, "ROMName=");
-        get_string(f1, tmp->Name, sizeof(tmp->Name));
-        fscanf(f1, "ROMPath=");
-        get_string(f1, tmp->Path, sizeof(tmp->Path));
-        fscanf(f1, "ROMType=%d\n", &(tmp->ROMType));
-        lstAvailableROMs.push_back(tmp);
-      }
-      
-      lstMRUDiskList.clear();
-      int numDisks = 0;
-      char disk[MAX_PATH];
-      fscanf(f1, "MRUDiskList=%d\n", &numDisks);
-      for(i=0; i<numDisks; ++i)
-      {
-        fscanf(f1, "Diskfile=");
-        get_string(f1, disk, sizeof(disk));
-        FILE *f = fopen(disk, "rb");
-        if(f != NULL)
-        {
-          fclose(f);
-          lstMRUDiskList.push_back(disk);
+  struct zfile *fh;
+  fh = zfile_fopen (path, _T("r"), ZFD_NORMAL);
+  if (fh) {
+    char linea[CONFIG_BLEN];
+    TCHAR option[CONFIG_BLEN], value[CONFIG_BLEN];
+    int numROMs, numDisks, numCDs;
+    int romType = -1;
+    char romName[MAX_PATH] = { '\0' };
+    char romPath[MAX_PATH] = { '\0' };
+    char tmpFile[MAX_PATH];
+    
+    while (zfile_fgetsa (linea, sizeof (linea), fh) != 0) {
+    	trimwsa (linea);
+    	if (strlen (linea) > 0) {
+  	    if (!cfgfile_separate_linea (path, linea, option, value))
+      		continue;
+        
+        if(cfgfile_string(option, value, "ROMName", romName, sizeof(romName))
+        || cfgfile_string(option, value, "ROMPath", romPath, sizeof(romPath))
+        || cfgfile_intval(option, value, "ROMType", &romType, 1)) {
+          if(strlen(romName) > 0 && strlen(romPath) > 0 && romType != -1) {
+            AvailableROM *tmp = new AvailableROM();
+            strncpy(tmp->Name, romName, sizeof(tmp->Name));
+            strncpy(tmp->Path, romPath, sizeof(tmp->Path));
+            tmp->ROMType = romType;
+            lstAvailableROMs.push_back(tmp);
+            strncpy(romName, "", sizeof(romName));
+            strncpy(romPath, "", sizeof(romPath));
+            romType = -1;
+          }
+        } else if (cfgfile_string(option, value, "Diskfile", tmpFile, sizeof(tmpFile))) {
+          FILE *f = fopen(tmpFile, "rb");
+          if(f != NULL) {
+            fclose(f);
+            lstMRUDiskList.push_back(tmpFile);
+          }
+        } else if (cfgfile_string(option, value, "CDfile", tmpFile, sizeof(tmpFile))) {
+          FILE *f = fopen(tmpFile, "rb");
+          if(f != NULL) {
+            fclose(f);
+            lstMRUCDList.push_back(tmpFile);
+          }
+        } else {
+          cfgfile_string(option, value, "path", currentDir, sizeof(currentDir));
+          cfgfile_string(option, value, "config_path", config_path, sizeof(config_path));
+          cfgfile_string(option, value, "rom_path", rom_path, sizeof(rom_path));
+          cfgfile_intval(option, value, "ROMs", &numROMs, 1);
+          cfgfile_intval(option, value, "MRUDiskList", &numDisks, 1);
+          cfgfile_intval(option, value, "MRUCDList", &numCDs, 1);
+          cfgfile_intval(option, value, "Quickstart", &quickstart_start, 1);
         }
-      }
-
-      lstMRUCDList.clear();
-      int numCD = 0;
-      char cd[MAX_PATH];
-      fscanf(f1, "MRUCDList=%d\n", &numCD);
-      for(i=0; i<numCD; ++i)
-      {
-        fscanf(f1, "CDfile=");
-        get_string(f1, cd, sizeof(cd));
-        FILE *f = fopen(cd, "rb");
-        if(f != NULL)
-        {
-          fclose(f);
-          lstMRUCDList.push_back(cd);
-        }
-      }
-	  }
-		fclose(f1);
-	}
+    	}
+    }
+    zfile_fclose (fh);
+  }
 }
 
 
@@ -724,7 +758,7 @@ bool SetVSyncRate(int hz)
 {
 	char cmd[64];
   
-  if(currVSyncRate != hz)
+  if(currVSyncRate != hz && (hz == 50 || hz == 60))
   {
     snprintf((char*)cmd, 64, "sudo /usr/pandora/scripts/op_lcdrate.sh %d", hz);
     system(cmd);
@@ -754,6 +788,7 @@ void setCpuSpeed()
 			SetVSyncRate(60);
 		else
 			SetVSyncRate(50);
+		fix_apmodes(&changed_prefs);
 	}
 #else
   return;
@@ -806,9 +841,21 @@ void resetCpuSpeed(void)
 }
 
 
+void target_addtorecent (const TCHAR *name, int t)
+{
+}
+
+
 void target_reset (void)
 {
 }
+
+
+bool target_can_autoswitchdevice(void)
+{
+	return true;
+}
+
 
 uae_u32 emulib_target_getcpurate (uae_u32 v, uae_u32 *low)
 {
@@ -896,9 +943,6 @@ int main (int argc, char *argv[])
   
   logging_cleanup();
 
-//  printf("Threads at exit:\n");
-//  dbg_list_threads();
-  
   return 0;
 }
 
@@ -965,6 +1009,17 @@ int handle_msgpump (void)
   					  // Holding left or right shoulder button -> stylus does right mousebutton
   					  doStylusRightClick = 1;
             }
+#ifdef ACTION_REPLAY
+// Todo
+#if 0
+                case SDLK_a:  // Left shoulder + a -> activate cardridge (Action Replay)
+        		      if(currprefs.cartfile[0] != '\0') {
+          		      inputdevice_add_inputcode (AKS_FREEZEBUTTON, 1);
+    				        handled = 1;
+    				      }
+                	break;
+#endif
+#endif
             // Fall through...
             
   				default:
@@ -982,7 +1037,7 @@ int handle_msgpump (void)
   				    }
   				  }
   				  else
-  				    
+  				  {  
   				  modifier = rEvent.key.keysym.mod;
   				  keycode = translate_pandora_keys(rEvent.key.keysym.sym, &modifier);
   				  if(keycode)
@@ -1000,6 +1055,7 @@ int handle_msgpump (void)
 
 				    }
                                   break;
+                                  }
 				}
         break;
         

@@ -96,22 +96,22 @@ class FileButtonActionListener : public gcn::ActionListener
           char tmp[MAX_PATH];
           if(txtFilename->getText().length() <= 0)
             return;
-          strcpy(tmp, workingDir);
-          strcat(tmp, "/");
-          strcat(tmp, txtFilename->getText().c_str());
+          strncpy(tmp, workingDir, MAX_PATH);
+          strncat(tmp, "/", MAX_PATH);
+          strncat(tmp, txtFilename->getText().c_str(), MAX_PATH);
           if(strstr(tmp, filefilter[0]) == NULL)
-            strcat(tmp, filefilter[0]);
+            strncat(tmp, filefilter[0], MAX_PATH);
           if(my_existsfile(tmp) == 1)
             return; // File already exists
-          strcpy(workingDir, tmp);
+          strncpy(workingDir, tmp, MAX_PATH);
           dialogResult = true;
         }
         else
         {
           if(fileList->isDir(selected_item))
             return; // Directory selected -> Ok not possible
-          strcat(workingDir, "/");
-          strcat(workingDir, fileList->getElementAt(selected_item).c_str());
+          strncat(workingDir, "/", MAX_PATH);
+          strncat(workingDir, fileList->getElementAt(selected_item).c_str(), MAX_PATH);
           dialogResult = true;
         }
       }
@@ -131,11 +131,11 @@ static void checkfoldername (char *current)
 	{ 
 	  fileList->changeDir(current);
 	  ptr = realpath(current, actualpath);
-	  strcpy(workingDir, ptr);
+	  strncpy(workingDir, ptr, MAX_PATH);
 	  closedir(dir);
 	}
   else
-    strcpy(workingDir, start_path_data);
+    strncpy(workingDir, start_path_data, MAX_PATH);
   txtCurrent->setText(workingDir);
 }
 
@@ -164,9 +164,9 @@ class SelectFileActionListener : public gcn::ActionListener
       char foldername[256] = "";
 
       selected_item = lstFiles->getSelected();
-      strcpy(foldername, workingDir);
-      strcat(foldername, "/");
-      strcat(foldername, fileList->getElementAt(selected_item).c_str());
+      strncpy(foldername, workingDir, MAX_PATH);
+      strncat(foldername, "/", MAX_PATH);
+      strncat(foldername, fileList->getElementAt(selected_item).c_str(), MAX_PATH);
       if(fileList->isDir(selected_item))
         checkfoldername(foldername);
       else if(!createNew)
@@ -279,6 +279,8 @@ static void ExitSelectFile(void)
 
 static void SelectFileLoop(void)
 {
+  FocusBugWorkaround(wndSelectFile);  
+  
   while(!dialogFinished)
   {
     SDL_Event event;

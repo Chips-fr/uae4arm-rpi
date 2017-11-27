@@ -33,6 +33,9 @@ static SDL_Surface *current_screenshot = NULL;
 static int x_size_table[MAX_SCREEN_MODES] = { 640, 640, 800, 1024, 1152, 1280 };
 static int y_size_table[MAX_SCREEN_MODES] = { 400, 480, 480,  768,  864,  960 };
 
+unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+static unsigned long last_synctime;
+
 static int red_bits, green_bits, blue_bits;
 static int red_shift, green_shift, blue_shift;
 
@@ -81,19 +84,18 @@ int graphics_setup (void)
 void InitAmigaVidMode(struct uae_prefs *p)
 {
   /* Initialize structure for Amiga video modes */
-  gfxvidinfo.pixbytes = 2;
-  gfxvidinfo.bufmem = (uae_u8 *)prSDLScreen->pixels;
-  gfxvidinfo.outwidth = p->gfx_size.width;
-  gfxvidinfo.outheight = p->gfx_size.height;
+  gfxvidinfo.drawbuffer.pixbytes = 2;
+  gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
+  gfxvidinfo.drawbuffer.outwidth = p->gfx_size.width;
+  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height;
 #ifdef PICASSO96
   if(screen_is_picasso)
   {
-    gfxvidinfo.outwidth  = picasso_vidinfo.width;
-    //gfxvidinfo.outheight = picasso_vidinfo.height;
+    gfxvidinfo.drawbuffer.outwidth  = picasso_vidinfo.width;
+    //gfxvidinfo.drawbuffer.outheight = picasso_vidinfo.height;
   }
 #endif
-  gfxvidinfo.rowbytes = prSDLScreen->pitch;
-  //gfxvidinfo.rowbytes = blit_rect.width * 2;
+  gfxvidinfo.drawbuffer.rowbytes = prSDLScreen->pitch;
 }
 
 void graphics_dispmanshutdown (void)
@@ -208,13 +210,11 @@ int check_prefs_changed_gfx (void)
   
   if(currprefs.gfx_size.height != changed_prefs.gfx_size.height ||
      currprefs.gfx_size.width != changed_prefs.gfx_size.width ||
-     currprefs.gfx_size_fs.width != changed_prefs.gfx_size_fs.width ||
      currprefs.gfx_resolution != changed_prefs.gfx_resolution)
   {
   	cfgfile_configuration_change(1);
     currprefs.gfx_size.height = changed_prefs.gfx_size.height;
     currprefs.gfx_size.width = changed_prefs.gfx_size.width;
-    currprefs.gfx_size_fs.width = changed_prefs.gfx_size_fs.width;
     currprefs.gfx_resolution = changed_prefs.gfx_resolution;
     update_display(&currprefs);
     changed = 1;
@@ -231,7 +231,7 @@ int check_prefs_changed_gfx (void)
   if (currprefs.chipset_refreshrate != changed_prefs.chipset_refreshrate) 
   {
   	currprefs.chipset_refreshrate = changed_prefs.chipset_refreshrate;
-	  init_hz_full ();
+	  init_hz_normal();
 	  changed = 1;
   }
   
@@ -256,7 +256,30 @@ void wait_for_vsync(void)
   // Temporary
 }
 
-void flush_screen ()
+bool render_screen (bool immediate)
+{
+    //SDL_UnlockSurface (prSDLScreen);
+
+    if (savestate_state == STATE_DOSAVE)
+    {
+        if(delay_savestate_frame > 0)
+          --delay_savestate_frame;
+        else
+        {
+            CreateScreenshot();
+            save_thumb(screenshot_filename);
+            savestate_state = 0;
+        }
+    }
+#ifdef WITH_LOGGING
+    RefreshLiveInfo();
+#endif
+  
+    return true;
+}
+
+
+void show_screen(int mode)
 {
     //SDL_UnlockSurface (prSDLScreen);
 
@@ -277,9 +300,9 @@ void flush_screen ()
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
   //  usleep((next_synctime - start) - 1000);
 
-  gl_flip(gfxvidinfo.bufmem, currprefs.gfx_size.width, currprefs.gfx_size.height);
+  gl_flip(gfxvidinfo.drawbuffer.bufmem, currprefs.gfx_size.width, currprefs.gfx_size.height);
 
-
+#if 0
   last_synctime = read_processor_time();
   
   if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000)
@@ -288,11 +311,23 @@ void flush_screen ()
     adjust_idletime(last_synctime - start);
   
   next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+#endif
 
 	init_row_map();
 
 }
 
+unsigned long target_lastsynctime(void)
+{
+  return last_synctime;
+}
+
+bool show_screen_maybe (bool show)
+{
+	if (show)
+		show_screen (0);
+	return false;
+}
 
 void black_screen_now(void)
 {
@@ -344,7 +379,6 @@ STATIC_INLINE int maskShift (unsigned long mask)
 
 static int init_colors (void)
 {
-	int i;
 	int red_bits, green_bits, blue_bits;
 	int red_shift, green_shift, blue_shift;
 
@@ -357,8 +391,6 @@ static int init_colors (void)
 	blue_shift = maskShift(prSDLScreen->format->Bmask);
 	alloc_colors64k (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, 0);
 	notice_new_xcolors();
-	for (i = 0; i < 4096; i++)
-		xcolors[i] = xcolors[i] * 0x00010001;
 
 	return 1;
 }

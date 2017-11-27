@@ -1,0 +1,125 @@
+2017-08-06 - Beta version
+   - Merged lot of changes from WinUAE 3.3.0
+   - Added panel "Quickstart"
+   - Fixed bug when first click in popup window was ignored
+   - Support for more compression formats: xz, fdi
+   - Support for disk write protect
+   - Support for HD write protect
+   - Support for Action Replay
+   - Support for A600/A1200/A4000 IDE controller
+   - Support for Superhires
+   - Support for A4000 motherboard/processorboard RAM
+   - Support for CD32 fmv module
+   - Better handling of cpu fastest possible (less frameskips and less audio hickups)
+
+2016-09-24 - Release version
+   - Merged lot of changes from WinUAE 2.8.1
+   - Fixed graphic glitches caused by borderblank
+   - Fixed bug in navigation through quit button
+   - Keys V and W were switched
+   - Compiled with gcc 6.2
+
+2016-08-22 - Release version
+   - Border sprites (tested with Speris Legacy)
+   - CPU fastest: automatic timing adjust to reduce stutter 
+
+2016-08-21 - Beta version
+   - Avoid audio delays in some games/demos
+   - Automatic switch of freshrate for programmed NTSC/PAL mode change
+   - Bugfix in JIT which sometimes caused seg faults when enter gui
+   - Savestates enabled for HD and CD configurations (don't know if this is stable)
+   - Optimized with profiler
+   - Added option "Wait for blits" from WinUAE
+
+2016-07-10 - Beta version
+   - JIT: fixed code for non ARMv6T2 CPUs (not relevant for Pandora)
+   - Added CD32 buttons to custom control mapping
+   - CD32: support for FLAC and MP3 (Audio stutters at start of each audio track because of high cpu usage for decoding. Use frameskip or overclocking to avoid this.)
+
+2016-07-08 - Beta version
+   - Performance improvement in JIT
+   - Faster HAM decoding
+   - Faster sprite drawing in AGA
+   - Left + right shoulder + r: switch lores/hires
+   - CD32 support
+   - New inputdevice handling
+   - Built-in configurations for Amiga 500, Amiga 1200 and CD32
+
+2016-05-12 - Release version with new JITv2
+
+2016-05-08 - Beta version
+   - Bug fixes in JIT
+   - Performance improvement in JIT
+   
+2016-05-05 - Beta version with new JITv2
+
+2016-04-24 - Release version
+   - Improvments in rp9 support (most demos with 68040 CPU now working)
+   - Newest code from WinUAE for opcode emulation
+   - Minor bugfixes introduced in previous betas 
+
+2016-04-17 - Beta version
+   - Bugfix in dialog for adding HDF
+   - Improved support for rp9 (only 5 out of 99 games from "Amiga Forever 2016" not working)
+     Usage: Copy rp9 files and the three "workbench-xyz.hdf" files to folder "appdata/uae4arm/rp9".
+            All files of a rp9 archive added to the last used disk list, so you can easily select them with
+            the dropdown control in the floppy panel.
+   - Support for RDB hardfiles
+
+2016-04-03 - Beta version
+   - Disk images in zip files
+   - Support for rp9
+   - New mousehack code
+   - Picasso96: 8 bit color mode
+   - Max. Z3 mem now 128 MB
+   - Built-in AROS
+   - Bugfix: Press q in a textfield in GUI quits UAE4ARM
+   - bsdsocket.library 
+
+2015-10-26 - Release version with bug fixes
+   - Switched to newer picasso code from WinUAE. Works much better, even with JIT.
+   - Minor update of sprite handling
+   - Corrected cpu cycle count in exceptions
+   - Minor graphic gliteches fixed (Love-Demo)
+   - Compiled with gcc 5.2
+  
+2015-10-03 - First release
+  Changes:
+   - Cleanup of code
+   - Minor bugfixes
+   - Updated CPU cycles for 68020
+   - GUI: create hardfile and floppy disks
+    
+2015-08-16 - Alpha version
+  Changes:
+   - JIT: minor optimization of emitted ARM code
+   - JIT: bugfix for cycle count
+   - JIT: bugfix in emitted code (CMP.W, CMP.B, TST.W and TST. B)
+   - JIT: disabled option which caused many problems in Picasso96 (JIT now ~15% slower...)
+   - Fixed handling of HDs
+   - Bugfix: switch from non JIT to JIT now working after first reset
+   - DMS file support
+   - Bugfix in FPU: AIBB now working
+   
+2015-05-26 - Alpha version
+  Changes:
+   - Commandline options available:
+      -config=/path/file.uae to load specific config file (set option use_gui=no in config file to start without showing gui) many other options like in WinUAE
+   - JIT now save for 24-bit CPUs (68000, 68EC020)
+   - Bugfix in sigsegv handler for JIT
+   - Added ZorroIII fast memory (currently max. 32 MB, does somebody needs more?)
+   - Added Picasso96 (required version of rtg.library: 40.3993 or higher)
+   - Selection in CPU dialog fixed
+   - {L}+{r}+dPad up and down: adjust Amiga screen
+
+2015-05-03 - First alpha version.
+  Changes compared to latest version of UAE4All
+   - Use of newcpu instead of FAME/C for 680x0 emulation
+   - 680x0 with 32 bit addressing mode
+   - More compatible 68000 emulation
+   - 68040 emulation
+   - FPU (68881) emulation
+   - JIT
+   - Auto detect Amiga ROMs
+   - Up to 5 HDDs (mix of folder or hardfile possible)
+   - Lot of new audio options (filter, stereo separation)

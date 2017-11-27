@@ -6,10 +6,10 @@
 #include "gui.h"
 #include "memory.h"
 #include "newcpu.h"
-#include "inputdevice.h"
 #include "custom.h"
 #include "xwin.h"
 #include "drawing.h"
+#include "inputdevice.h"
 #include "savestate.h"
 #include "picasso96.h"
 
@@ -17,6 +17,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_gfxPrimitives.h>
+#include <SDL_ttf.h>
 #ifdef ANDROIDSDL
 #include <android/log.h>
 #endif
@@ -26,11 +27,15 @@
 
 /* SDL surface variable for output of emulation */
 SDL_Surface *prSDLScreen = NULL;
+static unsigned int current_vsync_frame = 0;
 /* Dummy SDL variable for screen init */
 SDL_Surface *Dummy_prSDLScreen = NULL;
 static SDL_Surface *current_screenshot = NULL;
-/* Possible screen modes (x and y resolutions) */
 
+unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+static unsigned long last_synctime;
+
+/* Possible screen modes (x and y resolutions) */
 #define MAX_SCREEN_MODES 10
 static int x_size_table[MAX_SCREEN_MODES] = { 640, 640, 720, 800, 800, 960, 1024, 1280, 1280, 1920 };
 static int y_size_table[MAX_SCREEN_MODES] = { 400, 480, 400, 480, 600, 540,  768,  720,  800, 1080 };
@@ -60,8 +65,8 @@ uae_sem_t vsync_wait_sem;
 
 DISPMANX_DISPLAY_HANDLE_T   dispmanxdisplay;
 DISPMANX_MODEINFO_T         dispmanxdinfo;
-DISPMANX_RESOURCE_HANDLE_T  dispmanxresource_amigafb_1;
-DISPMANX_RESOURCE_HANDLE_T  dispmanxresource_amigafb_2;
+DISPMANX_RESOURCE_HANDLE_T  dispmanxresource_amigafb_1 = 0;
+DISPMANX_RESOURCE_HANDLE_T  dispmanxresource_amigafb_2 = 0;
 DISPMANX_ELEMENT_HANDLE_T   dispmanxelement;
 DISPMANX_UPDATE_HANDLE_T    dispmanxupdate;
 VC_RECT_T       src_rect;
@@ -73,19 +78,10 @@ unsigned char current_resource_amigafb = 0;
 unsigned char need_wait_dispmanx_semaphore = 0;
 long start;
 
-
+static volatile uae_atomic vsync_counter = 0;
 void vsync_callback(unsigned int a, void* b)
 {
-  // Here we are synchronized with VSync
-  // next_synctime is what we were expected as sync time.
-  last_synctime = read_processor_time();
-  // Check if we miss a frame (with a margin of 1000 cycles)
-  if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000 )
-    adjust_idletime(-1);
-  else
-    adjust_idletime(last_synctime - start);
-  // Update next synctime with current sync.
-  next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+  atomic_inc(&vsync_counter);
 
   uae_sem_post (&vsync_wait_sem);
 }
@@ -102,22 +98,72 @@ int graphics_setup (void)
 }
 
 
+#ifdef WITH_LOGGING
+
+SDL_Surface *liveInfo = NULL;
+TTF_Font *liveFont = NULL;
+int liveInfoCounter = 0;
+void ShowLiveInfo(char *msg)
+{
+  if(liveFont == NULL)
+  {
+    TTF_Init();
+    liveFont = TTF_OpenFont("data/FreeSans.ttf", 12);
+  }
+  if(liveInfo != NULL) {
+    SDL_FreeSurface(liveInfo);
+    liveInfo = NULL;
+  }
+  SDL_Color col;
+  col.r = 0xbf;
+  col.g = 0xbf;
+  col.b = 0xbf;
+  liveInfo = TTF_RenderText_Solid(liveFont, msg, col);
+  liveInfoCounter = 50 * 5;
+}
+
+void RefreshLiveInfo()
+{
+  if(liveInfoCounter > 0)
+  {
+    SDL_Rect dst, src;
+    
+    dst.x = 0;
+    dst.y = 2;
+    src.w = liveInfo->w;
+    src.h = liveInfo->h;
+    src.x = 0;
+    src.y = 0;
+    if(liveInfo != NULL)
+      SDL_BlitSurface(liveInfo, &src, prSDLScreen, &dst);
+    liveInfoCounter--;
+    if(liveInfoCounter == 0)
+    {
+      if(liveInfo != NULL) {
+        SDL_FreeSurface(liveInfo);
+        liveInfo = NULL;
+      }
+    }
+  }
+}
+
+#endif
+
 void InitAmigaVidMode(struct uae_prefs *p)
 {
   /* Initialize structure for Amiga video modes */
-  gfxvidinfo.pixbytes = 2;
-  gfxvidinfo.bufmem = (uae_u8 *)prSDLScreen->pixels;
-  gfxvidinfo.outwidth = p->gfx_size.width;
-  gfxvidinfo.outheight = p->gfx_size.height;
+  gfxvidinfo.drawbuffer.pixbytes = 2;
+  gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
+  gfxvidinfo.drawbuffer.outwidth = p->gfx_size.width;
+  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height;
 #ifdef PICASSO96
   if(screen_is_picasso)
   {
-    gfxvidinfo.outwidth  = picasso_vidinfo.width;
-    //gfxvidinfo.outheight = picasso_vidinfo.height;
+    gfxvidinfo.drawbuffer.outwidth  = picasso_vidinfo.width;
+    //gfxvidinfo.drawbuffer.outheight = picasso_vidinfo.height;
   }
 #endif
-  //gfxvidinfo.rowbytes = prSDLScreen->pitch;
-  gfxvidinfo.rowbytes = blit_rect.width * 2;
+  gfxvidinfo.drawbuffer.rowbytes = prSDLScreen->pitch;
 }
 
 void graphics_dispmanshutdown (void)
@@ -181,9 +227,12 @@ static void open_screen(struct uae_prefs *p)
   {
     const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
     printf("DispmanX: Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
+#ifdef DEBUG
     // For debug, in order to avoid full screen.
+    Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
+#else
     Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
-    //Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
+#endif
   }
 
   SDL_ShowCursor(SDL_DISABLE);
@@ -253,11 +302,13 @@ static void open_screen(struct uae_prefs *p)
 					 scaled_height );
   }
 
+#ifdef DEBUG
   // For debug, in order to avoid full screen.
-  //vc_dispmanx_rect_set( &dst_rect, (dispmanxdinfo.width /2.7),
-  //                     0 ,
-  //                     (dispmanxdinfo.width - (dispmanxdinfo.width * 6)/100 )/1.5,
-  //                     (dispmanxdinfo.height - (dispmanxdinfo.height * 7)/100 )/1.5);
+  vc_dispmanx_rect_set( &dst_rect, (dispmanxdinfo.width /2.7),
+                       0 ,
+                       (dispmanxdinfo.width - (dispmanxdinfo.width * 6)/100 )/1.5,
+                       (dispmanxdinfo.height - (dispmanxdinfo.height * 7)/100 )/1.5);
+#endif
 
 
   if (DispManXElementpresent == 0)
@@ -304,13 +355,11 @@ int check_prefs_changed_gfx (void)
   
   if(currprefs.gfx_size.height != changed_prefs.gfx_size.height ||
      currprefs.gfx_size.width != changed_prefs.gfx_size.width ||
-     currprefs.gfx_size_fs.width != changed_prefs.gfx_size_fs.width ||
      currprefs.gfx_resolution != changed_prefs.gfx_resolution)
   {
   	cfgfile_configuration_change(1);
     currprefs.gfx_size.height = changed_prefs.gfx_size.height;
     currprefs.gfx_size.width = changed_prefs.gfx_size.width;
-    currprefs.gfx_size_fs.width = changed_prefs.gfx_size_fs.width;
     currprefs.gfx_resolution = changed_prefs.gfx_resolution;
     update_display(&currprefs);
     changed = 1;
@@ -327,9 +376,14 @@ int check_prefs_changed_gfx (void)
   if (currprefs.chipset_refreshrate != changed_prefs.chipset_refreshrate) 
   {
   	currprefs.chipset_refreshrate = changed_prefs.chipset_refreshrate;
-	  init_hz_full ();
+	  init_hz_normal();
 	  changed = 1;
   }
+	currprefs.filesys_limit = changed_prefs.filesys_limit;
+	currprefs.harddrive_read_only = changed_prefs.harddrive_read_only;
+  
+  if(changed)
+		init_custom ();
   
   return changed;
 }
@@ -338,6 +392,7 @@ int check_prefs_changed_gfx (void)
 int lockscr (void)
 {
     //SDL_LockSurface(prSDLScreen);
+    init_row_map();
     return 1;
 }
 
@@ -353,21 +408,31 @@ void wait_for_vsync(void)
 }
 
 
-void flush_screen ()
+bool render_screen (bool immediate)
 {
     //SDL_UnlockSurface (prSDLScreen);
 
     if (savestate_state == STATE_DOSAVE)
     {
-    if(delay_savestate_frame > 0)
-      --delay_savestate_frame;
-    else
-    {
-        CreateScreenshot();
-        save_thumb(screenshot_filename);
-        savestate_state = 0;
+        if(delay_savestate_frame > 0)
+          --delay_savestate_frame;
+        else
+        {
+            CreateScreenshot();
+            save_thumb(screenshot_filename);
+            savestate_state = 0;
+        }
     }
-  }
+#ifdef WITH_LOGGING
+    RefreshLiveInfo();
+#endif
+  
+    return true;
+}
+
+
+void show_screen(int mode)
+{
 
   //start = read_processor_time();
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
@@ -380,15 +445,17 @@ void flush_screen ()
 	start = read_processor_time();
 	uae_sem_wait (&vsync_wait_sem);
   }
+  current_vsync_frame += currprefs.gfx_framerate;
 
+  last_synctime = read_processor_time();
 
 	if (current_resource_amigafb == 1)
 	{
 		current_resource_amigafb = 0;
 		vc_dispmanx_resource_write_data(  dispmanxresource_amigafb_1,
 	                                    VC_IMAGE_RGB565,
-	                                    gfxvidinfo.outwidth * 2,
-	                                    gfxvidinfo.bufmem,
+	                                    gfxvidinfo.drawbuffer.rowbytes,
+	                                    gfxvidinfo.drawbuffer.bufmem,
 	                                    &blit_rect );
 		dispmanxupdate = vc_dispmanx_update_start( 10 );
 		vc_dispmanx_element_change_source(dispmanxupdate,dispmanxelement,dispmanxresource_amigafb_1);
@@ -402,8 +469,8 @@ void flush_screen ()
 		current_resource_amigafb = 1;
 		vc_dispmanx_resource_write_data(  dispmanxresource_amigafb_2,
 	                                    VC_IMAGE_RGB565,
-	                                    gfxvidinfo.outwidth * 2,
-	                                    gfxvidinfo.bufmem,
+	                                    gfxvidinfo.drawbuffer.rowbytes,
+	                                    gfxvidinfo.drawbuffer.bufmem,
 	                                    &blit_rect );
 		dispmanxupdate = vc_dispmanx_update_start( 10 );
 		vc_dispmanx_element_change_source(dispmanxupdate,dispmanxelement,dispmanxresource_amigafb_2);
@@ -412,20 +479,36 @@ void flush_screen ()
 	}
 	need_wait_dispmanx_semaphore = 1;
 
-	init_row_map();
+  idletime += last_synctime - start;
 
+  if (last_synctime - next_synctime > time_per_frame - 5000)
+    next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+  else
+    next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
 }
 
+
+unsigned long target_lastsynctime(void)
+{
+  return last_synctime;
+}
+
+bool show_screen_maybe (bool show)
+{
+	if (show)
+		show_screen (0);
+	return false;
+}
 
 void black_screen_now(void)
 {
         SDL_FillRect(prSDLScreen,NULL,0);
-	SDL_Flip(prSDLScreen);
-	flush_screen();
+	render_screen(true);
+	show_screen(0);
 }
 
 
-static void graphics_subinit (void)
+static void graphics_subinit(void)
 {
 	if (prSDLScreen == NULL)
 	{
@@ -435,12 +518,11 @@ static void graphics_subinit (void)
 	else
 	{
 		SDL_ShowCursor(SDL_DISABLE);
-
-    InitAmigaVidMode(&currprefs);
+		InitAmigaVidMode(&currprefs);
 	}
 }
 
-STATIC_INLINE int bitsInMask (unsigned long mask)
+STATIC_INLINE int bitsInMask(unsigned long mask)
 {
 	/* count bits in mask */
 	int n = 0;
@@ -453,7 +535,7 @@ STATIC_INLINE int bitsInMask (unsigned long mask)
 }
 
 
-STATIC_INLINE int maskShift (unsigned long mask)
+STATIC_INLINE int maskShift(unsigned long mask)
 {
 	/* determine how far mask is shifted */
 	int n = 0;
@@ -466,9 +548,8 @@ STATIC_INLINE int maskShift (unsigned long mask)
 }
 
 
-static int init_colors (void)
+static int init_colors(void)
 {
-	int i;
 	int red_bits, green_bits, blue_bits;
 	int red_shift, green_shift, blue_shift;
 
@@ -479,10 +560,8 @@ static int init_colors (void)
 	red_shift = maskShift(prSDLScreen->format->Rmask);
 	green_shift = maskShift(prSDLScreen->format->Gmask);
 	blue_shift = maskShift(prSDLScreen->format->Bmask);
-	alloc_colors64k (red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, 0);
+	alloc_colors64k(red_bits, green_bits, blue_bits, red_shift, green_shift, blue_shift, 0);
 	notice_new_xcolors();
-	for (i = 0; i < 4096; i++)
-		xcolors[i] = xcolors[i] * 0x00010001;
 
 	return 1;
 }
@@ -533,9 +612,6 @@ int graphics_init(bool mousecapture)
 
 	if (!init_colors ())
 		return 0;
-
-	//buttonstate[0] = buttonstate[1] = buttonstate[2] = 0;
-	//keyboard_init();
   
 	return 1;
 }
@@ -888,9 +964,16 @@ uae_u8 *gfx_lock_picasso (void)
   return (uae_u8 *)prSDLScreen->pixels;
 }
 
-void gfx_unlock_picasso (void)
+
+void gfx_unlock_picasso(bool dorender)
 {
   // We lock the surface directly after create and flip, so no unlock here
+  //SDL_UnlockSurface(prSDLScreen);
+  if(dorender)
+  {
+    render_screen(true);
+    show_screen(0);
+  }
 }
 
 #endif // PICASSO96

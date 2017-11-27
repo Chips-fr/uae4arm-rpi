@@ -33,12 +33,13 @@ static gcn::Button *cmdSaveForDisk;
 static gcn::Button *cmdCreateDDDisk;
 static gcn::Button *cmdCreateHDDisk;
 
-static const char *diskfile_filter[] = { ".adf", ".adz", ".zip", ".gz", ".dms", "\0" };
+static const char *diskfile_filter[] = { ".adf", ".adz", ".fdi", ".zip", ".dms", ".gz", ".xz", "\0" };
 static const char *drivespeedlist[] = { "100% (compatible)", "200%", "400%", "800%" };
 static const int drivespeedvalues[] = { 100, 200, 400, 800 };
 
 static void AdjustDropDownControls(void);
 static bool bLoadConfigForDisk = false;
+static bool bIgnoreListChange = false;
 
 
 class DriveTypeListModel : public gcn::ListModel
@@ -107,6 +108,7 @@ class DriveTypeActionListener : public gcn::ActionListener
           changed_prefs.floppyslots[i].dfxtype = cboDFxType[i]->getSelected() - 1;
       }
       RefreshPanelFloppy();
+      RefreshPanelQuickstart();
     }
 };
 static DriveTypeActionListener* driveTypeActionListener;
@@ -138,11 +140,16 @@ class DFxCheckActionListener : public gcn::ActionListener
       	    //---------------------------------------
             // Write-protect changed
       	    //---------------------------------------
-            // ToDo: set write protect for floppy
+            disk_setwriteprotect (&changed_prefs, i, changed_prefs.floppyslots[i].df, chkDFxWriteProtect[i]->isSelected());
+            if(disk_getwriteprotect(&changed_prefs, changed_prefs.floppyslots[i].df) != chkDFxWriteProtect[i]->isSelected()) {
+              // Failed to change write protection -> maybe filesystem doesn't support this
+              ShowMessage("Set/Clear write protect", "Failed to change write permission.", "Maybe underlying filesystem doesn't support this.", "Ok", "");
+            }
           }
         }
       }
       RefreshPanelFloppy();
+      RefreshPanelQuickstart();
     }
 };
 static DFxCheckActionListener* dfxCheckActionListener;
@@ -169,7 +176,7 @@ class DFxButtonActionListener : public gcn::ActionListener
           // Eject disk from drive
     	    //---------------------------------------
           disk_eject(i);
-          strcpy(changed_prefs.floppyslots[i].df, "");
+          strncpy(changed_prefs.floppyslots[i].df, "", MAX_DPATH);
           AdjustDropDownControls();
         }
         else if (actionEvent.getSource() == cmdDFxSelect[i])
@@ -206,12 +213,12 @@ class DFxButtonActionListener : public gcn::ActionListener
         }
       }
       RefreshPanelFloppy();
+      RefreshPanelQuickstart();
     }
 };
 static DFxButtonActionListener* dfxButtonActionListener;
 
 
-static bool bIgnoreListChange = false;
 class DiskFileActionListener : public gcn::ActionListener
 {
   public:
@@ -231,7 +238,7 @@ class DiskFileActionListener : public gcn::ActionListener
       	    if(idx < 0)
     	      {
               disk_eject(i);
-              strcpy(changed_prefs.floppyslots[i].df, "");
+              strncpy(changed_prefs.floppyslots[i].df, "", MAX_DPATH);
               AdjustDropDownControls();
     	      }
     	      else
@@ -261,6 +268,7 @@ class DiskFileActionListener : public gcn::ActionListener
         }
       }
       RefreshPanelFloppy();
+      RefreshPanelQuickstart();
     }
 };
 static DiskFileActionListener* diskFileActionListener;
@@ -381,7 +389,8 @@ void InitPanelFloppy(const struct _ConfigCategory& category)
 	  
 	  chkDFxWriteProtect[i] = new gcn::UaeCheckBox("Write-protected");
 	  chkDFxWriteProtect[i]->addActionListener(dfxCheckActionListener);
-	  chkDFxWriteProtect[i]->setEnabled(false);
+	  snprintf(tmp, 20, "chkWP%d", i);
+	  chkDFxWriteProtect[i]->setId(tmp);
 	  
     cmdDFxInfo[i] = new gcn::Button("?");
     cmdDFxInfo[i]->setSize(SMALL_BUTTON_WIDTH, SMALL_BUTTON_HEIGHT);
@@ -561,6 +570,7 @@ void RefreshPanelFloppy(void)
     chkDFx[i]->setEnabled(prevAvailable);
     cboDFxType[i]->setEnabled(prevAvailable);
     
+	  chkDFxWriteProtect[i]->setEnabled(driveEnabled && !changed_prefs.floppy_read_only);
     cmdDFxInfo[i]->setEnabled(driveEnabled);
     cmdDFxEject[i]->setEnabled(driveEnabled);
     cmdDFxSelect[i]->setEnabled(driveEnabled);
