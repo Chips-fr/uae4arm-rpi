@@ -87,7 +87,7 @@ void InitAmigaVidMode(struct uae_prefs *p)
   gfxvidinfo.drawbuffer.pixbytes = 2;
   gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
   gfxvidinfo.drawbuffer.outwidth = p->gfx_size.width;
-  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height;
+  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height << p->gfx_vresolution;
 #ifdef PICASSO96
   if(screen_is_picasso)
   {
@@ -135,7 +135,7 @@ static void open_screen(struct uae_prefs *p)
   {
     p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
     width  = p->gfx_size.width;
-    height = p->gfx_size.height;
+    height = p->gfx_size.height << p->gfx_vresolution;
   }
 
 
@@ -210,12 +210,14 @@ int check_prefs_changed_gfx (void)
   
   if(currprefs.gfx_size.height != changed_prefs.gfx_size.height ||
      currprefs.gfx_size.width != changed_prefs.gfx_size.width ||
-     currprefs.gfx_resolution != changed_prefs.gfx_resolution)
+     currprefs.gfx_resolution != changed_prefs.gfx_resolution ||
+     currprefs.gfx_vresolution != changed_prefs.gfx_vresolution)
   {
   	cfgfile_configuration_change(1);
     currprefs.gfx_size.height = changed_prefs.gfx_size.height;
     currprefs.gfx_size.width = changed_prefs.gfx_size.width;
     currprefs.gfx_resolution = changed_prefs.gfx_resolution;
+    currprefs.gfx_vresolution = changed_prefs.gfx_vresolution;
     update_display(&currprefs);
     changed = 1;
   }
@@ -281,30 +283,22 @@ bool render_screen (bool immediate)
 
 void show_screen(int mode)
 {
-    //SDL_UnlockSurface (prSDLScreen);
-
-
-    if (savestate_state == STATE_DOSAVE)
-    {
-    if(delay_savestate_frame > 0)
-      --delay_savestate_frame;
-    else
-    {
-        CreateScreenshot();
-        save_thumb(screenshot_filename);
-        savestate_state = 0;
-    }
-  }
-
   long start = read_processor_time();
   //if(start < next_synctime && next_synctime - start > time_per_frame - 1000)
   //  usleep((next_synctime - start) - 1000);
 
-  gl_flip(gfxvidinfo.drawbuffer.bufmem, currprefs.gfx_size.width, currprefs.gfx_size.height);
+  gl_flip(gfxvidinfo.drawbuffer.bufmem, gfxvidinfo.drawbuffer.outwidth, gfxvidinfo.drawbuffer.outheight);
 
-#if 0
   last_synctime = read_processor_time();
-  
+
+#if 1
+  idletime += last_synctime - start;
+
+  if (last_synctime - next_synctime > time_per_frame - (long)5000)
+    next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+  else
+    next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+#else
   if(last_synctime - next_synctime > time_per_frame * (1 + currprefs.gfx_framerate) - (long)1000)
     adjust_idletime(-1);
   else

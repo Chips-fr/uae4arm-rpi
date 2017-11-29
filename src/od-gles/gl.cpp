@@ -100,7 +100,7 @@ int gl_init(void *display, void *window, int *quirks)
 		goto out;
 	}
 
-	tmp_texture_mem = calloc(1, 1024 * 512 * 2);
+	tmp_texture_mem = calloc(1, 1024 * 1024 * 2);
 	if (tmp_texture_mem == NULL) {
 		printf("OOM\n");
 		goto out;
@@ -157,7 +157,7 @@ int gl_init(void *display, void *window, int *quirks)
 	glBindTexture(GL_TEXTURE_2D, texture_name);
 	if (gl_have_error("glBindTexture")) goto out;
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 512, 0, GL_RGB,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB,
 		GL_UNSIGNED_SHORT_5_6_5, tmp_texture_mem);
 	if (gl_have_error("glTexImage2D")) goto out;
 
@@ -220,7 +220,7 @@ int gl_flip(const void *fb, int w, int h)
 	if (fb != NULL) {
 		if (w != old_w || h != old_h) {
 			float f_w = (float)w / 1024.0f;
-			float f_h = (float)h / 512.0f;
+			float f_h = (float)h / 1024.0f;
 			texture_coords[1*2 + 0] = f_w;
 			texture_coords[2*2 + 1] = f_h;
 			texture_coords[3*2 + 0] = f_w;
@@ -238,7 +238,7 @@ int gl_flip(const void *fb, int w, int h)
 
 		for (int i=0; i<4; i++) {
 				float f_w = (float)w / 1024.0f;
-				float f_h = (float)h / 512.0f;
+				float f_h = (float)h / 1024.0f;
 				float x = orig_texture_coords[i*2 + 0] * f_w;
 				float y = orig_texture_coords[i*2 + 1] * f_h;
 				texture_coords[i*2 + 0] = 

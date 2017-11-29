@@ -26,11 +26,18 @@ Enable hat usage on joystick.
 Add Sony 6axis joystick workaround.  
 
 
-How to compile on Raspbian Jessie:
+How to compile on Raspbian Jessie & Stretch:
 
    Install following packages:
 
-      sudo apt-get install libsdl1.2-dev libguichan-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libxml2-dev libflac-dev libmpg123-dev
+      sudo apt-get install libsdl1.2-dev 
+      sudo apt-get install libguichan-dev
+      sudo apt-get install libsdl-ttf2.0-dev
+      sudo apt-get install libsdl-gfx1.2-dev
+      sudo apt-get install libxml2-dev
+      sudo apt-get install libflac-dev
+      sudo apt-get install libmpg123-dev
+      sudo apt-get install libmpeg2-4-dev
 
    Then for Raspberry Pi 2:  
 

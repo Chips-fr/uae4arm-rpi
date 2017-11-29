@@ -5345,6 +5345,14 @@ static void hsync_handler_post (bool onvsync)
     int lineno = vpos;
 		if (lineno >= MAXVPOS)
 			lineno %= MAXVPOS;
+		if (currprefs.gfx_vresolution) {
+			lineno *= 2;
+			if (interlace_seen) {
+				if (!lof_current) {
+					lineno++;
+				}
+			}
+		}
   	prev_lineno = next_lineno;
     next_lineno = lineno;
     reset_decisions ();

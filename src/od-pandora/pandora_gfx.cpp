@@ -148,7 +148,7 @@ void InitAmigaVidMode(struct uae_prefs *p)
 	gfxvidinfo.drawbuffer.pixbytes = 2;
 	gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
   gfxvidinfo.drawbuffer.outwidth = p->gfx_size.width;
-  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height;
+  gfxvidinfo.drawbuffer.outheight = p->gfx_size.height << p->gfx_vresolution;
 	gfxvidinfo.drawbuffer.rowbytes = prSDLScreen->pitch;
 }
 
@@ -218,14 +218,12 @@ static void open_screen(struct uae_prefs *p)
 
   if(!screen_is_picasso)
   {
-    if(prSDLScreen == NULL || prSDLScreen->w != p->gfx_size.width || prSDLScreen->h != p->gfx_size.height)
+    if(prSDLScreen == NULL || prSDLScreen->w != p->gfx_size.width || prSDLScreen->h != p->gfx_size.height << p->gfx_vresolution)
     {
-#if defined(PANDORA) && !defined(WIN32)
-  	  prSDLScreen = SDL_SetVideoMode(p->gfx_size.width, p->gfx_size.height, 16, SDL_HWSURFACE|SDL_FULLSCREEN|SDL_DOUBLEBUF);
-#elif defined(PANDORA) && defined(WIN32)
-  	  prSDLScreen = SDL_SetVideoMode(p->gfx_size.width, p->gfx_size.height, 16, SDL_SWSURFACE|SDL_DOUBLEBUF);
+#if !defined(WIN32)
+  	  prSDLScreen = SDL_SetVideoMode(p->gfx_size.width, p->gfx_size.height << p->gfx_vresolution, 16, SDL_HWSURFACE|SDL_FULLSCREEN|SDL_DOUBLEBUF);
 #else
-  	  prSDLScreen = SDL_SetVideoMode(p->gfx_size.width, p->gfx_size.height, 16, SDL_HWSURFACE|SDL_FULLSCREEN);
+  	  prSDLScreen = SDL_SetVideoMode(p->gfx_size.width, p->gfx_size.height << p->gfx_vresolution, 16, SDL_SWSURFACE|SDL_DOUBLEBUF);
 #endif
     }
   }
@@ -271,12 +269,14 @@ int check_prefs_changed_gfx (void)
   
   if(currprefs.gfx_size.height != changed_prefs.gfx_size.height ||
      currprefs.gfx_size.width != changed_prefs.gfx_size.width ||
-     currprefs.gfx_resolution != changed_prefs.gfx_resolution)
+     currprefs.gfx_resolution != changed_prefs.gfx_resolution ||
+		 currprefs.gfx_vresolution != changed_prefs.gfx_vresolution)
   {
   	cfgfile_configuration_change(1);
     currprefs.gfx_size.height = changed_prefs.gfx_size.height;
     currprefs.gfx_size.width = changed_prefs.gfx_size.width;
     currprefs.gfx_resolution = changed_prefs.gfx_resolution;
+		currprefs.gfx_vresolution = changed_prefs.gfx_vresolution;
     update_display(&currprefs);
     changed = 1;
   }

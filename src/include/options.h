@@ -253,6 +253,7 @@ struct uae_prefs {
   struct wh gfx_size;
 	struct apmode gfx_apmode[2];
   int gfx_resolution;
+ 	int gfx_vresolution;
 
 #ifdef RASPBERRY
   int gfx_correct_aspect;

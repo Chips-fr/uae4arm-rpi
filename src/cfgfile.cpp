@@ -61,6 +61,12 @@ static const TCHAR *guimode1[] = { _T("no"), _T("yes"), _T("nowait"), 0 };
 static const TCHAR *guimode2[] = { _T("false"), _T("true"), _T("nowait"), 0 };
 static const TCHAR *guimode3[] = { _T("0"), _T("1"), _T("nowait"), 0 };
 static const TCHAR *csmode[] = { _T("ocs"), _T("ecs_agnus"), _T("ecs_denise"), _T("ecs"), _T("aga"), 0 };
+static const TCHAR *linemode[] = {
+	_T("none"),
+	_T("double"), _T("scanlines"), _T("scanlines2p"), _T("scanlines3p"),
+	_T("double2"), _T("scanlines2"), _T("scanlines2p2"), _T("scanlines2p3"),
+	_T("double3"), _T("scanlines3"), _T("scanlines3p2"), _T("scanlines3p3"),
+	0 };
 static const TCHAR *speedmode[] = { _T("max"), _T("real"), 0 };
 static const TCHAR *soundmode1[] = { _T("none"), _T("interrupts"), _T("normal"), _T("exact"), 0 };
 static const TCHAR *soundmode2[] = { _T("none"), _T("interrupts"), _T("good"), _T("best"), 0 };
@@ -870,6 +876,7 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 	cfgfile_write_str (f, _T("gfx_vsync_picasso"), vsyncmodes[p->gfx_apmode[1].gfx_vsync + 1]);
   cfgfile_write_bool (f, _T("gfx_lores"), p->gfx_resolution == 0);
   cfgfile_write_str (f, _T("gfx_resolution"), lorestype1[p->gfx_resolution]);
+	cfgfile_write_str (f, _T("gfx_linemode"), p->gfx_vresolution > 0 ? linemode[1] : linemode[0]);
 
 #ifdef RASPBERRY
   cfgfile_write (f, _T("gfx_correct_aspect"), _T("%d"), p->gfx_correct_aspect);
@@ -1595,6 +1602,17 @@ static int cfgfile_parse_host (struct uae_prefs *p, TCHAR *option, TCHAR *value)
 		return 1;
 	}
 
+	if (_tcscmp (option, _T("gfx_linemode")) == 0) {
+		int v;
+		p->gfx_vresolution = VRES_DOUBLE;
+		if (cfgfile_strval(option, value, _T("gfx_linemode"), &v, linemode, 0)) {
+			p->gfx_vresolution = VRES_NONDOUBLE;
+			if (v > 0) {
+				p->gfx_vresolution = VRES_DOUBLE;
+			}
+		}
+		return 1;
+	}
 	if (_tcscmp (option, _T("gfx_vsync")) == 0) {
 		if (cfgfile_strval (option, value, _T("gfx_vsync"), &p->gfx_apmode[APMODE_NATIVE].gfx_vsync, vsyncmodes, 0) >= 0) {
 			p->gfx_apmode[APMODE_NATIVE].gfx_vsync--;
@@ -3859,6 +3877,8 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
   p->kbd_led_scr = -1; // No status on scrollock
   p->kbd_led_cap = -1; // No status on capslock
 #endif
+	p->gfx_vresolution = VRES_DOUBLE;
+
   p->immediate_blits = 0;
 	p->waiting_blits = 0;
   p->chipset_refreshrate = 50;
