@@ -74,13 +74,13 @@ endif
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 
 MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/archivers -Isrc/od-pandora -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
-MORE_CFLAGS += -fexceptions -fpermissive -marm 
+MORE_CFLAGS += -fexceptions -fpermissive -std=gnu++11 -marm
 
 LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl -lmpeg2convert -lmpeg2
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
-MORE_CFLAGS += -Ofast -fomit-frame-pointer -fsingle-precision-constant
+MORE_CFLAGS += -Ofast -fomit-frame-pointer
 MORE_CFLAGS += -finline -fno-builtin
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING
