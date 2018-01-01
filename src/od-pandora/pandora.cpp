@@ -975,6 +975,14 @@ int handle_msgpump (void)
 
   		  if(rEvent.key.keysym.sym == currprefs.key_for_menu)
   		    inputdevice_add_inputcode (AKS_ENTERGUI, 1);
+#ifdef ACTION_REPLAY
+  		  if(rEvent.key.keysym.sym == currprefs.key_for_cartridge)
+        		      if(currprefs.cartfile[0] != '\0') {
+          		      inputdevice_add_inputcode (AKS_FREEZEBUTTON, 1);
+    				        handled = 1;
+    				      }
+#endif
+
   		  switch(rEvent.key.keysym.sym)
   		  {
  		#ifdef CAPSLOCK_DEBIAN_WORKAROUND
@@ -1009,17 +1017,6 @@ int handle_msgpump (void)
   					  // Holding left or right shoulder button -> stylus does right mousebutton
   					  doStylusRightClick = 1;
             }
-#ifdef ACTION_REPLAY
-// Todo
-#if 0
-                case SDLK_a:  // Left shoulder + a -> activate cardridge (Action Replay)
-        		      if(currprefs.cartfile[0] != '\0') {
-          		      inputdevice_add_inputcode (AKS_FREEZEBUTTON, 1);
-    				        handled = 1;
-    				      }
-                	break;
-#endif
-#endif
             // Fall through...
             
   				default:

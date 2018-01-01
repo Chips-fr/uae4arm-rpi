@@ -355,6 +355,11 @@ struct uae_prefs {
 
   int key_for_menu;
 
+#ifdef ACTION_REPLAY
+  int key_for_cartridge;
+#endif
+
+
   /* input */
 
 	struct jport jports[MAX_JPORTS];

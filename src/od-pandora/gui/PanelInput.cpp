@@ -63,6 +63,10 @@ static gcn::Label *lblRight;
 static gcn::UaeDropDown* cboRight;
 static gcn::Label *lblKeyForMenu;
 static gcn::UaeDropDown* KeyForMenu;
+#ifdef ACTION_REPLAY
+static gcn::Label *lblKeyForCartridge;
+static gcn::UaeDropDown* KeyForCartridge;
+#endif
 
 
 class StringListModel : public gcn::ListModel
@@ -261,8 +265,12 @@ class InputActionListener : public gcn::ActionListener
         customControlMap[VK_RIGHT] = amigaKey[cboRight->getSelected()];
 
  	    else if (actionEvent.getSource() == KeyForMenu)
-        changed_prefs.key_for_menu = ControlKey_SDLKeyValues[KeyForMenu->getSelected()] ;
+        currprefs.key_for_menu = changed_prefs.key_for_menu = ControlKey_SDLKeyValues[KeyForMenu->getSelected()] ;
 
+#ifdef ACTION_REPLAY
+ 	    else if (actionEvent.getSource() == KeyForCartridge )
+        currprefs.key_for_cartridge = changed_prefs.key_for_cartridge = ControlKey_SDLKeyValues[KeyForCartridge->getSelected()] ;
+#endif
     }
 };
 static InputActionListener* inputActionListener;
@@ -431,11 +439,26 @@ void InitPanelInput(const struct _ConfigCategory& category)
   lblKeyForMenu = new gcn::Label("Key for Menu:");
   lblKeyForMenu->setSize(100, LABEL_HEIGHT);
   lblKeyForMenu->setAlignment(gcn::Graphics::RIGHT);
+
+#ifdef ACTION_REPLAY
+  lblKeyForCartridge = new gcn::Label("Key for Cartridge:");
+  lblKeyForCartridge->setSize(150, LABEL_HEIGHT);
+  lblKeyForCartridge->setAlignment(gcn::Graphics::RIGHT);
+#endif
+
   KeyForMenu = new gcn::UaeDropDown(&ControlKeyList);
   KeyForMenu->setSize(150, DROPDOWN_HEIGHT);
   KeyForMenu->setBaseColor(gui_baseCol);
   KeyForMenu->setId("CKeyMenu");
   KeyForMenu->addActionListener(inputActionListener);
+
+#ifdef ACTION_REPLAY
+  KeyForCartridge = new gcn::UaeDropDown(&ControlKeyList);
+  KeyForCartridge->setSize(150, DROPDOWN_HEIGHT);
+  KeyForCartridge->setBaseColor(gui_baseCol);
+  KeyForCartridge->setId("CKeyCart");
+  KeyForCartridge->addActionListener(inputActionListener);
+#endif
 
   int posY = DISTANCE_BORDER;
   category.panel->add(lblPort0, DISTANCE_BORDER, posY);
@@ -489,6 +512,12 @@ void InitPanelInput(const struct _ConfigCategory& category)
   
   category.panel->add(lblKeyForMenu, DISTANCE_BORDER, posY);
   category.panel->add(KeyForMenu, DISTANCE_BORDER + lblLeft->getWidth() + 8, posY);
+
+#ifdef ACTION_REPLAY
+  category.panel->add(lblKeyForCartridge, 250, posY);
+  category.panel->add(KeyForCartridge, 300 + lblLeft->getWidth() + 8, posY);
+#endif
+
   posY += KeyForMenu->getHeight() + 4;
 
   RefreshPanelInput();
@@ -536,6 +565,11 @@ void ExitPanelInput(void)
 
   delete lblKeyForMenu;
   delete KeyForMenu;
+
+#ifdef ACTION_REPLAY
+  delete lblKeyForCartridge;
+  delete KeyForCartridge;
+#endif
 
   delete inputActionListener;
 }
@@ -637,4 +671,14 @@ void RefreshPanelInput(void)
       break;
     }
   }
+#ifdef ACTION_REPLAY
+  for(i=0; i<4; ++i)
+  {
+    if(changed_prefs.key_for_cartridge == ControlKey_SDLKeyValues[i])
+    {
+      KeyForCartridge->setSelected(i);
+      break;
+    }
+  }
+#endif
 }
