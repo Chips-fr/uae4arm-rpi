@@ -514,7 +514,7 @@ typedef long uae_atomic;
 #define MAX_PATH 256
 #endif
 
-#define WORDS_BIGENDIAN 1
+//#define WORDS_BIGENDIAN 1
 
 #define M68K_SPEED_7MHZ_CYCLES 0
 #define M68K_SPEED_14MHZ_CYCLES 1024
