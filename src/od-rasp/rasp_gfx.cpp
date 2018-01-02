@@ -274,7 +274,7 @@ static void open_screen(struct uae_prefs *p)
 	vc_dispmanx_rect_set( &blit_rect, 0, 0, width,height);
 	vc_dispmanx_resource_write_data(  dispmanxresource_amigafb_1,
                                     VC_IMAGE_RGB565,
-                                    width *2,
+                                    prSDLScreen->pitch,
                                     prSDLScreen->pixels,
                                     &blit_rect );
 	vc_dispmanx_rect_set( &src_rect, 0, 0, width << 16, height << 16 );

@@ -14,11 +14,7 @@
 extern int gui_init (void);
 extern int gui_update (void);
 extern void gui_exit (void);
-#ifdef WIN32
 extern void gui_led (int, int, int);
-#else
-STATIC_INLINE void gui_led (int led, int on, int brightness) { }
-#endif
 extern void gui_filename (int, const TCHAR *);
 extern void gui_flicker_led (int, int, int);
 extern unsigned int gui_ledstate;

@@ -110,7 +110,7 @@ static uae_u8 spritepixels[MAX_PIXELS_PER_LINE * 2];
 static int sprite_first_x, sprite_last_x;
 
 /* AGA mode color lookup tables */
-#ifndef ARMV6_ASSEMBLY
+#ifndef ARMV6T2
 unsigned int xredcolors[256], xgreencolors[256], xbluecolors[256];
 #endif
 static int dblpf_ind1_aga[256], dblpf_ind2_aga[256];

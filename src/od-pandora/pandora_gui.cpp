@@ -550,7 +550,7 @@ void gui_disk_image_change (int unitnum, const char *name, bool writeprotected)
 {
 }
 
-void gui_led (int led, int on)
+void gui_led (int led, int on, int brightness)
 {
 #ifdef RASPBERRY
    #define LED_ALL   -1         // Define for all LEDs
@@ -623,7 +623,7 @@ void gui_flicker_led (int led, int unitnum, int status)
       break;
   }
 #ifdef RASPBERRY
-   gui_led(led, status);
+   gui_led(led, status , -1);
 #endif
 }
 
