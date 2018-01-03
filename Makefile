@@ -79,6 +79,9 @@ MORE_CFLAGS += -finline -fno-builtin
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic
 
+#MORE_CFLAGS += -fsanitize=address -fsanitize=bounds
+#LDFLAGS += -static-libasan -fsanitize=address -fsanitize=bounds
+
 ifdef TRACER
 TRACE_CFLAGS = -DTRACER -finstrument-functions -Wall -rdynamic
 endif

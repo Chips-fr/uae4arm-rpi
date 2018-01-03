@@ -3893,13 +3893,14 @@ static void resetjport (struct uae_prefs *prefs, int index)
 static void remove_compa_config (struct uae_prefs *prefs, int index)
 {
 	int typelist;
-	const int *atp;
+	const int *atpp;
 	int inputlist[MAX_COMPA_INPUTLIST];
 
-	if (inputdevice_get_compatibility_input (prefs, index, &typelist, inputlist, &atp) <= 0)
+	if (inputdevice_get_compatibility_input (prefs, index, &typelist, inputlist, &atpp) <= 0)
 		return;
 	for (int i = 0; inputlist[i] >= 0; i++) {
 		int evtnum = inputlist[i];
+		const int *atp = atpp;
 
 		int atpidx = 0;
 		while (*atp >= 0) {

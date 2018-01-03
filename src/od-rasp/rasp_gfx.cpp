@@ -47,7 +47,7 @@ int screen_is_picasso = 0;
 
 static int curr_layer_width = 0;
 
-static char screenshot_filename_default[255]={
+static char screenshot_filename_default[MAX_DPATH]={
 	'/', 't', 'm', 'p', '/', 'n', 'u', 'l', 'l', '.', 'p', 'n', 'g', '\0'
 };
 char *screenshot_filename=(char *)&screenshot_filename_default[0];
@@ -182,12 +182,18 @@ void graphics_subshutdown (void)
 {
   if (dispmanxresource_amigafb_1 != 0)
     graphics_dispmanshutdown();
-  // Dunno if below lines are usefull for Rpi...
-  //SDL_FreeSurface(prSDLScreen);
-  //prSDLScreen = NULL;
+
+  if (Dummy_prSDLScreen != NULL)
+  { 
+    // y.f. 2016-10-13 : free the previous screen surface every time, 
+    // so we can have fullscreen while running and windowed while in config window.
+    // Apparently, something somewhere is resetting the screen.
+    // Chips: confirmed with sanitize gcc option... looks like each SDL_SetVideoMode free previous surface...
+    SDL_FreeSurface(Dummy_prSDLScreen);
+    Dummy_prSDLScreen = NULL;
+  }
+
 }
-
-
 
 
 
@@ -215,13 +221,6 @@ static void open_screen(struct uae_prefs *p)
     width  = p->gfx_size.width;
     height = p->gfx_size.height << p->gfx_vresolution;
   }
-
-
-  //if(prSDLScreen != NULL)
-  //{
-  //  SDL_FreeSurface(prSDLScreen);
-  //  prSDLScreen = NULL;
-  //} 
 
   if(Dummy_prSDLScreen == NULL )
   {
@@ -621,7 +620,10 @@ int graphics_init(bool mousecapture)
 void graphics_leave (void)
 {
 	graphics_subshutdown ();
-	SDL_FreeSurface(Dummy_prSDLScreen);
+	if (Dummy_prSDLScreen != NULL) {
+		SDL_FreeSurface(Dummy_prSDLScreen);
+		Dummy_prSDLScreen = NULL;
+	}
 	bcm_host_deinit();
 	SDL_VideoQuit();
 }

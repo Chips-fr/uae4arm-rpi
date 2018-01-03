@@ -2518,14 +2518,15 @@ static void disk_insert_2 (int num, const TCHAR *name, bool forced, bool forcedw
 		drive_insert (drv, &currprefs, num, name, false, forcedwriteprotect);
 	  return;
   }
-  if (!_tcscmp (currprefs.floppyslots[num].df, name))
-  	return;
+	if (!_tcscmp (currprefs.floppyslots[num].df, name))
+  		return;
 	drv->dskeject = false;
-  _tcscpy (drv->newname, name);
+	if (_tcscmp (drv->newname, name))
+		_tcscpy (drv->newname, name);
 	drv->newnamewriteprotected = forcedwriteprotect;
-  _tcscpy (currprefs.floppyslots[num].df, name);
+	_tcscpy (currprefs.floppyslots[num].df, name);
 	currprefs.floppyslots[num].forcedwriteprotect = forcedwriteprotect;
-  DISK_history_add (name, -1, HISTORY_FLOPPY, 0);
+	DISK_history_add (name, -1, HISTORY_FLOPPY, 0);
 	if (name[0] == 0) {
 		disk_eject (num);
 	} else if (!drive_empty(drv) || drv->dskchange_time > 0) {

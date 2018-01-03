@@ -50,7 +50,7 @@ static char vid_drv_name[32];
 static void *display, *window;
 static int gl_quirks;
 
-static char screenshot_filename_default[255]={
+static char screenshot_filename_default[MAX_DPATH]={
 	'/', 't', 'm', 'p', '/', 'n', 'u', 'l', 'l', '.', 'p', 'n', 'g', '\0'
 };
 char *screenshot_filename=(char *)&screenshot_filename_default[0];
@@ -98,18 +98,20 @@ void InitAmigaVidMode(struct uae_prefs *p)
   gfxvidinfo.drawbuffer.rowbytes = prSDLScreen->pitch;
 }
 
-void graphics_dispmanshutdown (void)
-{
-    printf("dispmanshutdown\n");
-}
-
 
 void graphics_subshutdown (void)
 {
   gl_finish();
-  // Dunno if below lines are usefull for Rpi...
-  //SDL_FreeSurface(prSDLScreen);
-  //prSDLScreen = NULL;
+
+  if (Dummy_prSDLScreen != NULL)
+  { 
+    // y.f. 2016-10-13 : free the previous screen surface every time, 
+    // so we can have fullscreen while running and windowed while in config window.
+    // Apparently, something somewhere is resetting the screen.
+    // Chips: confirmed with sanitize gcc option... looks like each SDL_SetVideoMode free previous surface...
+    SDL_FreeSurface(Dummy_prSDLScreen);
+    Dummy_prSDLScreen = NULL;
+  }
 }
 
 
@@ -136,15 +138,6 @@ static void open_screen(struct uae_prefs *p)
     p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
     width  = p->gfx_size.width;
     height = p->gfx_size.height << p->gfx_vresolution;
-  }
-
-
-  if(Dummy_prSDLScreen)
-  { // y.f. 2016-10-13 : free the previous screen surface every time, 
-    // so we can have fullscreen while running and windowed while in config window.
-   // Apparently, something somewhere is resetting the screen.
-	SDL_FreeSurface(Dummy_prSDLScreen);
-	Dummy_prSDLScreen = NULL;
   }
 
   if(Dummy_prSDLScreen == NULL )
