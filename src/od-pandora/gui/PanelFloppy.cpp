@@ -534,6 +534,7 @@ static void AdjustDropDownControls(void)
   
   for(i=0; i<4; ++i)
   {
+    bool found = FALSE;
     cboDFxFile[i]->clearSelected();
 
     if((changed_prefs.floppyslots[i].dfxtype != DRV_NONE) && strlen(changed_prefs.floppyslots[i].df) > 0)
@@ -543,9 +544,15 @@ static void AdjustDropDownControls(void)
         if(!lstMRUDiskList[j].compare(changed_prefs.floppyslots[i].df))
         {
           cboDFxFile[i]->setSelected(j);
+          found = TRUE;
           break;
         }
       }
+      if (!found)
+      {
+        AddFileToDiskList(changed_prefs.floppyslots[i].df, 1);
+        cboDFxFile[i]->setSelected(0);
+      } 
     }
   }
        

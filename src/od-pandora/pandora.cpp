@@ -505,6 +505,7 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
 
     if(count_HDs(p) > 0) // When loading a config with HDs, always do a hardreset
       gui_force_rtarea_hdchange();
+    quickstart_model = -1;
   }
 
   return result;

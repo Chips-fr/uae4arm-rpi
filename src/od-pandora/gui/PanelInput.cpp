@@ -442,7 +442,7 @@ void InitPanelInput(const struct _ConfigCategory& category)
 
 #ifdef ACTION_REPLAY
   lblKeyForCartridge = new gcn::Label("Key for Cartridge:");
-  lblKeyForCartridge->setSize(150, LABEL_HEIGHT);
+  lblKeyForCartridge->setSize(120, LABEL_HEIGHT);
   lblKeyForCartridge->setAlignment(gcn::Graphics::RIGHT);
 #endif
 
@@ -514,7 +514,7 @@ void InitPanelInput(const struct _ConfigCategory& category)
   category.panel->add(KeyForMenu, DISTANCE_BORDER + lblLeft->getWidth() + 8, posY);
 
 #ifdef ACTION_REPLAY
-  category.panel->add(lblKeyForCartridge, 250, posY);
+  category.panel->add(lblKeyForCartridge, 280, posY);
   category.panel->add(KeyForCartridge, 300 + lblLeft->getWidth() + 8, posY);
 #endif
 

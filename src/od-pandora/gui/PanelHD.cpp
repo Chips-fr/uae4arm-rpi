@@ -511,14 +511,21 @@ static void AdjustDropDownControls(void)
   cboCDFile->clearSelected();
   if((changed_prefs.cdslots[0].inuse) && strlen(changed_prefs.cdslots[0].name) > 0)
   {
+    bool found = FALSE;
     for(i = 0; i < lstMRUCDList.size(); ++i)
     {
       if(!lstMRUCDList[i].compare(changed_prefs.cdslots[0].name))
       {
         cboCDFile->setSelected(i);
+        found = TRUE;
         break;
       }
     }
+      if (!found)
+      {
+        AddFileToCDList(changed_prefs.cdslots[0].name, 1);
+        cboCDFile->setSelected(0);
+      }
   }
 }
 

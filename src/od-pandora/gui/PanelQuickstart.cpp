@@ -153,7 +153,8 @@ static void SetControlState(int model)
 
 static void AdjustPrefs(void)
 {
-	built_in_prefs (&changed_prefs, quickstart_model, quickstart_conf, 0, 0);
+  if (quickstart_model > 0)
+    built_in_prefs (&changed_prefs, quickstart_model, quickstart_conf, 0, 0);
   switch(quickstart_model) {
     case 0: // A500
     case 1: // A500+
@@ -730,6 +731,7 @@ static void AdjustDropDownControls(void)
   
   for(i=0; i<2; ++i)
   {
+    bool found = FALSE;
     cboDFxFile[i]->clearSelected();
 
     if((changed_prefs.floppyslots[i].dfxtype != DRV_NONE) && strlen(changed_prefs.floppyslots[i].df) > 0)
@@ -739,22 +741,35 @@ static void AdjustDropDownControls(void)
         if(!lstMRUDiskList[j].compare(changed_prefs.floppyslots[i].df))
         {
           cboDFxFile[i]->setSelected(j);
+          found = TRUE;
           break;
         }
       }
+      if (!found)
+      {
+        AddFileToDiskList(changed_prefs.floppyslots[i].df, 1);
+        cboDFxFile[i]->setSelected(0);
+      } 
     }
   }
 
   cboCDFile->clearSelected();
   if((changed_prefs.cdslots[0].inuse) && strlen(changed_prefs.cdslots[0].name) > 0)
   {
+    bool found = FALSE;
     for(i = 0; i < lstMRUCDList.size(); ++i)
     {
       if(!lstMRUCDList[i].compare(changed_prefs.cdslots[0].name))
       {
         cboCDFile->setSelected(i);
+        found = TRUE;
         break;
       }
+      if (!found)
+      {
+        AddFileToCDList(changed_prefs.cdslots[0].name, 1);
+        cboCDFile->setSelected(0);
+      } 
     }
   }
        
