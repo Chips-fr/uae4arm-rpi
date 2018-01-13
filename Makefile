@@ -18,14 +18,16 @@ else ifeq ($(PLATFORM),rpi1)
 	HAVE_DISPMANX = 1
 	USE_PICASSO96 = 1
 else ifeq ($(PLATFORM),generic-sdl)
-	# On Raspberry Pi uncomment below line or remove ARMV6T2 define.
-	#CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
+	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	endif
 	MORE_CFLAGS += -DARMV6T2
 	HAVE_SDL_DISPLAY = 1
 else ifeq ($(PLATFORM),gles)
-	# For Raspberry Pi uncomment the two below lines
-	#LDFLAGS += -lbcm_host
-	#CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
+	LDFLAGS += -lbcm_host
+	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	endif
 	# Uncomment below line for activating shader support. It's very slown on Allwinner.
 	#MORE_CFLAGS += -DSHADER_SUPPORT
 	MORE_CFLAGS += -DARMV6T2

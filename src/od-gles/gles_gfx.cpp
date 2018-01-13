@@ -6,10 +6,10 @@
 #include "gui.h"
 #include "memory.h"
 #include "newcpu.h"
-#include "inputdevice.h"
 #include "custom.h"
 #include "xwin.h"
 #include "drawing.h"
+#include "inputdevice.h"
 #include "savestate.h"
 #include "picasso96.h"
 
@@ -25,16 +25,14 @@
 
 /* SDL surface variable for output of emulation */
 SDL_Surface *prSDLScreen = NULL;
+unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+static unsigned long last_synctime;
 /* Dummy SDL variable for screen init */
 SDL_Surface *Dummy_prSDLScreen = NULL;
-static SDL_Surface *current_screenshot = NULL;
 /* Possible screen modes (x and y resolutions) */
 #define MAX_SCREEN_MODES 6
 static int x_size_table[MAX_SCREEN_MODES] = { 640, 640, 800, 1024, 1152, 1280 };
 static int y_size_table[MAX_SCREEN_MODES] = { 400, 480, 480,  768,  864,  960 };
-
-unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
-static unsigned long last_synctime;
 
 static int red_bits, green_bits, blue_bits;
 static int red_shift, green_shift, blue_shift;
@@ -44,6 +42,7 @@ struct MultiDisplay Displays[MAX_DISPLAYS];
 
 int screen_is_picasso = 0;
 
+static SDL_Surface *current_screenshot = NULL;
 static int curr_layer_width = 0;
 
 static char vid_drv_name[32];
@@ -226,10 +225,16 @@ int check_prefs_changed_gfx (void)
   if (currprefs.chipset_refreshrate != changed_prefs.chipset_refreshrate) 
   {
   	currprefs.chipset_refreshrate = changed_prefs.chipset_refreshrate;
-	  init_hz_normal();
+	  init_hz_normal ();
 	  changed = 1;
   }
+
+	currprefs.filesys_limit = changed_prefs.filesys_limit;
+	currprefs.harddrive_read_only = changed_prefs.harddrive_read_only;
   
+  if(changed)
+		init_custom ();
+
   return changed;
 }
 
@@ -428,9 +433,6 @@ int graphics_init (bool mousecapture)
 
 	if (!init_colors ())
 		return 0;
-
-	//buttonstate[0] = buttonstate[1] = buttonstate[2] = 0;
-	//keyboard_init();
   
 	return 1;
 }
@@ -533,9 +535,8 @@ static void CreateScreenshot(void)
 
 	w=prSDLScreen->w;
 	h=prSDLScreen->h;
-
-	current_screenshot = SDL_CreateRGBSurface(prSDLScreen->flags,w,h,prSDLScreen->format->BitsPerPixel,prSDLScreen->format->Rmask,prSDLScreen->format->Gmask,prSDLScreen->format->Bmask,prSDLScreen->format->Amask);
-  SDL_BlitSurface(prSDLScreen, NULL, current_screenshot, NULL);
+	current_screenshot = SDL_CreateRGBSurfaceFrom(prSDLScreen->pixels, w, h, prSDLScreen->format->BitsPerPixel, prSDLScreen->pitch,
+	  prSDLScreen->format->Rmask, prSDLScreen->format->Gmask, prSDLScreen->format->Bmask, prSDLScreen->format->Amask);
 }
 
 
