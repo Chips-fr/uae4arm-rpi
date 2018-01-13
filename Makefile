@@ -35,6 +35,11 @@ else ifeq ($(PLATFORM),gles)
 	HAVE_NEON = 1
 endif
 
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   MORE_CFLAGS += -DGIT_VERSION=$(GIT_VERSION)
+endif
+
 NAME   = uae4arm
 RM     = rm -f
 CXX    = g++
