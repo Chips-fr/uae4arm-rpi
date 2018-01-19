@@ -36,7 +36,8 @@ bool LoadConfigByName(const char *name)
   ConfigFileInfo* config = SearchConfigInList(name);
   if(config != NULL)
   {
-    if(emulating) {
+    if (0) {
+    //if(emulating) {
 		  uae_restart(-1, config->FullPath);
     } else {
       txtName->setText(config->Name);
@@ -111,7 +112,8 @@ class ConfigButtonActionListener : public gcn::ActionListener
         // Load selected configuration
         //-----------------------------------------------
         i = lstConfigs->getSelected();
-        if(emulating) {
+        if (0) {
+        //if(emulating) {
   			  uae_restart(-1, ConfigFilesList[i]->FullPath);
         } else {
           target_cfgfile_load(&changed_prefs, ConfigFilesList[i]->FullPath, 0, 0);
@@ -184,7 +186,8 @@ class ConfigsListActionListener : public gcn::ActionListener
         //-----------------------------------------------
         // Selected same config again -> load and start it
         //-----------------------------------------------
-  			if(emulating) {
+  			if (0) {
+  			//if(emulating) {
   			  uae_restart(0, ConfigFilesList[selected_item]->FullPath);
   			} else {
           target_cfgfile_load(&changed_prefs, ConfigFilesList[selected_item]->FullPath, 0, 0);
