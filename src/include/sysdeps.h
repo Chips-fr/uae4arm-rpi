@@ -491,6 +491,9 @@ extern void gui_message (const TCHAR *,...);
 
 #ifdef ARMV6_ASSEMBLY
 
+#define   bswap_16   do_byteswap_16
+#define   bswap_32   do_byteswap_32
+
 STATIC_INLINE uae_u32 do_byteswap_32(uae_u32 v) {
   __asm__ (
 		"rev %0, %0"
