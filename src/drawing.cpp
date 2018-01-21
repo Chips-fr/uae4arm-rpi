@@ -668,9 +668,16 @@ static void init_ham_decoding (void)
 				case 0x20: ham_lastcolor = DECODE_HAM6_2(ham_lastcolor, pv); break;
 				case 0x30: ham_lastcolor = DECODE_HAM6_3(ham_lastcolor, pv); break;
 #else
+#if 0
+// Looks like uae4arm use a different way for ham intermediate decoding.
 				case 0x10: ham_lastcolor &= 0xFF0; ham_lastcolor |= (pv & 0xF); break;
 				case 0x20: ham_lastcolor &= 0x0FF; ham_lastcolor |= (pv & 0xF) << 8; break;
 				case 0x30: ham_lastcolor &= 0xF0F; ham_lastcolor |= (pv & 0xF) << 4; break;
+#else
+				case 0x10: ham_lastcolor &= 0xFFE1; ham_lastcolor |= (pv & 0xF) << 1; break;
+				case 0x20: ham_lastcolor &= 0x0FFF; ham_lastcolor |= (pv & 0xF) << 12; break;
+				case 0x30: ham_lastcolor &= 0xF87F; ham_lastcolor |= (pv & 0xF) << 7; break;
+#endif
 #endif
 			}
 		}
@@ -742,9 +749,16 @@ static void decode_ham (int pix, int stoppos)
 				case 0x20: ham_lastcolor = DECODE_HAM6_2(ham_lastcolor, pv); break;
 				case 0x30: ham_lastcolor = DECODE_HAM6_3(ham_lastcolor, pv); break;
 #else
+#if 0
+// Looks like uae4arm use a different way for ham intermediate decoding.
 				case 0x10: ham_lastcolor &= 0xFF0; ham_lastcolor |= (pv & 0xF); break;
 				case 0x20: ham_lastcolor &= 0x0FF; ham_lastcolor |= (pv & 0xF) << 8; break;
 				case 0x30: ham_lastcolor &= 0xF0F; ham_lastcolor |= (pv & 0xF) << 4; break;
+#else
+				case 0x10: ham_lastcolor &= 0xFFE1; ham_lastcolor |= (pv & 0xF) << 1; break;
+				case 0x20: ham_lastcolor &= 0x0FFF; ham_lastcolor |= (pv & 0xF) << 12; break;
+				case 0x30: ham_lastcolor &= 0xF87F; ham_lastcolor |= (pv & 0xF) << 7; break;
+#endif
 #endif
 			}
 			ham_linebuf[ham_decode_pixel++] = ham_lastcolor;
