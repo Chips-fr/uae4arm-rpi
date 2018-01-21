@@ -1617,6 +1617,8 @@ void m68k_go (int may_quit)
 
 			if (quit_program == UAE_QUIT)
     		break;
+	    if(quit_program == UAE_RESET_HARD)
+	      reinit_amiga();
 
 			hsync_counter = 0;
 	    quit_program = 0;

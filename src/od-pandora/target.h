@@ -114,6 +114,7 @@ extern void AddFileToCDList(const char *file, int moveToTop);
 extern const int amigawidth_values[AMIGAWIDTH_COUNT];
 extern const int amigaheight_values[AMIGAHEIGHT_COUNT];
 
+void reinit_amiga(void);
 int count_HDs(struct uae_prefs *p);
 extern void gui_force_rtarea_hdchange(void);
 extern void gui_restart(void);

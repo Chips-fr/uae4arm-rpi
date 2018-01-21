@@ -653,13 +653,14 @@ void leave_program (void)
 static int real_main2 (int argc, TCHAR **argv)
 {
   printf("Uae4arm v0.5 for Raspberry Pi by Chips\n");
+  printf("Based on uae version: %i.%i.%i\n",UAEMAJOR,UAEMINOR,UAESUBREV);
 #ifdef GIT_VERSION
 
 #define STR_(x) #x
 #define STR(x) STR_(x)
   const char git_version[] = STR(GIT_VERSION);
 
-  printf("Git : %s\n",git_version);
+  printf("Git revision: %s\n",git_version);
 #endif
 #ifdef PANDORA_SPECIFIC
   SDL_Init(SDL_INIT_NOPARACHUTE | SDL_INIT_VIDEO);

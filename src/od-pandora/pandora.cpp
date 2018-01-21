@@ -33,6 +33,21 @@
 #include <SDL.h>
 #include "pandora_rp9.h"
 
+// Temporary reintroduce reinit_amiga
+#include "newcpu.h"
+#include "custom.h"
+#include "xwin.h"
+#include "drawing.h"
+#include "autoconf.h"
+#include "custom.h"
+#include "keybuf.h"
+#include "bsdsocket.h"
+#include "blkdev.h"
+#include "native2amiga.h"
+#include "uaeresource.h"
+#include "akiko.h"
+// Temporary reintroduce reinit_amiga
+
 #ifdef WITH_LOGGING
 extern FILE *debugfile;
 #endif
@@ -75,6 +90,74 @@ int max_uae_height;
 
 
 extern "C" int main( int argc, char *argv[] );
+
+
+void reinit_amiga(void)
+{
+  write_log("reinit_amiga() called\n");
+  DISK_free ();
+#ifdef CD32
+	akiko_free ();
+#endif
+#ifdef FILESYS
+  filesys_cleanup ();
+  hardfile_reset();
+#endif
+#ifdef AUTOCONFIG
+#if defined (BSDSOCKET)
+  bsdlib_reset();
+#endif
+  expansion_cleanup ();
+#endif
+	device_func_reset ();
+  memory_cleanup ();
+  
+  /* At this point, there might run some threads from bsdsocket.*/
+//  write_log("Threads in reinit_amiga():\n");
+//  dbg_list_threads();
+
+  init_mem_banks ();
+
+  currprefs = changed_prefs;
+  /* force sound settings change */
+  currprefs.produce_sound = 0;
+
+  HandleA3000Mem(currprefs.mbresmem_low_size, currprefs.mbresmem_high_size);
+  
+  framecnt = 1;
+#ifdef AUTOCONFIG
+  rtarea_setup ();
+#endif
+#ifdef FILESYS
+  rtarea_init ();
+  uaeres_install ();
+  hardfile_install();
+#endif
+  keybuf_init();
+
+#ifdef AUTOCONFIG
+  expansion_init ();
+#endif
+#ifdef FILESYS
+  filesys_install (); 
+#endif
+  memory_init ();
+  memory_reset ();
+
+#ifdef AUTOCONFIG
+#if defined (BSDSOCKET)
+	bsdlib_install ();
+#endif
+  emulib_install ();
+  native2amiga_install ();
+#endif
+
+  custom_init (); /* Must come after memory_init */
+  DISK_init ();
+  
+  reset_frame_rate_hack ();
+  init_m68k();
+}
 
 
 void sleep_millis_main (int ms)
