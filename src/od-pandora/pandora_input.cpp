@@ -283,7 +283,9 @@ static int init_joystick (void)
     Joysticktable[cpt] = SDL_JoystickOpen (cpt);
     strncpy(JoystickName[cpt],SDL_JoystickName(cpt),80);
     printf("Joystick %i : %s\n",cpt,JoystickName[cpt]);
-    printf("    Buttons: %i Axis: %i Hats: %i\n",SDL_JoystickNumButtons(Joysticktable[cpt]),SDL_JoystickNumAxes(Joysticktable[cpt]),SDL_JoystickNumHats(Joysticktable[cpt]));
+    printf("    Axis      : %i\n",SDL_JoystickNumAxes(Joysticktable[cpt]));
+    printf("    Hats/DPads: %i\n",SDL_JoystickNumHats(Joysticktable[cpt]));
+    printf("    Buttons   : %i\n",SDL_JoystickNumButtons(Joysticktable[cpt]));
 
     if (strcmp(JoystickName[cpt],"Sony PLAYSTATION(R)3 Controller") == 0 ||
             strcmp(JoystickName[cpt],"PLAYSTATION(R)3 Controller") == 0)

@@ -84,7 +84,7 @@ ifndef DEBUG
 MORE_CFLAGS += -Ofast -fomit-frame-pointer
 MORE_CFLAGS += -finline -fno-builtin
 else
-MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic
+MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING
 
 #MORE_CFLAGS += -fsanitize=address -fsanitize=bounds
 #LDFLAGS += -static-libasan -fsanitize=address -fsanitize=bounds
@@ -98,7 +98,6 @@ endif
 ASFLAGS += $(CPU_FLAGS)
 
 CXXFLAGS += $(SDL_CFLAGS) $(CPU_FLAGS) $(DEFS) $(MORE_CFLAGS)
-
 
 ifdef GEN_PROFILE
 MORE_CFLAGS += -fprofile-generate=/media/MAINSD/pandora/test -fprofile-arcs -fvpt
