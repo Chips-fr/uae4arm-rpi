@@ -125,6 +125,7 @@ static void parse_compatibility(struct uae_prefs *p, xmlNode *node)
         {
           p->cachesize = 8192;
           p->address_space_24 = 0;
+          p->compfpu = true;
         }
         else if(strcmp((const char *) content, "flexible-cpu-cycles") == 0)
           p->cpu_compatible = 0;
@@ -313,6 +314,12 @@ static void parse_peripheral(struct uae_prefs *p, xmlNode *node)
           {
             p->cachesize = atoi((const char *) attr) / 1024;
             xmlFree(attr);
+          }
+          attr = xmlGetProp(curr_node, (const xmlChar *) _T("fpu"));
+          if(attr != NULL) 
+          {
+						if(strcmp((const char *) attr, "false") == 0)
+							p->compfpu = false;
           }
         }
         xmlFree(content);

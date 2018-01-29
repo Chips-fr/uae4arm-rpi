@@ -1,7 +1,7 @@
  /*
   * UAE - The Un*x Amiga Emulator
   *
-  * Target specific stuff, Pandora version
+  * Target specific stuff, Pandora and RaspberryPi version
   */
 
 #include <SDL.h>
@@ -19,7 +19,9 @@ STATIC_INLINE FILE *uae_tfopen(const TCHAR *path, const TCHAR *mode)
 }
 
 
-/* ToDo: check for right place or still required... */
+extern void fix_apmodes(struct uae_prefs *p);
+extern int generic_main (int argc, char *argv[]);
+
 
 #define OFFSET_Y_ADJUST 15
 
@@ -28,7 +30,6 @@ extern int emulating;
 extern uae_u8* natmem_offset;
 extern int z3base_adr;
 
-extern int currVSyncRate;
 extern unsigned long time_per_frame;
 
 void run_gui(void);
@@ -41,19 +42,11 @@ extern int screen_is_picasso;
 bool HandleA3000Mem(int lowsize, int highsize);
 
 void saveAdfDir(void);
-bool SetVSyncRate(int hz);
-void setCpuSpeed(void);
-void resetCpuSpeed(void);
 void update_display(struct uae_prefs *);
 void black_screen_now(void);
 void graphics_subshutdown (void);
-void moveVertical(int value);
-
-void pandora_stop_sound(void);
 
 void keyboard_settrans (void);
-int translate_pandora_keys(int symbol, int *modifier);
-void SimulateMouseOrJoy(int code, int keypressed);
 
 #define REMAP_MOUSEBUTTON_LEFT    -1
 #define REMAP_MOUSEBUTTON_RIGHT   -2
@@ -118,6 +111,8 @@ extern void gui_force_rtarea_hdchange(void);
 extern void gui_restart(void);
 extern bool hardfile_testrdb (const TCHAR *filename);
 
+extern bool host_poweroff;
+
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -158,3 +153,14 @@ STATIC_INLINE void atomic_set(volatile uae_atomic *p, uae_u32 v)
 {
   __sync_lock_test_and_set(p, v);
 }
+
+#ifdef USE_JIT_FPU
+#ifdef __cplusplus
+  extern "C" {
+#endif
+    void save_host_fp_regs(void* buf);
+    void restore_host_fp_regs(void* buf);
+#ifdef __cplusplus
+  }
+#endif
+#endif

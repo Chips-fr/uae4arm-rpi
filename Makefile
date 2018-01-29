@@ -4,7 +4,7 @@ endif
 
 ifeq ($(PLATFORM),rpi2)
 	CPU_FLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 
+	MORE_CFLAGS += -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DUSE_JIT_FPU
 	LDFLAGS += -lbcm_host
 	DEFS += -DRASPBERRY
 	HAVE_NEON = 1
@@ -30,7 +30,7 @@ else ifeq ($(PLATFORM),gles)
 	endif
 	# Uncomment below line for activating shader support. It's very slown on Allwinner.
 	#MORE_CFLAGS += -DSHADER_SUPPORT
-	MORE_CFLAGS += -DARMV6T2
+	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
 endif

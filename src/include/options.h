@@ -285,9 +285,9 @@ struct uae_prefs {
   int sound_filter_type;
 	int sound_volume_cd;
 
+	bool compfpu;
   int cachesize;
 	bool fpu_strict;
-	bool fpu_softfloat;
 
   int gfx_framerate;
   struct wh gfx_size;

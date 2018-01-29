@@ -1117,6 +1117,9 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 	if (p->sound_volume_cd >= 0)
 		cfgfile_write (f, _T("sound_volume_cd"), _T("%d"), p->sound_volume_cd);
 
+#ifdef USE_JIT_FPU
+	cfgfile_write_bool (f, _T("compfpu"), p->compfpu);
+#endif
   cfgfile_write (f, _T("cachesize"), _T("%d"), p->cachesize);
 
 	for (i = 0; i < MAX_JPORTS; i++) {
@@ -1363,7 +1366,6 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
 
 	cfgfile_dwrite_bool (f, _T("fpu_no_unimplemented"), p->fpu_no_unimplemented);
 	cfgfile_write_bool (f, _T("fpu_strict"), p->fpu_strict);
-	cfgfile_dwrite_bool (f, _T("fpu_softfloat"), p->fpu_softfloat);
 
   cfgfile_write (f, _T("rtg_modes"), _T("0x%x"), p->picasso96_modeflags);
 
@@ -3039,7 +3041,9 @@ static int cfgfile_parse_hardware (struct uae_prefs *p, const TCHAR *option, TCH
 	  || cfgfile_yesno (option, value, _T("cpu_compatible"), &p->cpu_compatible)
 	  || cfgfile_yesno (option, value, _T("cpu_24bit_addressing"), &p->address_space_24)
 		|| cfgfile_yesno (option, value, _T("fpu_strict"), &p->fpu_strict)
-		|| cfgfile_yesno (option, value, _T("fpu_softfloat"), &p->fpu_softfloat)
+#ifdef USE_JIT_FPU
+		|| cfgfile_yesno (option, value, _T("compfpu"), &p->compfpu)
+#endif
 		|| cfgfile_yesno (option, value, _T("floppy_write_protect"), &p->floppy_read_only)
 		|| cfgfile_yesno(option, value, _T("harddrive_write_protect"), &p->harddrive_read_only))
 	  return 1;
@@ -4430,6 +4434,11 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
   p->sound_filter_type = 0;
 	p->sound_volume_cd = 20;
 
+#ifdef USE_JIT_FPU
+	p->compfpu = 1;
+#else
+	p->compfpu = 0;
+#endif
   p->cachesize = 0;
 
   p->gfx_framerate = 0;
@@ -4509,7 +4518,6 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
   p->cpu_model = 68000;
 	p->fpu_no_unimplemented = false;
 	p->fpu_strict = 0;
-	p->fpu_softfloat = 0;
   p->m68k_speed = 0;
   p->cpu_compatible = 0;
   p->address_space_24 = 1;
