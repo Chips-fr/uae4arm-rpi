@@ -63,6 +63,12 @@ static gcn::Label *lblRight;
 static gcn::UaeDropDown* cboRight;
 static gcn::Label *lblKeyForMenu;
 static gcn::UaeDropDown* KeyForMenu;
+static gcn::Label *lblButtonForMenu;
+static gcn::UaeDropDown* ButtonForMenu;
+static gcn::Label *lblKeyForQuit;
+static gcn::UaeDropDown* KeyForQuit;
+static gcn::Label *lblButtonForQuit;
+static gcn::UaeDropDown* ButtonForQuit;
 #ifdef ACTION_REPLAY
 static gcn::Label *lblKeyForCartridge;
 static gcn::UaeDropDown* KeyForCartridge;
@@ -110,10 +116,15 @@ const char *tapDelayValues[] = { "Normal", "Short", "None" };
 StringListModel tapDelayList(tapDelayValues, 3);
 #endif
 
-static const int ControlKey_SDLKeyValues[] = { SDLK_F11 , SDLK_F12, SDLK_LALT , SDLK_LCTRL };
+static const int ControlKey_SDLKeyValues[] = { 0, SDLK_F11 , SDLK_F12, SDLK_LALT , SDLK_LCTRL };
 
-const char *ControlKeyValues[] = { "F11", "F12", "LeftAlt", "LeftCtrl" };
-StringListModel ControlKeyList(ControlKeyValues, 4);
+const char *ControlKeyValues[] = { "------------------", "F11", "F12", "LeftAlt", "LeftCtrl" };
+StringListModel ControlKeyList(ControlKeyValues, 5);
+
+static const int ControlButton_SDLButtonValues[] = { -1, 0, 1, 2, 3, 4 , 5};
+
+const char *ControlButtonValues[] = { "------------------", "JoyButton0", "JoyButton1", "JoyButton2", "JoyButton3",  "JoyButton4", "JoyButton5" };
+StringListModel ControlButtonList(ControlButtonValues, 7);
 
 const char *mappingValues[] = {
   "CD32 rwd", "CD32 ffw", "CD32 play", "CD32 yellow", "CD32 green",
@@ -162,6 +173,27 @@ static int GetAmigaKeyIndex(int key)
   return 13; // Default: no key
 }
 
+static int GetControlKeyIndex(int key)
+{
+	int ControlKey_SDLKeyValues_Length = sizeof(ControlKey_SDLKeyValues) / sizeof(int);
+	for (int i = 0; i < (ControlKey_SDLKeyValues_Length + 1); ++i)
+	{
+		if (ControlKey_SDLKeyValues[i] == key)
+			return i;
+	}
+	return 0; // Default: no key
+}
+
+static int GetControlButtonIndex(int button)
+{
+	int ControlButton_SDLButtonValues_Length = sizeof(ControlButton_SDLButtonValues) / sizeof(int);
+	for (int i = 0; i < (ControlButton_SDLButtonValues_Length + 1); ++i)
+	{
+		if (ControlButton_SDLButtonValues[i] == button)
+			return i;
+	}
+	return 0; // Default: no key
+}
 
 class InputActionListener : public gcn::ActionListener
 {
@@ -266,6 +298,15 @@ class InputActionListener : public gcn::ActionListener
 
  	    else if (actionEvent.getSource() == KeyForMenu)
         currprefs.key_for_menu = changed_prefs.key_for_menu = ControlKey_SDLKeyValues[KeyForMenu->getSelected()] ;
+
+	    else if (actionEvent.getSource() == KeyForQuit)
+	currprefs.key_for_quit = changed_prefs.key_for_quit = ControlKey_SDLKeyValues[KeyForQuit->getSelected()];
+
+	    else if (actionEvent.getSource() == ButtonForMenu)
+	currprefs.button_for_menu = changed_prefs.button_for_menu = ControlButton_SDLButtonValues[ButtonForMenu->getSelected()];
+        
+	    else if (actionEvent.getSource() == ButtonForQuit)
+	currprefs.button_for_quit = changed_prefs.button_for_quit = ControlButton_SDLButtonValues[ButtonForQuit->getSelected()];
 
 #ifdef ACTION_REPLAY
  	    else if (actionEvent.getSource() == KeyForCartridge )
@@ -436,15 +477,9 @@ void InitPanelInput(const struct _ConfigCategory& category)
   cboRight->setId("cboRight");
   cboRight->addActionListener(inputActionListener);
 
-  lblKeyForMenu = new gcn::Label("Key for Menu:");
+  lblKeyForMenu = new gcn::Label("Menu key:");
   lblKeyForMenu->setSize(100, LABEL_HEIGHT);
   lblKeyForMenu->setAlignment(gcn::Graphics::RIGHT);
-
-#ifdef ACTION_REPLAY
-  lblKeyForCartridge = new gcn::Label("Key for Cartridge:");
-  lblKeyForCartridge->setSize(120, LABEL_HEIGHT);
-  lblKeyForCartridge->setAlignment(gcn::Graphics::RIGHT);
-#endif
 
   KeyForMenu = new gcn::UaeDropDown(&ControlKeyList);
   KeyForMenu->setSize(150, DROPDOWN_HEIGHT);
@@ -452,7 +487,38 @@ void InitPanelInput(const struct _ConfigCategory& category)
   KeyForMenu->setId("CKeyMenu");
   KeyForMenu->addActionListener(inputActionListener);
 
+  lblKeyForQuit = new gcn::Label("Quit Key:");
+  lblKeyForQuit->setSize(100, LABEL_HEIGHT);
+  lblKeyForQuit->setAlignment(gcn::Graphics::RIGHT);
+  KeyForQuit = new gcn::UaeDropDown(&ControlKeyList);
+  KeyForQuit->setSize(150, DROPDOWN_HEIGHT);
+  KeyForQuit->setBaseColor(gui_baseCol);
+  KeyForQuit->setId("KeyForQuit");
+  KeyForQuit->addActionListener(inputActionListener);
+
+  lblButtonForMenu = new gcn::Label("Menu Button:");
+  lblButtonForMenu->setSize(100, LABEL_HEIGHT);
+  lblButtonForMenu->setAlignment(gcn::Graphics::RIGHT);
+  ButtonForMenu = new gcn::UaeDropDown(&ControlButtonList);
+  ButtonForMenu->setSize(150, DROPDOWN_HEIGHT);
+  ButtonForMenu->setBaseColor(gui_baseCol);
+  ButtonForMenu->setId("ButtonForMenu");
+  ButtonForMenu->addActionListener(inputActionListener);
+
+  lblButtonForQuit = new gcn::Label("Quit Button:");
+  lblButtonForQuit->setSize(100, LABEL_HEIGHT);
+  lblButtonForQuit->setAlignment(gcn::Graphics::RIGHT);
+  ButtonForQuit = new gcn::UaeDropDown(&ControlButtonList);
+  ButtonForQuit->setSize(150, DROPDOWN_HEIGHT);
+  ButtonForQuit->setBaseColor(gui_baseCol);
+  ButtonForQuit->setId("ButtonForQuit");
+  ButtonForQuit->addActionListener(inputActionListener);
+
 #ifdef ACTION_REPLAY
+  lblKeyForCartridge = new gcn::Label("Key for Cartridge:");
+  lblKeyForCartridge->setSize(120, LABEL_HEIGHT);
+  lblKeyForCartridge->setAlignment(gcn::Graphics::RIGHT);
+
   KeyForCartridge = new gcn::UaeDropDown(&ControlKeyList);
   KeyForCartridge->setSize(150, DROPDOWN_HEIGHT);
   KeyForCartridge->setBaseColor(gui_baseCol);
@@ -463,17 +529,17 @@ void InitPanelInput(const struct _ConfigCategory& category)
   int posY = DISTANCE_BORDER;
   category.panel->add(lblPort0, DISTANCE_BORDER, posY);
   category.panel->add(cboPort0, DISTANCE_BORDER + lblPort0->getWidth() + 8, posY);
-  posY += cboPort0->getHeight() + DISTANCE_NEXT_Y;
+  posY += cboPort0->getHeight() + 4;
   category.panel->add(lblPort1, DISTANCE_BORDER, posY);
   category.panel->add(cboPort1, DISTANCE_BORDER + lblPort1->getWidth() + 8, posY);
 
   posY += cboPort1->getHeight() + DISTANCE_NEXT_Y;
   category.panel->add(lblAutofire, DISTANCE_BORDER, posY);
   category.panel->add(cboAutofire, DISTANCE_BORDER + lblAutofire->getWidth() + 8, posY);
-  posY += cboAutofire->getHeight() + DISTANCE_NEXT_Y;
+  //posY += cboAutofire->getHeight() + DISTANCE_NEXT_Y;
 
-  category.panel->add(lblMouseSpeed, DISTANCE_BORDER, posY);
-  category.panel->add(sldMouseSpeed, DISTANCE_BORDER + lblMouseSpeed->getWidth() + 8, posY);
+  category.panel->add(lblMouseSpeed, 300, posY);
+  category.panel->add(sldMouseSpeed, 300 + lblMouseSpeed->getWidth() + 8, posY);
   category.panel->add(lblMouseSpeedInfo, sldMouseSpeed->getX() + sldMouseSpeed->getWidth() + 12, posY);
   posY += sldMouseSpeed->getHeight() + DISTANCE_NEXT_Y;
 #ifndef RASPBERRY
@@ -512,13 +578,22 @@ void InitPanelInput(const struct _ConfigCategory& category)
   
   category.panel->add(lblKeyForMenu, DISTANCE_BORDER, posY);
   category.panel->add(KeyForMenu, DISTANCE_BORDER + lblLeft->getWidth() + 8, posY);
+  category.panel->add(lblKeyForQuit, 300, posY);
+  category.panel->add(KeyForQuit, 300 + lblKeyForQuit->getWidth() + 8 , posY);
+  posY += KeyForMenu->getHeight() + 4;
+
+  category.panel->add(lblButtonForMenu, DISTANCE_BORDER, posY);
+  category.panel->add(ButtonForMenu, DISTANCE_BORDER + lblButtonForMenu->getWidth() + 8, posY);
+  category.panel->add(lblButtonForQuit, 300, posY);
+  category.panel->add(ButtonForQuit, 300 + lblButtonForQuit->getWidth() + 8, posY);
+  posY += ButtonForMenu->getHeight() + 4;
 
 #ifdef ACTION_REPLAY
   category.panel->add(lblKeyForCartridge, 280, posY);
   category.panel->add(KeyForCartridge, 300 + lblLeft->getWidth() + 8, posY);
 #endif
 
-  posY += KeyForMenu->getHeight() + 4;
+  posY += KeyForMenu->getHeight() + DISTANCE_NEXT_Y;
 
   RefreshPanelInput();
 }
@@ -663,14 +738,11 @@ void RefreshPanelInput(void)
   cboLeft->setSelected(GetAmigaKeyIndex(customControlMap[VK_LEFT]));
   cboRight->setSelected(GetAmigaKeyIndex(customControlMap[VK_RIGHT]));
 
-  for(i=0; i<4; ++i)
-  {
-    if(changed_prefs.key_for_menu == ControlKey_SDLKeyValues[i])
-    {
-      KeyForMenu->setSelected(i);
-      break;
-    }
-  }
+  KeyForMenu->setSelected(GetControlKeyIndex(changed_prefs.key_for_menu));
+  KeyForQuit->setSelected(GetControlKeyIndex(changed_prefs.key_for_quit));
+  ButtonForMenu->setSelected(GetControlButtonIndex(changed_prefs.button_for_menu));
+  ButtonForQuit->setSelected(GetControlButtonIndex(changed_prefs.button_for_quit));
+
 #ifdef ACTION_REPLAY
   for(i=0; i<4; ++i)
   {

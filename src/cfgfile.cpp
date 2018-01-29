@@ -1167,6 +1167,9 @@ void cfgfile_save_options (struct zfile *f, struct uae_prefs *p, int type)
   cfgfile_dwrite_str (f, _T("absolute_mouse"), abspointers[p->input_tablet]);
 
   cfgfile_write (f, _T("key_for_menu"), _T("%d"), p->key_for_menu);
+  cfgfile_write(f, _T("key_for_quit"), _T("%d"), p->key_for_quit);
+  cfgfile_write(f, _T("button_for_menu"), _T("%d"), p->button_for_menu);
+  cfgfile_write(f, _T("button_for_quit"), _T("%d"), p->button_for_quit);
 
 #ifdef ACTION_REPLAY
   cfgfile_write (f, _T("key_for_cartridge"), _T("%d"), p->key_for_cartridge);
@@ -1933,6 +1936,15 @@ static int cfgfile_parse_host (struct uae_prefs *p, TCHAR *option, TCHAR *value)
 
   if (cfgfile_intval (option, value, "key_for_menu", &p->key_for_menu, 1))
     return 1;
+
+	if (cfgfile_intval(option, value, "key_for_quit", &p->key_for_quit, 1))
+		return 1;
+
+	if (cfgfile_intval(option, value, "button_for_menu", &p->button_for_menu, 1))
+		return 1;
+
+	if (cfgfile_intval(option, value, "button_for_quit", &p->button_for_quit, 1))
+		return 1;
 
 #ifdef ACTION_REPLAY
   if (cfgfile_intval (option, value, "key_for_cartridge", &p->key_for_cartridge, 1))
@@ -4535,9 +4547,12 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
   p->input_tablet = TABLET_OFF;
 
   p->key_for_menu = SDLK_F12;
+  p->key_for_quit = 0;
+  p->button_for_menu = -1;
+  p->button_for_quit = -1;
 
 #ifdef ACTION_REPLAY
-  p->key_for_cartridge = SDLK_F11;
+  p->key_for_cartridge = 0;
 #endif
 
   inputdevice_default_prefs (p);

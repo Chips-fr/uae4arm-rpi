@@ -5496,6 +5496,12 @@ void inputdevice_copyconfig (struct uae_prefs *src, struct uae_prefs *dst)
 	dst->input_joymouse_speed = src->input_joymouse_speed;
 	dst->input_mouse_speed = src->input_mouse_speed;
   dst->input_autofire_linecnt = src->input_autofire_linecnt;
+
+  dst->key_for_menu = src->key_for_menu;
+  dst->key_for_quit = src->key_for_quit;
+  dst->button_for_menu = src->button_for_menu;
+  dst->button_for_quit = src->button_for_quit;
+
 	for (int i = 0; i < MAX_JPORTS; i++) {
 		copyjport (src, dst, i);
 	}

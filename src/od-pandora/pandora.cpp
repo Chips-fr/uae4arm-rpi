@@ -985,11 +985,20 @@ int handle_msgpump (void)
   		case SDL_QUIT:
   			uae_quit();
   			break;
-  			
+
+		case SDL_JOYBUTTONDOWN:
+			if (currprefs.button_for_menu != -1 && rEvent.jbutton.button == currprefs.button_for_menu)
+				inputdevice_add_inputcode(AKS_ENTERGUI, 1);
+			if (currprefs.button_for_quit != -1 && rEvent.jbutton.button == currprefs.button_for_quit)
+				inputdevice_add_inputcode(AKS_QUIT, 1);
+			break;
+	
   		case SDL_KEYDOWN:
 
-  		  if(rEvent.key.keysym.sym == currprefs.key_for_menu)
-  		    inputdevice_add_inputcode (AKS_ENTERGUI, 1);
+  		  if (currprefs.key_for_menu != 0 && rEvent.key.keysym.sym == currprefs.key_for_menu)
+  		  	inputdevice_add_inputcode(AKS_ENTERGUI, 1);
+  		  if (currprefs.key_for_quit != 0 && rEvent.key.keysym.sym == currprefs.key_for_quit)
+  		  	inputdevice_add_inputcode(AKS_QUIT, 1);
 #ifdef ACTION_REPLAY
   		  if(rEvent.key.keysym.sym == currprefs.key_for_cartridge)
         		      if(currprefs.cartfile[0] != '\0') {
