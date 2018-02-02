@@ -83,7 +83,7 @@ static clock_t emul_end_time	= 0;
 #endif
 
 #ifdef PROFILE_UNTRANSLATED_INSNS
-static int untranslated_top_ten = 30;
+static int untranslated_top_ten = 20;
 static uae_u32 raw_cputbl_count[65536] = { 0, };
 static uae_u16 opcode_nums[65536];
 
@@ -94,7 +94,7 @@ static int untranslated_compfn(const void *e1, const void *e2)
 }
 #endif
 
-#define NATMEM_OFFSETX (uae_u32)natmem_offset
+#define NATMEM_OFFSETX regs.natmem_offset
 
 static compop_func *compfunctbl[65536];
 static compop_func *nfcompfunctbl[65536];
@@ -715,8 +715,6 @@ static uae_u32 data_wasted = 0;
 static uae_u32 data_buffers_used = 0;
 #endif
 
-static uae_s32 data_natmem_pos = 0;
-
 STATIC_INLINE void compemu_raw_branch(IMM d);
 
 STATIC_INLINE void data_check_end(uae_s32 n, uae_s32 codesize)
@@ -733,8 +731,6 @@ STATIC_INLINE void data_check_end(uae_s32 n, uae_s32 codesize)
     data_writepos = get_target_noopt();
     data_endpos = data_writepos + DATA_BUFFER_SIZE;
     set_target(get_target_noopt() + DATA_BUFFER_SIZE);
-
-    data_natmem_pos = 0;
   }
 }
 
@@ -767,15 +763,6 @@ STATIC_INLINE uae_s32 data_long_offs(uae_u32 x)
 STATIC_INLINE uae_s32 get_data_offset(uae_s32 t) 
 {
 	return t - (uae_s32)get_target_noopt() - 8;
-}
-
-STATIC_INLINE uae_s32 get_data_natmem(void)
-{
-  if(data_natmem_pos == 0 || (uae_s32)get_target_noopt() - data_natmem_pos >= DATA_BUFFER_MAXOFFSET)
-  {
-    data_natmem_pos = data_long(NATMEM_OFFSETX, 4);
-  }
-  return get_data_offset(data_natmem_pos);
 }
 
 STATIC_INLINE void reset_data_buffer(void)
@@ -1386,26 +1373,27 @@ STATIC_INLINE void f_disassociate(int r)
 }
 
 
-
 static int f_alloc_reg(int r, int willclobber)
 {
 	int bestreg;
 
 	if(r < 8)
-	  bestreg = r + 8; // map real Amiga reg to ARM VFP reg 8-15
-	else
-	  bestreg = r - 8; // map FP_RESULT, FS1, FS2 or FS3 to ARM VFP reg 0-3
+	  bestreg = r + 8;   // map real Amiga reg to ARM VFP reg 8-15 (call save)
+	else if(r == FP_RESULT)
+		bestreg = 6;	 // map FP_RESULT to ARM VFP reg 6
+	else // FS1
+	  bestreg = 7; 	 	 // map FS1 to ARM VFP reg 7
 
 	if (!willclobber) {
 		if (live.fate[r].status == INMEM) {
 			compemu_raw_fmov_rm(bestreg, (uintptr)live.fate[r].mem);
-			live.fate[r].status=CLEAN;
+			live.fate[r].status = CLEAN;
 		}
 	}
 	else {
 		live.fate[r].status = DIRTY;
 	}
-	live.fate[r].realreg=bestreg;
+	live.fate[r].realreg = bestreg;
 	live.fat[bestreg].holds = r;
 	live.fat[bestreg].nholds = 1;
 
@@ -1512,24 +1500,6 @@ static scratch_t scratch;
  * Support functions exposed to newcpu                              *
  ********************************************************************/
 
-static void compiler_init(void)
-{
-	static bool initialized = false;
-	if (initialized)
-		return;
-	
-	initialized = true;
-
-#ifdef PROFILE_UNTRANSLATED_INSNS
-	jit_log("<JIT compiler> : gather statistics on untranslated insns count");
-#endif
-
-#ifdef PROFILE_COMPILE_TIME
-	jit_log("<JIT compiler> : gather statistics on translation time");
-	emul_start_time = clock();
-#endif
-}
-
 void compiler_exit(void)
 {
 #ifdef PROFILE_COMPILE_TIME
@@ -1580,15 +1550,7 @@ void compiler_exit(void)
 		dp = table68k + opcode_nums[i];
 		for (lookup = lookuptab; lookup->mnemo != (instrmnem)dp->mnemo; lookup++)
 			;
-		if(strcmp(lookup->name, "FPP") == 0
-		|| strcmp(lookup->name, "FBcc") == 0
-		|| strcmp(lookup->name, "DIVS") == 0
-		|| strcmp(lookup->name, "DIVU") == 0
-		|| strcmp(lookup->name, "DIVL") == 0) {
-		  untranslated_top_ten++; // Ignore this
-		}
-		else
-  		jit_log("%03d: %04x %10u %s", i, opcode_nums[i], count, lookup->name);
+ 		jit_log("%03d: %04x %10u %s", i, opcode_nums[i], count, lookup->name);
 	}
 #endif
 }
@@ -1679,12 +1641,14 @@ void flush(int save_regs)
   sync_m68k_pc(); /* mid level */
 
   if (save_regs) {
+#ifdef USE_JIT_FPU
 		for (i = 0; i < VFREGS; i++) {
 			if (live.fate[i].needflush == NF_SCRATCH ||
 				live.fate[i].status == CLEAN) {
 					f_disassociate(i);
 			}
 		}
+#endif
   	for (i=0; i<=FLAGTMP; i++) {
   		switch(live.state[i].status) {
   		  case INMEM:
@@ -1705,11 +1669,13 @@ void flush(int save_regs)
   	      break;
 	    }
 	  }
+#ifdef USE_JIT_FPU
 		for (i = 0; i <= FP_RESULT; i++) {
 			if (live.fate[i].status == DIRTY) {
 				f_evict(i);
 			}
 		}
+#endif
   }
 }
 
@@ -1727,9 +1693,9 @@ void freescratch(void)
 
   for (i = S1; i < VREGS; i++)
     forget_about(i);
-
-	for (i = FS1; i <= FS3; i++) // only FS1-FS3
-		f_forget_about(i);
+#ifdef USE_JIT_FPU
+	f_forget_about(FS1);
+#endif
 }
 
 /********************************************************************
@@ -1763,9 +1729,12 @@ static void flush_all(void)
     		tomem(i);
 	    }
   	}
-		for (i = FP_RESULT; i <= FS3; i++) // only FP_RESULT and FS1-FS3, FP0-FP7 are call save
-			if (f_isinreg(i))
-				f_evict(i);
+#ifdef USE_JIT_FPU
+  if (f_isinreg(FP_RESULT))
+    f_evict(FP_RESULT);
+  if (f_isinreg(FS1))
+    f_evict(FS1);
+#endif
 }
 
 /* Make sure all registers that will get clobbered by a call are
@@ -1786,11 +1755,11 @@ static void prepare_for_call_2(void)
   	if (!call_saved[i] && live.nat[i].nholds > 0)
 	    free_nreg(i);
   }
-
-	for (i = 0; i < 4; i++) // only FP_RESULT and FS1-FS3, FP0-FP7 are call save
+#ifdef USE_JIT_FPU
+	for (i = 6; i <= 7; i++) // only FP_RESULT and FS1, FP0-FP7 are call save
 		if (live.fat[i].nholds > 0)
 			f_free_nreg(i);
-
+#endif
   live.flags_in_flags = TRASH;  /* Note: We assume we already rescued the
 			         flags at the very start of the call_r
 			         functions! */
@@ -1892,6 +1861,14 @@ STATIC_INLINE void writemem_real_clobber(int address, int source, int size)
   	}
   }
 	forget_about(source);
+}
+
+void writeword_clobber(int address, int source, int tmp)
+{
+  if (special_mem & S_WRITE)
+  	writemem_special(address, source, 16, 2, tmp);
+  else
+  	writemem_real_clobber(address, source, 2);
 }
 
 void writelong_clobber(int address, int source, int tmp)
@@ -2061,18 +2038,6 @@ void set_cache_state(int enabled)
   if (enabled != letit)
   	flush_icache_hard(3);
   letit = enabled;
-}
-
-int get_cache_state(void)
-{
-  return letit;
-}
-
-uae_u32 get_jitted_size(void)
-{
-  if (compiled_code)
-  	return current_compile_p - compiled_code;
-  return 0;
 }
 
 void alloc_cache(void)
@@ -2880,7 +2845,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		    t1 = taken_pc_p;
   		    t2 = next_pc_p;
   		    if(cc < NATIVE_CC_AL)
-  		      cc = branch_cc^1;
+  		    	cc = branch_cc^1;
   		    else if(cc > NATIVE_CC_AL)
   		    	cc = 0x10 | (branch_cc ^ 0xf);
     		}
@@ -2921,40 +2886,40 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
       else
       {
     		if (was_comp) {
-  		    flush(1);
+		      flush(1);
     		}
 
-  		  /* Let's find out where next_handler is... */
-  		  if (was_comp && isinreg(PC_P)) {
+		    /* Let's find out where next_handler is... */
+		    if (was_comp && isinreg(PC_P)) {
 #if defined(CPU_arm) && !defined(ARMV6T2)
           data_check_end(4, 52);
 #endif
-		      r = live.state[PC_P].realreg;
-		      compemu_raw_endblock_pc_inreg(r, scaled_cycles(totcycles));
-  		  }
+	        r = live.state[PC_P].realreg;
+	        compemu_raw_endblock_pc_inreg(r, scaled_cycles(totcycles));
+		    }
     		else if (was_comp && isconst(PC_P)) {
-  		    uintptr v = live.state[PC_P].val;
-  		    uae_u32* tba;
-  		    blockinfo* tbi;
-  
-  		    tbi = get_blockinfo_addr_new((void*)v, 1);
-  		    match_states(tbi);
+		      uintptr v = live.state[PC_P].val;
+		      uae_u32* tba;
+		      blockinfo* tbi;
+
+		      tbi = get_blockinfo_addr_new((void*)v, 1);
+		      match_states(tbi);
 
 #if defined(CPU_arm) && !defined(ARMV6T2)
           data_check_end(4, 56);
 #endif
-  		    compemu_raw_endblock_pc_isconst(scaled_cycles(totcycles), v);
-  		    tba = (uae_u32*)get_target();
-  		    emit_jmp_target(get_handler(v));
-  		    create_jmpdep(bi, 0, tba, v);
+		      compemu_raw_endblock_pc_isconst(scaled_cycles(totcycles), v);
+		      tba = (uae_u32*)get_target();
+		      emit_jmp_target(get_handler(v));
+		      create_jmpdep(bi, 0, tba, v);
     		}
     		else {
-  		    r = REG_PC_TMP;
-  		    compemu_raw_mov_l_rm(r, (uintptr)&regs.pc_p);
+		      r = REG_PC_TMP;
+		      compemu_raw_mov_l_rm(r, (uintptr)&regs.pc_p);
 #if defined(CPU_arm) && !defined(ARMV6T2)
           data_check_end(4, 52);
 #endif
-	  	    compemu_raw_endblock_pc_inreg(r, scaled_cycles(totcycles));
+    	    compemu_raw_endblock_pc_inreg(r, scaled_cycles(totcycles));
 		    }
 	    }
 	  }

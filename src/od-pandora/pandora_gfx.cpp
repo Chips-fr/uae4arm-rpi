@@ -662,8 +662,7 @@ bool vsync_switchmode (int hz)
   
   if(hz != currVSyncRate) 
   {
-    SetVSyncRate(hz);
-  	black_screen_now();
+    black_screen_now();
     fpscounter_reset();
     time_per_frame = 1000 * 1000 / (hz);
   }

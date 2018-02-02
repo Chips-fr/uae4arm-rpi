@@ -167,6 +167,14 @@ void sleep_millis (int ms)
   usleep(ms * 1000);
 }
 
+int sleep_millis_main (int ms)
+{
+	unsigned long start = read_processor_time ();
+  usleep(ms * 1000);
+  idletime += read_processor_time () - start;
+  return 0;
+}
+
 
 void logging_init( void )
 {

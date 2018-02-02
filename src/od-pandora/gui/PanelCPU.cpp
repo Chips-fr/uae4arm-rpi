@@ -395,8 +395,13 @@ void RefreshPanelCPU(void)
   optFPUinternal->setEnabled(changed_prefs.cpu_model == 68040);
   
   chkFPUstrict->setSelected(changed_prefs.fpu_strict);
+#ifdef USE_JIT_FPU
   chkFPUJIT->setSelected(changed_prefs.compfpu);
   chkFPUJIT->setEnabled(changed_prefs.cachesize > 0);
+#else
+  chkFPUJIT->setSelected(false);
+  chkFPUJIT->setEnabled(false);
+#endif
   
 	if (changed_prefs.m68k_speed == M68K_SPEED_7MHZ_CYCLES)
     opt7Mhz->setSelected(true);

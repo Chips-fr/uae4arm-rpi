@@ -718,7 +718,6 @@ static int real_main2 (int argc, TCHAR **argv)
   }
   else
   {
-  	setCpuSpeed();
     update_display(&currprefs);
   }
 

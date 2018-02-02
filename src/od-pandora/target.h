@@ -12,6 +12,10 @@
 
 #define OPTIONSFILENAME "uaeconfig"
 
+#ifndef ARMV6T2
+#undef USE_JIT_FPU
+#endif
+
 
 STATIC_INLINE FILE *uae_tfopen(const TCHAR *path, const TCHAR *mode)
 {
@@ -27,8 +31,9 @@ extern int generic_main (int argc, char *argv[]);
 
 extern int emulating;
 
-extern uae_u8* natmem_offset;
 extern int z3base_adr;
+
+extern int currVSyncRate;
 
 extern unsigned long time_per_frame;
 
@@ -46,7 +51,11 @@ void update_display(struct uae_prefs *);
 void black_screen_now(void);
 void graphics_subshutdown (void);
 
+void pandora_stop_sound(void);
+
 void keyboard_settrans (void);
+int translate_pandora_keys(int symbol, int *modifier);
+void SimulateMouseOrJoy(int code, int keypressed);
 
 #define REMAP_MOUSEBUTTON_LEFT    -1
 #define REMAP_MOUSEBUTTON_RIGHT   -2
