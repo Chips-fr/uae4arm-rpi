@@ -219,6 +219,38 @@ namespace sdl
               fake_event.key.keysym.sym = SDLK_RETURN;
               gui_input->pushInput(fake_event); // Fire key down
             }
+            // from emu to menu and vice-versa.
+            if ((event.type == SDL_JOYBUTTONDOWN) && (currprefs.button_for_menu != -1) && (event.jbutton.button == currprefs.button_for_menu))
+                if(emulating && widgets::cmdStart->isEnabled())
+                {
+                  //------------------------------------------------
+                  // Continue emulation
+                  //------------------------------------------------
+                  gui_running = false;
+                }
+                else
+                {
+                  //------------------------------------------------
+                  // First start of emulator -> reset Amiga
+                  //------------------------------------------------
+                  uae_reset(0,1);
+                  gui_running = false;
+                }
+            if ((event.type == SDL_JOYBUTTONDOWN) && (currprefs.button_for_quit != -1) && (event.jbutton.button == currprefs.button_for_quit))
+            {
+              //-------------------------------------------------
+              // Quit entire program via joybutton
+              //-------------------------------------------------
+              gcn::FocusHandler* focusHdl;
+              gcn::Widget* activeWidget;
+              focusHdl = gui_top->_getFocusHandler();
+              activeWidget = focusHdl->getFocused();
+              if(dynamic_cast<gcn::TextField*>(activeWidget) == NULL) {
+          			// ...but only if we are not in a Textfield...
+          			uae_quit();
+          			gui_running = false;
+          		}
+            }
         } else if (event.type == SDL_JOYHATMOTION) {
             TCHAR message[255];
             sprintf(message, "HAT %i %i %i %i\n", event.jhat.type, event.jhat.which, event.jhat.hat, event.jhat.value);
