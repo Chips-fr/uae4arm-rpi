@@ -39,7 +39,8 @@
 
 volatile int bsd_int_requested;
 
-void bsdsock_fake_int_handler(void) {
+void bsdsock_fake_int_handler(void) 
+{
 }
 
 #else
@@ -332,12 +333,12 @@ static void mapsockoptreturn(TrapContext *ctx, int level, int optname, uae_u32 o
     		case SO_SNDTIMEO:
     		case SO_RCVTIMEO:
     		case SO_TYPE:
-	  	    trap_put_long (ctx, optval, *(int *)buf);
+	  	    trap_put_long (ctx, optval, *static_cast<int *>(buf));
   		    break;
 
 		    case SO_ERROR:
   		    DEBUG_LOG("New errno is %d\n", mapErrno(*(int *)buf));
-  		    trap_put_long (ctx, optval, mapErrno(*(int *)buf));
+  		    trap_put_long (ctx, optval, mapErrno(*static_cast<int *>(buf)));
   		    break;
     		default:
 		      break;
@@ -357,7 +358,7 @@ static void mapsockoptreturn(TrapContext *ctx, int level, int optname, uae_u32 o
     		case IP_MULTICAST_TTL:
     		case IP_MULTICAST_LOOP:
     		case IP_ADD_MEMBERSHIP:
-  		    trap_put_long (ctx, optval, *(int *)buf);
+  		    trap_put_long (ctx, optval, *static_cast<int *>(buf));
 	  	    break;
 
 		    default:
@@ -369,7 +370,7 @@ static void mapsockoptreturn(TrapContext *ctx, int level, int optname, uae_u32 o
 	    switch (optname) {
     		case TCP_NODELAY:
     		case TCP_MAXSEG:
-  		    trap_put_long (ctx, optval,*(int *)buf);
+  		    trap_put_long (ctx, optval,*static_cast<int *>(buf));
 	  	    break;
 
 		    default:
@@ -413,7 +414,7 @@ static void mapsockoptvalue(TrapContext *ctx, int level, int optname, uae_u32 op
     		case SO_RCVTIMEO:
     		case SO_TYPE:
     		case SO_ERROR:
-  		    *((int *)buf) = trap_get_long (ctx, optval);
+  		    *static_cast<int *>(buf) = trap_get_long (ctx, optval);
 	  	    break;
 		    default:
 		      break;
@@ -433,7 +434,7 @@ static void mapsockoptvalue(TrapContext *ctx, int level, int optname, uae_u32 op
     		case IP_MULTICAST_TTL:
     		case IP_MULTICAST_LOOP:
     		case IP_ADD_MEMBERSHIP:
-  		    *((int *)buf) = trap_get_long (ctx, optval);
+  		    *static_cast<int *>(buf) = trap_get_long (ctx, optval);
 	  	    break;
 
 		    default:
@@ -445,7 +446,7 @@ static void mapsockoptvalue(TrapContext *ctx, int level, int optname, uae_u32 op
 	    switch (optname) {
     		case TCP_NODELAY:
 		    case TCP_MAXSEG:
-		      *((int *)buf) = trap_get_long (ctx, optval);
+		      *static_cast<int *>(buf) = trap_get_long (ctx, optval);
 		      break;
 
     		default:
@@ -731,7 +732,7 @@ uae_u32 bsdthr_Accept_2 (SB)
   struct sockaddr_in addr;
   socklen_t hlen = sizeof (struct sockaddr_in);
 
-  if ((s = accept (sb->s, (struct sockaddr *)&addr, &hlen)) >= 0) {
+  if ((s = accept (sb->s, reinterpret_cast<struct sockaddr *>(&addr), &hlen)) >= 0) {
   	if ((flags = fcntl (s, F_GETFL)) == -1)
 	    flags = 0;
   	fcntl (s, F_SETFL, flags & ~O_NONBLOCK); /* @@@ Don't do this if it's supposed to stay nonblocking... */
@@ -789,7 +790,7 @@ uae_u32 bsdthr_Connect_2 (SB)
 		int len = sizeof (struct sockaddr_in);
 		int retval;
 		copysockaddr_a2n (sb->context, &addr, sb->a_addr, sb->a_addrlen);
-		retval = connect (sb->s, (struct sockaddr *)&addr, len);
+		retval = connect (sb->s, reinterpret_cast<struct sockaddr *>(&addr), len);
 		DEBUG_LOG ("Connect returns %d, errno is %d\n", retval, errno);
 		/* Hack: I need to set the action to something other than
 		 * 1 but I know action == 2 does the correct thing
@@ -875,7 +876,7 @@ uae_u32 bsdthr_blockingstuff (uae_u32 (*tryfunc)(SB), SB)
 
 static void *bsdlib_threadfunc (void *arg)
 {
-  struct socketbase *sb = (struct socketbase *) arg;
+  struct socketbase *sb = static_cast<struct socketbase *>(arg);
 
   DEBUG_LOG ("THREAD_START\n");
 
@@ -904,8 +905,9 @@ static void *bsdlib_threadfunc (void *arg)
     		sb->resultval = bsdthr_SendRecvAcceptConnect (bsdthr_Recv_2, sb);
 		    break;
 
-	    case 4: {     /* Gethostbyname */
-    		  struct hostent *tmphostent = gethostbyname ((char *)get_real_address (sb->name));
+	    case 4:       /* Gethostbyname */
+        {
+    		  struct hostent *tmphostent = gethostbyname (reinterpret_cast<char *>(get_real_address(sb->name)));
     		  if (tmphostent) {
   		      copyHostent (tmphostent, sb);
   		      bsdsocklib_setherrno (ctx, sb, 0);
@@ -923,8 +925,9 @@ static void *bsdlib_threadfunc (void *arg)
     		sb->resultval = bsdthr_SendRecvAcceptConnect (bsdthr_Accept_2, sb);
 		    break;
 
-	    case 7: {
-      		struct hostent *tmphostent = gethostbyaddr (get_real_address (sb->name), sb->a_addrlen, sb->flags);
+	    case 7: 
+        {
+      		struct hostent *tmphostent = gethostbyaddr (reinterpret_cast<const char*>(get_real_address(sb->name)), sb->a_addrlen, sb->flags);
 
 		      if (tmphostent) {
 		        copyHostent (tmphostent, sb);
@@ -994,7 +997,7 @@ void host_recvfrom (TrapContext *ctx, SB, uae_u32 sd, uae_u32 msg, uae_u8* hmsg,
 
   if (s == -1) {
 		sb->resultval = -1;
-		bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */;
+		bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */
 		return;
   }
 
@@ -1023,7 +1026,7 @@ void host_setsockopt (TrapContext *ctx, SB, uae_u32 sd, uae_u32 level, uae_u32 o
   void *buf;
   if (s == -1) {
 		sb->resultval = -1;
-		bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */;
+		bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */
 		return;
   }
 
@@ -1274,7 +1277,7 @@ uae_u32 host_bind (TrapContext *ctx, SB, uae_u32 sd, uae_u32 name, uae_u32 namel
   DEBUG_LOG ("bind(%u[%d], 0x%x, %u) -> ", sd, s, name, namelen);
   copysockaddr_a2n (ctx, &addr, name, namelen);
   printSockAddr (&addr);
-  if ((success = bind (s, (struct sockaddr *)&addr, len)) != 0) {
+  if ((success = bind (s, reinterpret_cast<struct sockaddr *>(&addr), len)) != 0) {
 		SETERRNO;
 		DEBUG_LOG ("failed (%d)\n",sb->sb_errno);
   } else {
@@ -1307,7 +1310,7 @@ uae_u32 host_listen (TrapContext *ctx, SB, uae_u32 sd, uae_u32 backlog)
 
 void host_getprotobyname (TrapContext *ctx, SB, uae_u32 name)
 {
-  struct protoent *p = getprotobyname ((char *)get_real_address (name));
+  struct protoent *p = getprotobyname (reinterpret_cast<char *>(get_real_address(name)));
 
   DEBUG_LOG ("Getprotobyname(%s) = %p\n", get_real_address (name), p);
 
@@ -1433,7 +1436,7 @@ int host_sbinit (TrapContext *ctx, SB)
   sb->hostentsize = 1024;
 
   /* @@@ The thread should be PTHREAD_CREATE_DETACHED */
-  if (uae_start_thread ("bsdsocket", bsdlib_threadfunc, (void *)sb, &sb->thread) == BAD_THREAD) {
+  if (uae_start_thread ("bsdsocket", bsdlib_threadfunc, static_cast<void *>(sb), &sb->thread) == BAD_THREAD) {
 		write_log ("BSDSOCK: Failed to create thread.\n");
 		uae_sem_destroy (&sb->sem);
 		close (sb->sockabort[0]);
@@ -1482,7 +1485,7 @@ uae_u32 host_Inet_NtoA (TrapContext *ctx, SB, uae_u32 in)
   struct in_addr ina;
   uae_u32 buf;
 
-  *(uae_u32 *)&ina = htonl (in);
+  *reinterpret_cast<uae_u32 *>(&ina) = htonl (in);
 
   BSDTRACE (("Inet_NtoA(%x) -> ", in));
 
@@ -1546,7 +1549,7 @@ int host_dup2socket (TrapContext *ctx, SB, int fd1, int fd2)
   s1 = getsock (ctx, sb, fd1);
   if (s1 != -1) {
 		if (fd2 != -1) {
-	    if ((unsigned int) (fd2) >= (unsigned int) sb->dtablesize) {
+	    if (static_cast<unsigned int>(fd2) >= static_cast<unsigned int>(sb->dtablesize)) {
   			BSDTRACE (("Bad file descriptor (%d)\n", fd2));
 				bsdsocklib_seterrno (ctx, sb, 9); /* EBADF */
 	    }

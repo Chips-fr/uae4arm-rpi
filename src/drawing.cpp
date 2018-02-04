@@ -49,6 +49,13 @@
 #include "audio.h"
 #include "devices.h"
 
+#define RENDER_SIGNAL_PARTIAL 1
+#define RENDER_SIGNAL_FRAME_DONE 2
+#define RENDER_SIGNAL_QUIT 3
+static uae_thread_id render_tid = 0;
+static smp_comm_pipe *volatile render_pipe = 0;
+static uae_sem_t render_sem = 0;
+
 extern int sprite_buffer_res;
 int lores_shift;
 
@@ -2226,7 +2233,7 @@ static void draw_status_line (int line, int statusy)
   draw_status_line_single (buf, statusy, gfxvidinfo.drawbuffer.outwidth);
 }
 
-void partial_draw_frame(void)
+static void partial_draw_frame(void)
 {
 	if (framecnt == 0) {
     if(!screenlocked) {
@@ -2341,10 +2348,26 @@ bool vsync_handle_check (void)
 
 void vsync_handle_redraw (void)
 {
-	if (framecnt == 0)
-		finish_drawing_frame ();
+	if (framecnt == 0) {
+    if(render_tid) {
+      write_comm_pipe_u32 (render_pipe, RENDER_SIGNAL_FRAME_DONE, 1);
+      uae_sem_wait (&render_sem);
+    }
+  }
 
 	if (quit_program < 0) {
+    if(render_tid) {
+      write_comm_pipe_u32 (render_pipe, RENDER_SIGNAL_QUIT, 1);
+      while(render_tid != 0) {
+        sleep_millis(10);
+      }
+      destroy_comm_pipe(render_pipe);
+      xfree(render_pipe);
+      render_pipe = 0;
+      uae_sem_destroy(&render_sem);
+      render_sem = 0;
+    }
+
 		quit_program = -quit_program;
     set_inhibit_frame (IHF_QUIT_PROGRAM);
 		set_special(SPCFLAG_BRK | SPCFLAG_MODE_CHANGE);
@@ -2365,6 +2388,14 @@ void hsync_record_line_state (int lineno)
   	return;
 
   linestate_first_undecided = lineno + 1;
+
+  if(render_tid && linestate_first_undecided > 3 ) {
+    if (currprefs.gfx_vresolution) {
+      if (!(linestate_first_undecided & 0x3e))
+        write_comm_pipe_u32(render_pipe, RENDER_SIGNAL_PARTIAL, 1);
+    } else if(!(linestate_first_undecided & 0x1f))
+      write_comm_pipe_u32 (render_pipe, RENDER_SIGNAL_PARTIAL, 1);
+  }
 }
 
 bool notice_interlace_seen (bool lace)
@@ -2412,11 +2443,43 @@ static void gen_direct_drawing_table(void)
 	}
 }
 
+static void *render_thread (void *unused)
+{
+  for(;;) {
+    uae_u32 signal = read_comm_pipe_u32_blocking(render_pipe);
+    switch(signal) {
+      case RENDER_SIGNAL_PARTIAL:
+        partial_draw_frame();
+        break;
+
+      case RENDER_SIGNAL_FRAME_DONE:
+        finish_drawing_frame();
+        uae_sem_post (&render_sem);
+        break;
+
+      case RENDER_SIGNAL_QUIT:
+        render_tid = 0;
+        return 0;
+    }
+  }
+}
+
 void drawing_init (void)
 {
   gen_pfield_tables();
 
 	gen_direct_drawing_table();
+
+  if(render_pipe == 0) {
+    render_pipe = xmalloc (smp_comm_pipe, 1);
+    init_comm_pipe(render_pipe, 20, 1);
+  }
+  if(render_sem == 0) {
+    uae_sem_init (&render_sem, 0, 0);
+  }
+  if(render_tid == 0 && render_pipe != 0 && render_sem != 0) {
+    uae_start_thread(_T("render"), render_thread, NULL, &render_tid);
+  }
 
 #ifdef PICASSO96
   if (!isrestore ()) {

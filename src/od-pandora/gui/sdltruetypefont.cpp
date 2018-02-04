@@ -125,16 +125,19 @@ namespace gcn
                 textSurface = TTF_RenderText_Solid(mFont, text.c_str(), sdlCol);
             }
         
-            SDL_Rect dst, src;
-            dst.x = x;
-            dst.y = y + yoffset;
-            src.w = textSurface->w;
-            src.h = textSurface->h;
-            src.x = 0;
-            src.y = 0;
-        
-            sdlGraphics->drawSDLSurface(textSurface, src, dst);
-            SDL_FreeSurface(textSurface);        
+            if(textSurface != NULL) {
+              SDL_Rect dst, src;
+              dst.x = x;
+              dst.y = y + yoffset;
+              src.w = textSurface->w;
+              src.h = textSurface->h;
+              src.x = 0;
+              src.y = 0;
+          
+              sdlGraphics->drawSDLSurface(textSurface, src, dst);
+              SDL_FreeSurface(textSurface);        
+              textSurface = NULL;
+            }
         }
     
         void SDLTrueTypeFont::setRowSpacing(int spacing)

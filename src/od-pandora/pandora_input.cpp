@@ -524,7 +524,7 @@ int input_get_default_joystick (struct uae_input_device *uid, int num, int port,
 {
   int h, v;
 
-  h = port ? INPUTEVENT_JOY2_HORIZ : INPUTEVENT_JOY1_HORIZ;;
+  h = port ? INPUTEVENT_JOY2_HORIZ : INPUTEVENT_JOY1_HORIZ;
   v = port ? INPUTEVENT_JOY2_VERT : INPUTEVENT_JOY1_VERT;
 
   setid (uid, num, ID_AXIS_OFFSET + 0, 0, port, h, gp);
@@ -542,6 +542,10 @@ int input_get_default_joystick (struct uae_input_device *uid, int num, int port,
     setid (uid, num, ID_BUTTON_OFFSET + 4, 0, port, port ? INPUTEVENT_JOY2_CD32_RWD : INPUTEVENT_JOY1_CD32_RWD, gp);
     setid (uid, num, ID_BUTTON_OFFSET + 5, 0, port, port ? INPUTEVENT_JOY2_CD32_FFW : INPUTEVENT_JOY1_CD32_FFW, gp);
     setid (uid, num, ID_BUTTON_OFFSET + 6, 0, port, port ? INPUTEVENT_JOY2_CD32_PLAY : INPUTEVENT_JOY1_CD32_PLAY, gp);
+
+    // mouse left and 'space' events (Not real but very useful?)
+    setid(uid, num, ID_BUTTON_OFFSET + 7, 0, port, port ? INPUTEVENT_JOY1_FIRE_BUTTON : INPUTEVENT_JOY2_FIRE_BUTTON, gp);
+    setid(uid, num, ID_BUTTON_OFFSET + 8, 0, port, port ? INPUTEVENT_KEY_SPACE : INPUTEVENT_KEY_SPACE, gp);
   }
   if (num == 0) {
     return 1;

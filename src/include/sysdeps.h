@@ -323,7 +323,7 @@ struct direct
 
 #endif /* _WIN32 */
 
-#if defined PANDORA
+#if defined(PANDORA) || defined(RASPBERRY)
 
 #include <ctype.h>
 
@@ -339,7 +339,7 @@ struct direct
 #define REGPARAM3 
 #define REGPARAM
 
-#endif /* PANDORA */
+#endif /* defined(PANDORA) || defined(RASPBERRY) */
 
 #ifdef DONT_HAVE_POSIX
 

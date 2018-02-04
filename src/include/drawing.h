@@ -240,7 +240,6 @@ extern int coord_native_to_amiga_y (int);
 extern int coord_native_to_amiga_x (int);
 
 extern void hsync_record_line_state (int lineno);
-extern void partial_draw_frame(void);
 extern void halt_draw_frame(void);
 extern void vsync_handle_redraw (void);
 extern bool vsync_handle_check (void);

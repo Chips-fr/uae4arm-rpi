@@ -72,18 +72,7 @@ int delay_savestate_frame = 0;
 #endif
 
 
-static long next_synctime = 0;
-
-static pthread_mutex_t gfx_mutex =  PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
-void gfx_lock (void)
-{
-	pthread_mutex_lock(&gfx_mutex);
-}
-void gfx_unlock (void)
-{
-	pthread_mutex_unlock(&gfx_mutex);
-}
+static unsigned long next_synctime = 0;
 
 int graphics_setup (void)
 {

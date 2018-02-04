@@ -168,7 +168,7 @@ static blockinfo* hold_bi[MAX_HOLD_BI];
 blockinfo* active;
 blockinfo* dormant;
 
-#ifdef PANDORA
+#ifndef WIN32
 #include <sys/mman.h>
 
 void cache_free (uae_u8 *cache, int size)

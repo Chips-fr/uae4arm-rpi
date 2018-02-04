@@ -205,8 +205,10 @@ namespace sdl
     delete gui_input;
     delete gui_graphics;
     
-    SDL_FreeSurface(gui_screen);
-    gui_screen = NULL;
+    if(gui_screen != NULL) {
+      SDL_FreeSurface(gui_screen);
+      gui_screen = NULL;
+    }
   }
 
   void gui_run()

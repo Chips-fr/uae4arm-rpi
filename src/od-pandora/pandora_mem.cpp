@@ -40,7 +40,11 @@ void free_AmigaMem(void)
 {
   if(natmem_offset != 0)
   {
+#ifdef RASPBERRY
+    munmap(natmem_offset, natmem_size + BARRIER);
+#else
     free(natmem_offset);
+#endif
     natmem_offset = 0;
   }
   if(additional_mem != MAP_FAILED)
@@ -69,7 +73,13 @@ void alloc_AmigaMem(void)
   // First attempt: allocate 16 MB for all memory in 24-bit area 
   // and additional mem for Z3 and RTG at correct offset
   natmem_size = 16 * 1024 * 1024;
+#ifdef RASPBERRY
+  // address returned by valloc() too high for later mmap() calls. Use mmap() also for first area.
+  natmem_offset = (uae_u8*) mmap((void *)0x20000000, natmem_size + BARRIER,
+    PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#else
   natmem_offset = (uae_u8*)valloc (natmem_size + BARRIER);
+#endif
   max_z3fastmem = ADDITIONAL_MEMSIZE - (16 * 1024 * 1024);
 	if (!natmem_offset) {
 		write_log("Can't allocate 16M of virtual address space!?\n");
@@ -100,7 +110,11 @@ void alloc_AmigaMem(void)
     set_expamem_z3_hack_mode(Z3MAPPING_UAE);
     return;
   }
+#ifdef RASPBERRY
+  munmap(natmem_offset, natmem_size + BARRIER);
+#else
   free(natmem_offset);
+#endif
   
   // Next attempt: allocate huge memory block for entire area
   natmem_size = ADDITIONAL_MEMSIZE + 256 * 1024 * 1024;
@@ -132,7 +146,7 @@ void alloc_AmigaMem(void)
 }
 
 
-static bool HandleA3000Mem(int lowsize, int highsize)
+bool HandleA3000Mem(int lowsize, int highsize)
 {
   bool result = true;
   

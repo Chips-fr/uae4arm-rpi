@@ -1,3 +1,7 @@
+2017-11-08 - First version for Raspi with render thread
+   - My first version for RaspberryPi using code from Chips and Midwan
+   - I introduced new render thread for better performance on hosts with multi core cpus
+
 2017-09-09 - Release version
    - Fixed frameskip (was broken in last two beta versions)
    - Fixed Picasso framerate (Pandora switches now to 60 Hz like the Amiga side)
