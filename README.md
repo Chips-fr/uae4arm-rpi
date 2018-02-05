@@ -43,6 +43,10 @@ How to compile on Raspbian Jessie & Stretch:
 
       make
 
+   Or for Raspberry Pi 3:  
+
+      make PLATFORM=rpi3
+
    Or for Raspberry Pi 1:  
 
       make PLATFORM=rpi1
@@ -62,7 +66,10 @@ How to compile on Raspbian Whezzy:
 
       make CXX=g++-4.8
 
+   Or for Raspberry Pi 3:  
+
+      make PLATFORM=rpi3 CXX=g++-4.8
+
    Or for Raspberry Pi 1:  
 
       make PLATFORM=rpi1 CXX=g++-4.8
-
