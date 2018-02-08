@@ -1,7 +1,11 @@
+2018-01-29 - Added JIT for FPU
+
+2017-11-29 - Added line doubling to remove flicker in interlace mode
+
 2017-11-08 - First version for Raspi with render thread
    - My first version for RaspberryPi using code from Chips and Midwan
    - I introduced new render thread for better performance on hosts with multi core cpus
-
+   
 2017-09-09 - Release version
    - Fixed frameskip (was broken in last two beta versions)
    - Fixed Picasso framerate (Pandora switches now to 60 Hz like the Amiga side)
