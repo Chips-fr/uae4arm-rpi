@@ -634,7 +634,8 @@ void savestate_initsave (const TCHAR *filename, int mode, int nodialogs, bool sa
 	  savestate_nodialogs = 0;
 	  return;
   }
-  _tcscpy (savestate_fname, filename);
+  if (savestate_fname != filename)
+    _tcscpy (savestate_fname, filename);
   savestate_docompress = (mode == 1) ? 1 : 0;
   savestate_nodialogs = nodialogs;
 	new_blitter = false;

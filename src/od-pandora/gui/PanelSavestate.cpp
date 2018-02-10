@@ -85,7 +85,7 @@ class SavestateActionListener : public gcn::ActionListener
           savestate_initsave(savestate_fname, 2, 0, false);
     			save_state (savestate_fname, "...");
           savestate_state = STATE_DOSAVE; // Just to create the screenshot
-          delay_savestate_frame = 1;          
+          delay_savestate_frame = 2;
       		gui_running = false;
         }	      
     		else
