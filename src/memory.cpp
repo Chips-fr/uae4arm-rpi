@@ -774,6 +774,9 @@ static struct zfile *get_kickstart_filehandle(struct uae_prefs *p)
   struct zfile *f;
   TCHAR tmprom[MAX_DPATH], tmprom2[MAX_DPATH];
 
+  if (p->romfile[0] == 0)
+    return 0;
+
   f = read_rom_name (p->romfile);
   _tcscpy (tmprom, p->romfile);
   if (f == NULL) {
