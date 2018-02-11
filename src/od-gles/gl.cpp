@@ -16,6 +16,9 @@ static EGLDisplay edpy;
 static EGLSurface esfc;
 static EGLContext ectxt;
 
+static int saved_texture_width;
+static int saved_texture_height;
+
 /* for external flips */
 void *gl_es_display;
 void *gl_es_surface;
@@ -63,7 +66,7 @@ static int gles_have_error(const char *name)
 	return 0;
 }
 
-int gl_init(void *display, void *window, int *quirks)
+int gl_init(void *display, void *window, int *quirks, int texture_width, int texture_height)
 {
 	EGLConfig ecfg = NULL;
 	GLuint texture_name = 0;
@@ -91,7 +94,9 @@ int gl_init(void *display, void *window, int *quirks)
 #endif
       EGL_NONE
    };
-	
+
+	saved_texture_width = texture_width;
+	saved_texture_height = texture_height;
 
 	// gl_platform_init() does Raspi-specific stuff like bcm_host_init()
 	ret = gl_platform_init(&display, &window, quirks);
@@ -100,7 +105,7 @@ int gl_init(void *display, void *window, int *quirks)
 		goto out;
 	}
 
-	tmp_texture_mem = calloc(1, 1024 * 1024 * 2);
+	tmp_texture_mem = calloc(1, texture_width * texture_height * 2);
 	if (tmp_texture_mem == NULL) {
 		printf("OOM\n");
 		goto out;
@@ -157,7 +162,7 @@ int gl_init(void *display, void *window, int *quirks)
 	glBindTexture(GL_TEXTURE_2D, texture_name);
 	if (gl_have_error("glBindTexture")) goto out;
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB,
 		GL_UNSIGNED_SHORT_5_6_5, tmp_texture_mem);
 	if (gl_have_error("glTexImage2D")) goto out;
 
@@ -219,8 +224,8 @@ int gl_flip(const void *fb, int w, int h)
 
 	if (fb != NULL) {
 		if (w != old_w || h != old_h) {
-			float f_w = (float)w / 1024.0f;
-			float f_h = (float)h / 1024.0f;
+			float f_w = (float)w / saved_texture_width;
+			float f_h = (float)h / saved_texture_height;
 			texture_coords[1*2 + 0] = f_w;
 			texture_coords[2*2 + 1] = f_h;
 			texture_coords[3*2 + 0] = f_w;
@@ -237,8 +242,8 @@ int gl_flip(const void *fb, int w, int h)
 		rotmat[3] = cos(floattime);
 
 		for (int i=0; i<4; i++) {
-				float f_w = (float)w / 1024.0f;
-				float f_h = (float)h / 1024.0f;
+				float f_w = (float)w / saved_texture_width;
+				float f_h = (float)h / saved_texture_height;
 				float x = orig_texture_coords[i*2 + 0] * f_w;
 				float y = orig_texture_coords[i*2 + 1] * f_h;
 				texture_coords[i*2 + 0] = 

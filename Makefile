@@ -31,6 +31,7 @@ else ifeq ($(PLATFORM),gles)
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
+	USE_PICASSO96 = 1
 endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)

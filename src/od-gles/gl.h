@@ -3,7 +3,7 @@
 
 #ifdef HAVE_GLES
 
-int gl_init(void *display, void *window, int *quirks);
+int gl_init(void *display, void *window, int *quirks, int texture_width, int texture_height);
 int gl_flip(const void *fb, int w, int h);
 void gl_finish(void);
 
@@ -13,7 +13,7 @@ extern void *gl_es_surface;
 
 #else
 
-static __inline int gl_init(void *display, void *window, int *quirks)
+static __inline int gl_init(void *display, void *window, int *quirks, int texture_width, int texture_height)
 {
   return -1;
 }
