@@ -141,7 +141,7 @@ static NavigationMap navMap[] =
   { "Z3mem",          "",               "",               "Fastmem",        "Gfxmem" },
   { "Gfxmem",         "",               "",               "Z3mem",          "A3000Low" },
   { "A3000Low",       "",               "",               "Gfxmem",         "A3000High" },
-  { "A3000High",      "",               "",               "A3000Low",       "RAM" },
+  { "A3000High",      "",               "",               "A3000Low",       "Chipmem" },
 
 //PanelFloppy
   { "DF0:",           "Floppy drives",  "cboType0",       "SaveForDisk",    "cboDisk0" },

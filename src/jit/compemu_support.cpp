@@ -179,7 +179,7 @@ static blockinfo* hold_bi[MAX_HOLD_BI];
 blockinfo* active;
 blockinfo* dormant;
 
-#ifndef WIN32
+#if !defined (WIN32) || !defined(ANDROID)
 #include <sys/mman.h>
 
 void cache_free (uae_u8 *cache, int size)
@@ -1326,7 +1326,7 @@ static int rmw(int r, int wsize, int rsize)
 /********************************************************************
  * FPU register status handling. EMIT TIME!                         *
  ********************************************************************/
-
+#ifdef USE_JIT_FPU
 STATIC_INLINE void f_tomem_drop(int r)
 {
 	if (live.fate[r].status == DIRTY) {
@@ -1459,7 +1459,7 @@ static void fflags_into_flags_internal(void)
 	f_unlock(r);
 	live_flags();
 }
-
+#endif
 
 #if defined(CPU_arm)
 #include "compemu_midfunc_arm.cpp"
