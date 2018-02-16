@@ -1752,7 +1752,7 @@ bool is_hardreset(void)
 }
 
 #ifdef USE_JIT_FPU
-static uae_u8 fp_buffer[8 * 8];
+static uae_u8 fp_buffer[8 * 9];
 #endif
 
 void m68k_go (int may_quit)

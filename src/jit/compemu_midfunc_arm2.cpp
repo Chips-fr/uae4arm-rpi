@@ -278,18 +278,6 @@ MENDFUNC(3,jff_ADD_l,(W4 d, RR4 s, RR4 v))
  * Flags: Not affected.
  *
  */
-MIDFUNC(2,jnf_ADDA_b,(W4 d, RR1 s))
-{
-	s = readreg(s, 4);
-	d = rmw(d, 4, 4);
-
-	SXTAB_rrr(d, d, s);
-
-	unlock2(d);
-	unlock2(s);
-}
-MENDFUNC(2,jnf_ADDA_b,(W4 d, RR1 s))
-
 MIDFUNC(2,jnf_ADDA_w,(W4 d, RR2 s))
 {
 	s = readreg(s, 4);
@@ -337,13 +325,8 @@ MIDFUNC(3,jnf_ADDX,(W4 d, RR4 s, RR4 v))
 	v = readreg(v, 4);
 	d = writereg(d, 4);
 
-  clobber_flags();
-
-	// Restore X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	MSR_CPSRf_r(REG_WORK1);
-	
-	ADC_rrr(d, s, v);
+  ADD_rrr(d, s, v);
+  ADD_rrr(d, d, x);
 
 	unlock2(d);
 	unlock2(s);
@@ -1457,7 +1440,7 @@ MIDFUNC(2,jnf_BSET_b,(RW4 d, RR4 s))
 		return;
 	}
 	s = readreg(s, 4);
-	d = rmw(d, 4 ,4);
+	d = rmw(d, 4, 4);
 
 	AND_rri(REG_WORK1, s, 7);
 	MOV_ri(REG_WORK2, 1);
@@ -1852,7 +1835,7 @@ MENDFUNC(2,jff_DBCC,(RR2 d, IMM cc))
  * C Always cleared.
  *
  */
- MIDFUNC(3,jnf_DIVU,(W4 d, RR4 s1, RR4 s2))
+MIDFUNC(3,jnf_DIVU,(W4 d, RR4 s1, RR4 s2))
 {
   s1 = readreg(s1, 4);
   s2 = readreg(s2, 4);
@@ -1868,14 +1851,14 @@ MENDFUNC(2,jff_DBCC,(RR2 d, IMM cc))
   MOVT_ri16(REG_WORK2, ((uae_u32)(&jit_exception)) >> 16);
   STR_rR(REG_WORK1, REG_WORK2);
 #ifdef ARM_HAS_DIV
-  B_i(5);        // end_of_op
-  
+  B_i(4);        // end_of_op
+
 	// src is not 0  
 	UDIV_rrr(REG_WORK1, s1, REG_WORK3);
 #else
-  B_i(11);       // end_of_op
-
-// src is not 0  
+  B_i(10);       // end_of_op
+	
+	// src is not 0  
 	VMOVi_from_ARM_dr(SCRATCH_F64_1, s1, 0);
 	VMOVi_from_ARM_dr(SCRATCH_F64_2, REG_WORK3, 0);
 	VCVTIuto64_ds(SCRATCH_F64_1, SCRATCH_F32_1);
@@ -1884,16 +1867,15 @@ MENDFUNC(2,jff_DBCC,(RR2 d, IMM cc))
 	VCVT64toIu_sd(SCRATCH_F32_1, SCRATCH_F64_3);
 	VMOVi_to_ARM_rd(REG_WORK1, SCRATCH_F64_1, 0);
 #endif
-  
-  LSRS_rri(REG_WORK2, REG_WORK1, 16); // if result of this is not 0, DIVU overflows -> no result
-  BNE_i(2);
+	  
+  LSRS_rri(REG_WORK2, REG_WORK1, 16); 							// if result of this is not 0, DIVU overflows -> no result
+  BNE_i(1);
   
   // Here we have to calc remainder
-  MUL_rrr(REG_WORK2, REG_WORK1, REG_WORK3);
-  SUB_rrr(REG_WORK2, s1, REG_WORK2);
-  PKHBT_rrrLSLi(d, REG_WORK1, REG_WORK2, 16);
+  MLS_rrrr(REG_WORK2, REG_WORK1, REG_WORK3, s1);
+	PKHBT_rrrLSLi(d, REG_WORK1, REG_WORK2, 16);
 // end_of_op
-  
+
   unlock2(d);
   unlock2(s1);
   unlock2(s2);
@@ -1905,7 +1887,7 @@ MIDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
   s1 = readreg(s1, 4);
   s2 = readreg(s2, 4);
   d = writereg(d, 4);
-  
+
   UNSIGNED16_REG_2_REG(REG_WORK3, s2);
   TST_rr(REG_WORK3, REG_WORK3);
   BNE_i(6);     // src is not 0
@@ -1920,14 +1902,14 @@ MIDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
   MOV_ri(REG_WORK1, ARM_Z_FLAG | ARM_V_FLAG);
   MSR_CPSRf_r(REG_WORK1);
 #ifdef ARM_HAS_DIV
-  B_i(12);        // end_of_op
+  B_i(11);        // end_of_op
 
 	// src is not 0  
 	UDIV_rrr(REG_WORK1, s1, REG_WORK3);
 #else
-  B_i(18);       // end_of_op
-
-// src is not 0  
+  B_i(17);       // end_of_op
+	
+	// src is not 0  
 	VMOVi_from_ARM_dr(SCRATCH_F64_1, s1, 0);
 	VMOVi_from_ARM_dr(SCRATCH_F64_2, REG_WORK3, 0);
 	VCVTIuto64_ds(SCRATCH_F64_1, SCRATCH_F32_1);
@@ -1937,12 +1919,12 @@ MIDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
 	VMOVi_to_ARM_rd(REG_WORK1, SCRATCH_F64_1, 0);
 #endif
   
-  LSRS_rri(REG_WORK2, REG_WORK1, 16); // if result of this is not 0, DIVU overflows
+  LSRS_rri(REG_WORK2, REG_WORK1, 16); 							// if result of this is not 0, DIVU overflows
   BEQ_i(2);
   // Here we handle overflow
   MOV_ri(REG_WORK1, ARM_V_FLAG | ARM_N_FLAG);
 	MSR_CPSRf_r(REG_WORK1);
-  B_i(6);
+  B_i(5);
   
   // Here we have to calc flags and remainder
   LSLS_rri(REG_WORK2, REG_WORK1, 16);  // N and Z ok
@@ -1950,11 +1932,10 @@ MIDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
 	BIC_rri(REG_WORK2, REG_WORK2, ARM_C_FLAG | ARM_V_FLAG);
 	MSR_CPSRf_r(REG_WORK2);
   
-  MUL_rrr(REG_WORK2, REG_WORK1, REG_WORK3);
-  SUB_rrr(REG_WORK2, s1, REG_WORK2);
+  MLS_rrrr(REG_WORK2, REG_WORK1, REG_WORK3, s1);
   PKHBT_rrrLSLi(d, REG_WORK1, REG_WORK2, 16);
 // end_of_op
-  
+	
   unlock2(d);
   unlock2(s1);
   unlock2(s2);
@@ -1988,13 +1969,13 @@ MIDFUNC(3,jnf_DIVS,(W4 d, RR4 s1, RR4 s2))
   STR_rR(REG_WORK1, REG_WORK2);
 #ifdef ARM_HAS_DIV
   B_i(12);        // end_of_op
-  
+
 	// src is not 0  
 	SDIV_rrr(REG_WORK1, s1, REG_WORK3);
 #else
   B_i(18);       // end_of_op
-
-// src is not 0  
+	
+	// src is not 0  
 	VMOVi_from_ARM_dr(SCRATCH_F64_1, s1, 0);
 	VMOVi_from_ARM_dr(SCRATCH_F64_2, REG_WORK3, 0);
 	VCVTIto64_ds(SCRATCH_F64_1, SCRATCH_F32_1);
@@ -2056,7 +2037,7 @@ MIDFUNC(3,jff_DIVS,(W4 d, RR4 s1, RR4 s2))
 #else
   B_i(25);       // end_of_op
 
-// src is not 0  
+	// src is not 0  
 	VMOVi_from_ARM_dr(SCRATCH_F64_1, s1, 0);
 	VMOVi_from_ARM_dr(SCRATCH_F64_2, REG_WORK3, 0);
 	VCVTIto64_ds(SCRATCH_F64_1, SCRATCH_F32_1);
@@ -2580,11 +2561,11 @@ MIDFUNC(3,jff_LSL_b_imm,(W4 d, RR4 s, IMM i))
 
 	MSR_CPSRf_i(0);
 
-	LSL_rri(d, s, 24);
 	if (i) {
-		LSLS_rri(d, d, i);
+		LSLS_rri(d, s, i + 24);
 		DUPLICACTE_CARRY
 	} else {
+		LSL_rri(d, s, 24);
 		TST_rr(d, d);
 	}
 	LSR_rri(d, d, 24);
@@ -2601,11 +2582,11 @@ MIDFUNC(3,jff_LSL_w_imm,(W4 d, RR4 s, IMM i))
 
 	MSR_CPSRf_i(0);
 
-	LSL_rri(d, s, 16);
 	if (i) {
-		LSLS_rri(d, d, i);
+		LSLS_rri(d, s, i + 16);
 		DUPLICACTE_CARRY
 	} else {
+		LSL_rri(d, s, 16);
 		TST_rr(d, d);
 	}
 	LSR_rri(d, d, 16);
@@ -2918,15 +2899,15 @@ MIDFUNC(3,jff_LSR_b_reg,(W4 d, RR4 s, RR4 i))
 	d = writereg(d, 4);
   int x = writereg(FLAGX, 4);
 
-	SIGNED8_REG_2_REG(d, s);        // Make sure, sign is in MSB if shift count is 0 (to get correct N flag)
 	MSR_CPSRf_i(0);
 	ANDS_rri(REG_WORK1, i, 63);
 	BEQ_i(4);                       // No shift -> X flag unchanged
-  AND_rri(d, d, 0xff);            // Shift count is not 0 -> unsigned required
+  AND_rri(d, s, 0xff);            // Shift count is not 0 -> unsigned required
 	LSRS_rrr(d, d, REG_WORK1);
 	MOV_ri(x, 1);
 	CC_MOV_ri(NATIVE_CC_CC, x, 0);
-	B_i(0);
+	B_i(1);
+	SIGNED8_REG_2_REG(d, s);        // Make sure, sign is in MSB if shift count is 0 (to get correct N flag)
 	TST_rr(d, d);
 
   unlock2(x);
@@ -2943,15 +2924,15 @@ MIDFUNC(3,jff_LSR_w_reg,(W4 d, RR4 s, RR4 i))
 	d = writereg(d, 4);
   int x = writereg(FLAGX, 4);
 
-	SIGNED16_REG_2_REG(d, s);       // Make sure, sign is in MSB if shift count is 0 (to get correct N flag)
   MSR_CPSRf_i(0); 
 	ANDS_rri(REG_WORK1, i, 63);
 	BEQ_i(4);                       // No shift -> X flag unchanged
-	UXTH_rr(d, d);                  // Shift count is not 0 -> unsigned required
+	UXTH_rr(d, s);                  // Shift count is not 0 -> unsigned required
 	LSRS_rrr(d, d, REG_WORK1);
 	MOV_ri(x, 1);
 	CC_MOV_ri(NATIVE_CC_CC, x, 0);
-	B_i(0);
+	B_i(1);
+	SIGNED16_REG_2_REG(d, s);       // Make sure, sign is in MSB if shift count is 0 (to get correct N flag)
 	TST_rr(d, d);
 
   unlock2(x);
@@ -3241,15 +3222,11 @@ MIDFUNC(2,jnf_MOVE16,(RR4 d, RR4 s))
 	ADD_rrr(s, s, REG_WORK1);
 	ADD_rrr(d, d, REG_WORK1);
 
-	LDR_rR(REG_WORK1, s);
-	LDR_rRI(REG_WORK2, s, 4);
-	STR_rR(REG_WORK1, d);
-	STR_rRI(REG_WORK2, d, 4);
+	LDRD_rR(REG_WORK1, s);
+	STRD_rR(REG_WORK1, d);
 
-	LDR_rRI(REG_WORK1, s, 8);
-	LDR_rRI(REG_WORK2, s, 12);
-	STR_rRI(REG_WORK1, d, 8);
-	STR_rRI(REG_WORK2, d, 12);
+	LDRD_rRI(REG_WORK1, s, 8);
+	STRD_rRI(REG_WORK1, d, 8);
 
   POP_REGS((1 << s) | (1 << d));
 
@@ -3309,9 +3286,7 @@ MIDFUNC(2,jnf_MULS,(RW4 d, RR4 s))
 	s = readreg(s, 4);
 	d = rmw(d, 4, 4);
 
-	SIGN_EXTEND_16_REG_2_REG(d, d);
-	SIGN_EXTEND_16_REG_2_REG(REG_WORK1, s);
-	MUL_rrr(d, d, REG_WORK1);
+  SMULxy_rrr(d, d, s, 0, 0);
 
 	unlock2(s);
 	unlock2(d);
@@ -3627,8 +3602,7 @@ MIDFUNC(2,jnf_NEGX_b,(W4 d, RR4 s))
   clobber_flags();
   
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SIGNED8_REG_2_REG(REG_WORK1, s);
@@ -3649,8 +3623,7 @@ MIDFUNC(2,jnf_NEGX_w,(W4 d, RR4 s))
   clobber_flags();
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SIGNED16_REG_2_REG(REG_WORK1, s);
@@ -3671,8 +3644,7 @@ MIDFUNC(2,jnf_NEGX_l,(W4 d, RR4 s))
   clobber_flags();
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	RSC_rri(d, s, 0);
@@ -3693,8 +3665,7 @@ MIDFUNC(2,jff_NEGX_b,(W4 d, RR1 s))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SIGNED8_REG_2_REG(REG_WORK1, s);
@@ -3727,8 +3698,7 @@ MIDFUNC(2,jff_NEGX_w,(W4 d, RR2 s))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SIGNED16_REG_2_REG(REG_WORK1, s);
@@ -3761,8 +3731,7 @@ MIDFUNC(2,jff_NEGX_l,(W4 d, RR4 s))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	RSCS_rri(d, s, 0);
@@ -5467,8 +5436,7 @@ MIDFUNC(3,jnf_SUBX,(W4 d, RR4 s, RR4 v))
   clobber_flags();
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SBC_rrr(d, s, v);
@@ -5491,8 +5459,7 @@ MIDFUNC(3,jff_SUBX_b,(W4 d, RR1 s, RR1 v))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	LSL_rri(REG_WORK1, s, 24);
@@ -5528,8 +5495,7 @@ MIDFUNC(3,jff_SUBX_w,(W4 d, RR2 s, RR2 v))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	LSL_rri(REG_WORK1, s, 16);
@@ -5565,8 +5531,7 @@ MIDFUNC(3,jff_SUBX_l,(W4 d, RR4 s, RR4 v))
 	CC_MVN_ri(NATIVE_CC_NE, REG_WORK2, ARM_Z_FLAG);
 
 	// Restore inverted X to carry (don't care about other flags)
-  LSL_rri(REG_WORK1, x, 29);
-	EOR_rri(REG_WORK1, REG_WORK1, ARM_C_FLAG);
+  MVN_rrLSLi(REG_WORK1, x, 29);
 	MSR_CPSRf_r(REG_WORK1);
 
 	SBCS_rrr(d, s, v);
