@@ -43,7 +43,7 @@
 extern uae_u8* current_compile_p;
 extern uae_u8* compiled_code;
 extern uae_u8 *popallspace;
-#define POPALLSPACE_SIZE 2048
+#define POPALLSPACE_SIZE 512
 extern blockinfo* active;
 extern blockinfo* dormant;
 extern void invalidate_block(blockinfo* bi);

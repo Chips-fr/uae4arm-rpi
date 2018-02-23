@@ -935,6 +935,26 @@ MIDFUNC(2,fp_to_exten_rm,(FW d, RR4 adr))
 }
 MENDFUNC(2,fp_to_exten_rm,(FW d, RR4 adr))
 
+MIDFUNC(2,fp_from_double_mr,(RR4 adr, FR s))
+{
+	adr = readreg(adr, 4);
+	s = f_readreg(s);
+  raw_fp_from_double_mr(adr, s);
+	f_unlock(s);
+	unlock2(adr);
+}
+MENDFUNC(2,fp_from_double_mr,(RR4 adr, FR s))
+
+MIDFUNC(2,fp_to_double_rm,(FW d, RR4 adr))
+{
+	adr = readreg(adr, 4);
+	d = f_writereg(d);
+  raw_fp_to_double_rm(d, adr);
+	unlock2(adr);
+	f_unlock(d);
+}
+MENDFUNC(2,fp_to_double_rm,(FW d, RR4 adr))
+
 MIDFUNC(2,fp_fscc_ri,(RW4 d, int cc))
 {
 	d = rmw(d, 4, 4);

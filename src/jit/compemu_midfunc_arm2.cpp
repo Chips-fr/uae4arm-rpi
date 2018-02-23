@@ -3222,11 +3222,23 @@ MIDFUNC(2,jnf_MOVE16,(RR4 d, RR4 s))
 	ADD_rrr(s, s, REG_WORK1);
 	ADD_rrr(d, d, REG_WORK1);
 
+#ifdef ARMV6T2
 	LDRD_rR(REG_WORK1, s);
 	STRD_rR(REG_WORK1, d);
 
 	LDRD_rRI(REG_WORK1, s, 8);
 	STRD_rRI(REG_WORK1, d, 8);
+#else
+	LDR_rR(REG_WORK1, s);
+	LDR_rRI(REG_WORK2, s, 4);
+	STR_rR(REG_WORK1, d);
+	STR_rRI(REG_WORK2, d, 4);
+
+	LDR_rRI(REG_WORK1, s, 8);
+	LDR_rRI(REG_WORK2, s, 12);
+	STR_rRI(REG_WORK1, d, 8);
+	STR_rRI(REG_WORK2, d, 12);
+#endif
 
   POP_REGS((1 << s) | (1 << d));
 

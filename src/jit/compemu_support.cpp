@@ -136,7 +136,11 @@ static int redo_current_block;
 uae_u8* current_compile_p = NULL;
 static uae_u8* max_compile_start;
 uae_u8* compiled_code = NULL;
+#if defined(CPU_arm) && !defined(ARMV6T2)
+const int POPALLSPACE_SIZE = 2048; /* That should be enough space */
+#else
 const int POPALLSPACE_SIZE = 512; /* That should be enough space */
+#endif
 uae_u8 *popallspace = NULL;
 
 void* pushall_call_handler = NULL;

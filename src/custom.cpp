@@ -2797,49 +2797,8 @@ static void init_hz (bool checkvposw)
 
   if (beamcon0 & 0x80) {
 		// programmable scanrates (ECS Agnus)
-	  if (vtotal >= MAXVPOS)
-	    vtotal = MAXVPOS - 1;
-	  maxvpos = vtotal + 1;
-	  if (htotal >= MAXHPOS)
-	    htotal = MAXHPOS - 1;
-	  maxhpos = htotal + 1;
-		vblank_hz_nom = vblank_hz = 227.0 * 312.0 * 50.0 / (maxvpos * maxhpos);
-		vblank_hz_shf = vblank_hz;
-		vblank_hz_lof = 227.0 * 313.0 * 50.0 / (maxvpos * maxhpos);
-		vblank_hz_lace = 227.0 * 312.5 * 50.0 / (maxvpos * maxhpos);
-
-		if ((beamcon0 & 0x1000) && (beamcon0 & 0x0200)) { // VARVBEN + VARVSYEN
-		  minfirstline = vsstop > vbstop ? vsstop : vbstop;
-		  if (minfirstline > maxvpos / 2) 
-			  minfirstline = vsstop > vbstop ? vbstop : vsstop;
-		} else if (beamcon0 & 0x0200) {
-			minfirstline = vsstop;
-			if (minfirstline > maxvpos / 2) 
-				minfirstline = 0;
-		} else if (beamcon0 & 0x1000) {
-			minfirstline = vbstop;
-			if (minfirstline > maxvpos / 2) 
-				minfirstline = 0;
-    }
-		
-	  if (minfirstline < 2)
-	      minfirstline = 2;
-	  if (minfirstline >= maxvpos)
-	      minfirstline = maxvpos - 1;
-
-	  sprite_vblank_endline = minfirstline - 2;
-		maxvpos_nom = maxvpos;
-		maxvpos_display = maxvpos;
-		equ_vblank_endline = -1;
-		varsync_changed = true;
-		vpos_count = maxvpos_nom;
-		vpos_count_diff = maxvpos_nom;
-	  hzc = 1;
-#ifdef WITH_INGAME_WARNING
-    char _info[64];
-    sprintf(_info, "Programmend HZ: %d", vblank_hz);
-    InGameMessage(_info);
-#endif
+    target_startup_msg("Unsupported feature", "Programmable scanrates (ECS Agnus) not supported.");
+    uae_restart(1, NULL);
   }
 	if (maxvpos_nom >= MAXVPOS)
 		maxvpos_nom = MAXVPOS;

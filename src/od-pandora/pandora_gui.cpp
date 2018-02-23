@@ -639,7 +639,8 @@ void gui_message (const char *format,...)
   vsprintf( msg, format, parms );
   va_end (parms);
 
-  InGameMessage(msg);
+  target_startup_msg("Error", msg);
+  uae_restart(1, NULL);
 }
 
 void notify_user (int msg)
