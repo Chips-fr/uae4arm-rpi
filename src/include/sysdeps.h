@@ -485,7 +485,7 @@ extern void gui_message (const TCHAR *,...);
  * Byte-swapping functions
  */
 
-#ifdef ARMV6_ASSEMBLY
+#ifdef ARMV6T2
 
 #define   bswap_16   do_byteswap_16
 #define   bswap_32   do_byteswap_32
@@ -516,6 +516,8 @@ STATIC_INLINE uae_u32 do_byteswap_16(uae_u32 v) {
 #  include <SDL_endian.h>
 #  define bswap_16(x) SDL_Swap16(x)
 #  define bswap_32(x) SDL_Swap32(x)
+#define do_byteswap_16(x) SDL_Swap16(x)
+#define do_byteswap_32(x) SDL_Swap32(x)
 # else
 /* Otherwise, we'll roll our own. */
 #  define bswap_16(x) (((x) >> 8) | (((x) & 0xFF) << 8))

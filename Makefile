@@ -74,7 +74,7 @@ endif
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 
 MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/archivers -Isrc/od-pandora -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
-MORE_CFLAGS += -fexceptions -fpermissive
+MORE_CFLAGS += -fexceptions -fpermissive -marm 
 
 LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl -lmpeg2convert -lmpeg2
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
@@ -233,7 +233,6 @@ OBJS =	\
 	src/od-pandora/gui/UaeDropDown.o \
 	src/od-pandora/gui/UaeCheckBox.o \
 	src/od-pandora/gui/UaeListBox.o \
-	src/od-pandora/gui/InGameMessage.o \
 	src/od-pandora/gui/SelectorEntry.o \
 	src/od-pandora/gui/ShowHelp.o \
 	src/od-pandora/gui/ShowMessage.o \

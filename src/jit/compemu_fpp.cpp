@@ -20,7 +20,7 @@
 #include "compemu.h"
 #include "flags_arm.h"
 
-#if defined(JIT)
+#if defined(USE_JIT_FPU)
 
 extern void fpp_to_exten(fpdata *fpd, uae_u32 wrd1, uae_u32 wrd2, uae_u32 wrd3);
 

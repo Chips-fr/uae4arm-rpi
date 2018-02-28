@@ -471,8 +471,8 @@ LOWFUNC(WRITE,NONE,2,compemu_raw_MERGE8_rr,(RW4 d, RR4 s))
   UBFX_rrii(REG_WORK1, s, 8, 24);
   BFI_rrii(d, REG_WORK1, 8, 31);
 #else
-	AND_rri(REG_WORK1, s, 0xffffff00);
-	BIC_rri(d, d, 0xffffff00);
+	BIC_rri(REG_WORK1, s, 0xff);
+	AND_rri(d, d, 0xff);
 	ORR_rrr(d, d, REG_WORK1);
 #endif
 }
@@ -889,11 +889,17 @@ STATIC_INLINE void compemu_raw_jcc_l_oponly(int cc)
 STATIC_INLINE void compemu_raw_handle_except(IMM cycles)
 {
 	uae_u32* branchadd;	
+	int offs;
 
   clobber_flags();
 
+#ifdef ARMV6T2
   MOVW_ri16(REG_WORK2, (uae_u32)(&jit_exception));
   MOVT_ri16(REG_WORK2, ((uae_u32)(&jit_exception)) >> 16);
+#else
+	offs = data_long_offs((uae_u32)(&jit_exception));
+	LDR_rRI(REG_WORK2, RPC_INDEX, offs);
+#endif
   LDR_rR(REG_WORK1, REG_WORK2);
 	TST_rr(REG_WORK1, REG_WORK1);
 
@@ -901,7 +907,7 @@ STATIC_INLINE void compemu_raw_handle_except(IMM cycles)
 	BEQ_i(0);		// no exception, jump to next instruction
 	
   // countdown -= scaled_cycles(totcycles);
-  uae_s32 offs = (uae_u32)&countdown - (uae_u32)&regs;
+  offs = (uae_u32)&countdown - (uae_u32)&regs;
 	LDR_rRI(REG_WORK1, R_REGSTRUCT, offs);
   if(CHECK32(cycles)) {
 	  SUBS_rri(REG_WORK1, REG_WORK1, cycles);
@@ -928,15 +934,10 @@ STATIC_INLINE void compemu_raw_handle_except(IMM cycles)
 
 STATIC_INLINE void compemu_raw_maybe_recompile(uae_u32 t)
 {
-#ifdef ARMV6T2
   BGE_i(2);
   raw_pop_preserved_regs();
   LDR_rRI(RPC_INDEX, RPC_INDEX, -4);
   emit_long(t);
-#else
-  uae_s32 offs = data_long_offs(t);
-	CC_LDR_rRI(NATIVE_CC_LT, RPC_INDEX, RPC_INDEX, offs);
-#endif
 }
 
 STATIC_INLINE void compemu_raw_jmp(uae_u32 t)
@@ -969,15 +970,10 @@ STATIC_INLINE void compemu_raw_jmp_m_indexed(uae_u32 base, uae_u32 r, uae_u32 m)
 
 STATIC_INLINE void compemu_raw_maybe_cachemiss(uae_u32 t)
 {
-#ifdef ARMV6T2
   BEQ_i(2);
   raw_pop_preserved_regs();
   LDR_rRI(RPC_INDEX, RPC_INDEX, -4);
   emit_long(t);
-#else
-  uae_s32 offs = data_long_offs(t);
-	CC_LDR_rRI(NATIVE_CC_NE, RPC_INDEX, RPC_INDEX, offs);
-#endif
 }
 
 STATIC_INLINE void compemu_raw_jz_b_oponly(void)

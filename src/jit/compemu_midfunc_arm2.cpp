@@ -1835,6 +1835,8 @@ MENDFUNC(2,jff_DBCC,(RR2 d, IMM cc))
  * C Always cleared.
  *
  */
+#ifdef ARMV6T2
+
 MIDFUNC(3,jnf_DIVU,(W4 d, RR4 s1, RR4 s2))
 {
   s1 = readreg(s1, 4);
@@ -1942,6 +1944,8 @@ MIDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
 }
 MENDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
  
+#endif
+ 
 /*
  * DIVS
  *
@@ -1952,6 +1956,8 @@ MENDFUNC(3,jff_DIVU,(W4 d, RR4 s1, RR4 s2))
  * C Always cleared.
  *
  */
+#ifdef ARMV6T2
+
 MIDFUNC(3,jnf_DIVS,(W4 d, RR4 s1, RR4 s2))
 {
   s1 = readreg(s1, 4);
@@ -2278,6 +2284,8 @@ MIDFUNC(3,jff_DIVLS32,(RW4 d, RR4 s1, W4 rem))
   unlock2(s1);
 }
 MENDFUNC(3,jff_DIVLS32,(RW4 d, RR4 s1, W4 rem))
+
+#endif
 
 /*
  * EOR
@@ -4491,7 +4499,12 @@ MIDFUNC(3,jff_ROXL_b,(W4 d, RR4 s, RR4 i))
   CC_MOV_ri(NATIVE_CC_CC, x, 0);
 
 	// Calc N and Z
+#ifdef ARMV6T2
 	BFI_rrii(d, x, 8, 8); // Make sure to set carry (last bit shifted out)
+#else
+	BIC_rri(d, d, 0x100);
+	ORR_rrrLSLi(d, d, x, 8);
+#endif
 	LSLS_rri(REG_WORK1, d, 24);
 	
 // end of op
@@ -4541,7 +4554,12 @@ MIDFUNC(3,jff_ROXL_w,(W4 d, RR4 s, RR4 i))
   CC_MOV_ri(NATIVE_CC_CC, x, 0);
 
 	// Calc N and Z
+#ifdef ARMV6T2
 	BFI_rrii(d, x, 16, 16); // Make sure to set carry (last bit shifted out)
+#else
+	BIC_rri(d, d, 0x10000);
+	ORR_rrrLSLi(d, d, x, 16);
+#endif
 	LSLS_rri(REG_WORK1, d, 16);
 	
 // end of op
