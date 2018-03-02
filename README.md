@@ -18,6 +18,7 @@ How to compile for raspberry:
       sudo apt-get install libflac-dev
       sudo apt-get install libmpg123-dev
       sudo apt-get install libmpeg2-4-dev
+      sudo apt-get install autoconf
 
    Then for Raspberry Pi 2 & 3:  
 
