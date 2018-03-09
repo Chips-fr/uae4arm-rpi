@@ -1,3 +1,4 @@
+2018-03-09 - JIT: bugfixes and small enhancements
 2018-02-28 - Fixes for non ARMv6T2 target
 2018-02-23 - Small enhancements and fixes (for non ARMv6T2)
 2018-02-16 - Performance enhancements in JIT and fix for MOVE16 in JIT
