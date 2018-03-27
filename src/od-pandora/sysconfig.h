@@ -2,7 +2,7 @@
 #define PANDORAUAE_SYSCONFIG_H
 
 #define SUPPORT_THREADS
-#define MAX_DPATH 256
+#define MAX_DPATH PATH_MAX
 
 /* #define DRIVESOUND */
 /* #define GFXFILTER */
@@ -510,9 +510,8 @@ typedef long uae_atomic;
 #define strcmpi(x,y) strcasecmp(x,y)
 #define stricmp(x,y) strcasecmp(x,y)
 
-#ifndef MAX_PATH
-#define MAX_PATH 256
-#endif
+#define MAX_PATH PATH_MAX
+
 
 #define M68K_SPEED_7MHZ_CYCLES 0
 #define M68K_SPEED_14MHZ_CYCLES 1024

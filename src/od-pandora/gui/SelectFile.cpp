@@ -161,7 +161,7 @@ class SelectFileActionListener : public gcn::ActionListener
     void action(const gcn::ActionEvent& actionEvent)
     {
       int selected_item;
-      char foldername[256] = "";
+      char foldername[MAX_PATH] = "";
 
       selected_item = lstFiles->getSelected();
       strncpy(foldername, workingDir, MAX_PATH);

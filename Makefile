@@ -277,6 +277,7 @@ LDFLAGS +=  -ldl
 ifneq (,$(wildcard /opt/vc/lib/libbrcmGLESv2.so))
 LDFLAGS += -lbrcmEGL -lbrcmGLESv2
 else
+LDFLAGS += -L/usr/lib/arm-linux-gnueabihf/mali-egl
 LDFLAGS += -lEGL -lGLESv2
 endif
 endif
