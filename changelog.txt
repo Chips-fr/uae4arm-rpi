@@ -1,3 +1,4 @@
+2018-04-01 - JIT: performance enhancements, implemented ROXR
 2018-03-09 - JIT: bugfixes and small enhancements
 2018-02-28 - Fixes for non ARMv6T2 target
 2018-02-23 - Small enhancements and fixes (for non ARMv6T2)
