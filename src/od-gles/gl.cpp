@@ -66,14 +66,18 @@ static int gles_have_error(const char *name)
 	return 0;
 }
 
+GLuint texture_name = 0;
+GLuint texture_name2 = 0;
+int texture_id = 0;
+void *texture_mem = NULL;
+void *texture_mem2 = NULL;
+
 int gl_init(void *display, void *window, int *quirks, int texture_width, int texture_height)
 {
-	EGLConfig ecfg = NULL;
-	GLuint texture_name = 0;
-	void *tmp_texture_mem = NULL;
-	EGLint num_config;
-	int retval = -1;
-	int ret;
+    EGLConfig ecfg = NULL;
+    EGLint num_config;
+    int retval = -1;
+    int ret;
 	
    static const EGLint config_attributes[] =
    {
@@ -105,8 +109,14 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 		goto out;
 	}
 
-	tmp_texture_mem = calloc(1, texture_width * texture_height * 2);
-	if (tmp_texture_mem == NULL) {
+	texture_mem = calloc(1, texture_width * texture_height * 2);
+	if (texture_mem == NULL) {
+		printf("OOM\n");
+		goto out;
+	}
+
+	texture_mem2 = calloc(1, texture_width * texture_height * 2);
+	if (texture_mem2 == NULL) {
 		printf("OOM\n");
 		goto out;
 	}
@@ -154,16 +164,28 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 #endif
 	//if (gl_have_error("glEnable(GL_TEXTURE_2D)")) goto out;
 
-	glGenTextures(1, &texture_name);
+	glGenTextures(1, &texture_name2);
 	if (gl_have_error("glGenTextures")) goto out;
 
+	glBindTexture(GL_TEXTURE_2D, texture_name2);
+	if (gl_have_error("glBindTexture")) goto out;
 
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB,
+		GL_UNSIGNED_SHORT_5_6_5,texture_mem2);
+	if (gl_have_error("glTexImage2D")) goto out;
+
+	// no mipmaps
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glGenTextures(1, &texture_name);
+	if (gl_have_error("glGenTextures")) goto out;
 
 	glBindTexture(GL_TEXTURE_2D, texture_name);
 	if (gl_have_error("glBindTexture")) goto out;
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB,
-		GL_UNSIGNED_SHORT_5_6_5, tmp_texture_mem);
+		GL_UNSIGNED_SHORT_5_6_5, texture_mem);
 	if (gl_have_error("glTexImage2D")) goto out;
 
 	// no mipmaps
@@ -193,7 +215,7 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 #endif
 
 out:
-	free(tmp_texture_mem);
+	//free(tmp_texture_mem);
 	return retval;
 }
 
@@ -254,6 +276,17 @@ int gl_flip(const void *fb, int w, int h)
 		}
 */
 
+		if (texture_id == 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, texture_name);
+			texture_id = 1;
+		}
+		else
+		{
+			glBindTexture(GL_TEXTURE_2D, texture_name2);
+			texture_id = 0;
+		}
+
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h,
 			GL_RGB, GL_UNSIGNED_SHORT_5_6_5, fb);
 		if (gl_have_error("glTexSubImage2D"))
@@ -293,6 +326,17 @@ void gl_finish(void)
 
 	gl_es_display = (void *)edpy;
 	gl_es_surface = (void *)esfc;
+
+	if (texture_mem != 0)
+	{
+		free(texture_mem);
+		texture_mem = 0;
+	}
+	if (texture_mem2 != 0)
+	{
+		free(texture_mem2);
+		texture_mem2 = 0;
+	}
 
 	gl_platform_finish();
 }

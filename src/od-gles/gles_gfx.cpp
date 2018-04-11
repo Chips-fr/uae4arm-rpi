@@ -22,6 +22,7 @@
 #include <SDL_syswm.h>
 #include "td-sdl/thread.h"
 
+#ifdef USE_RENDER_THREAD
 #define DISPLAY_SIGNAL_SETUP 				1
 #define DISPLAY_SIGNAL_SUBSHUTDOWN 			2
 #define DISPLAY_SIGNAL_OPEN 				3
@@ -31,6 +32,7 @@ static uae_thread_id display_tid = 0;
 static smp_comm_pipe *volatile display_pipe = 0;
 static uae_sem_t display_sem = 0;
 static bool volatile display_thread_busy = false;
+#endif
 
 static int display_width;
 static int display_height;
@@ -89,23 +91,52 @@ int delay_savestate_frame = 0;
 
 static long next_synctime = 0;
 
-
-unsigned char current_resource_amigafb = 0;
-
 long start;
 
 static volatile uae_atomic vsync_counter = 0;
 
+SDL_SysWMinfo wminfo;
+uint32_t vc_image_ptr;
+
+
+void signal_open(void)
+{
+	const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
+	printf("Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
+	//Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
+	Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
+
+	printf("Emulation resolution: Width %i Height: %i\n",display_width,display_height);
+	prSDLScreen = SDL_CreateRGBSurface(SDL_SWSURFACE,display_width,display_height,16,
+		Dummy_prSDLScreen->format->Rmask,
+		Dummy_prSDLScreen->format->Gmask,
+		Dummy_prSDLScreen->format->Bmask,
+		Dummy_prSDLScreen->format->Amask);
+
+
+	// get x11 display/window for GL
+	SDL_VideoDriverName(vid_drv_name, sizeof(vid_drv_name));
+	#ifdef SDL_VIDEO_DRIVER_X11
+	if (strcmp(vid_drv_name, "x11") == 0) {
+	  SDL_VERSION(&wminfo.version);
+	  if (SDL_GetWMInfo(&wminfo)> 0) {
+	    display = wminfo.info.x11.display;
+	    window = (void *)wminfo.info.x11.window;
+	  } else
+	  printf("Error getting SDL info\n");
+	}
+	#else
+	  (void)wminfo;
+	#endif
+	if (gl_init(display, window, &gl_quirks, TEXTURE_WIDTH, TEXTURE_HEIGHT)== 0) {
+	} else
+	printf("Error: Can't init gl subsystem.\n");
+}
+
+
+#ifdef USE_RENDER_THREAD
 static void *display_thread (void *unused)
 {
-  SDL_SysWMinfo wminfo;
-  int gl_works = 0;
-
-
-	uint32_t vc_image_ptr;
-	SDL_Surface *Dummy_prSDLScreen;
-	int width, height;
-	
 
   for(;;) {
     display_thread_busy = false;
@@ -125,42 +156,7 @@ static void *display_thread (void *unused)
 				break;
 				
 			case DISPLAY_SIGNAL_OPEN:
-				{
-				const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo ();
-				printf("Current resolution: %d x %d %d bpp\n",videoInfo->current_w, videoInfo->current_h, videoInfo->vfmt->BitsPerPixel);
-				//Dummy_prSDLScreen = SDL_SetVideoMode(videoInfo->current_w,videoInfo->current_h,16,SDL_SWSURFACE |SDL_FULLSCREEN);
-				Dummy_prSDLScreen = SDL_SetVideoMode(800,480,16,SDL_SWSURFACE );
-				}
-
-				printf("Emulation resolution: Width %i Height: %i\n",display_width,display_height);
-				prSDLScreen = SDL_CreateRGBSurface(SDL_SWSURFACE,display_width,display_height,16,
-					Dummy_prSDLScreen->format->Rmask,
-					Dummy_prSDLScreen->format->Gmask,
-					Dummy_prSDLScreen->format->Bmask,
-					Dummy_prSDLScreen->format->Amask);
-
-
-				// get x11 display/window for GL
-				SDL_VideoDriverName(vid_drv_name, sizeof(vid_drv_name));
-				#ifdef SDL_VIDEO_DRIVER_X11
-				if (strcmp(vid_drv_name, "x11") == 0) {
-				  SDL_VERSION(&wminfo.version);
-				  if (SDL_GetWMInfo(&wminfo)> 0) {
-				    display = wminfo.info.x11.display;
-				    window = (void *)wminfo.info.x11.window;
-				  } else
-				  printf("Error getting SDL info\n");
-				}
-				#else
-				  (void)wminfo;
-				#endif
-				if (gl_init(display, window, &gl_quirks, TEXTURE_WIDTH, TEXTURE_HEIGHT)== 0) {
-				  gl_works = 1;
-				} else
-				printf("Error: Can't init gl subsystem.\n");
-
-
-			
+				signal_open();
 
 				uae_sem_post (&display_sem);
 				break;
@@ -177,7 +173,7 @@ static void *display_thread (void *unused)
     }
   }
 }
-
+#endif
 
 int graphics_setup(void)
 {
@@ -206,6 +202,7 @@ int graphics_setup(void)
   }
 #endif
 
+#ifdef USE_RENDER_THREAD
   if(display_pipe == 0) {
     display_pipe = xmalloc (smp_comm_pipe, 1);
     init_comm_pipe(display_pipe, 20, 1);
@@ -216,16 +213,18 @@ int graphics_setup(void)
   if(display_tid == 0 && display_pipe != 0 && display_sem != 0) {
     uae_start_thread(_T("render"), display_thread, NULL, &display_tid);
   }
-	videoInfo = SDL_GetVideoInfo ();
-	write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SETUP, 1);
-	
+  videoInfo = SDL_GetVideoInfo ();
+  write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SETUP, 1);
+#endif	
 	return 1;
 }
 
 static void wait_for_display_thread(void)
 {
+#ifdef USE_RENDER_THREAD
 	while(display_thread_busy)
 		usleep(10);
+#endif
 }
 
 
@@ -302,11 +301,20 @@ void InitAmigaVidMode(struct uae_prefs *p)
 void graphics_subshutdown(void)
 {
 
-	if(display_tid != 0) {
-		wait_for_display_thread();
-		write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SUBSHUTDOWN, 1);
-	  uae_sem_wait (&display_sem);
-	}
+#ifdef USE_RENDER_THREAD
+  if(display_tid != 0) {
+    wait_for_display_thread();
+    write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SUBSHUTDOWN, 1);
+    uae_sem_wait (&display_sem);
+  }
+#else
+  gl_finish();
+  if(prSDLScreen != NULL) {
+    SDL_FreeSurface(prSDLScreen);
+    prSDLScreen = NULL;
+  }
+#endif
+
 
   if (Dummy_prSDLScreen != NULL)
   { 
@@ -340,10 +348,13 @@ static void open_screen(struct uae_prefs *p)
     display_height = p->gfx_size.height << p->gfx_vresolution;
   }
 
-
-	write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_OPEN, 1);
+#ifdef USE_RENDER_THREAD
+  write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_OPEN, 1);
   uae_sem_wait (&display_sem);
-  
+#else
+  signal_open();
+#endif
+
   vsync_counter = 0;
   current_vsync_frame = 2;
 
@@ -501,10 +512,13 @@ void show_screen(int mode)
 
   last_synctime = read_processor_time();
 
-
-	wait_for_display_thread();
-	write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SHOW, 1);
-
+#ifdef USE_RENDER_THREAD
+  wait_for_display_thread();
+  write_comm_pipe_u32(display_pipe, DISPLAY_SIGNAL_SHOW, 1);
+#else
+  gl_flip(gfxvidinfo.drawbuffer.bufmem, gfxvidinfo.drawbuffer.outwidth, gfxvidinfo.drawbuffer.outheight);
+  atomic_inc(&vsync_counter);
+#endif
 
   idletime += last_synctime - start;
 
@@ -645,6 +659,7 @@ void graphics_leave (void)
 		SDL_FreeSurface(Dummy_prSDLScreen);
 		Dummy_prSDLScreen = NULL;
 	}
+#ifdef USE_RENDER_THREAD
 	if(display_tid != 0) {
 	  write_comm_pipe_u32 (display_pipe, DISPLAY_SIGNAL_QUIT, 1);
 	  while(display_tid != 0) {
@@ -656,6 +671,11 @@ void graphics_leave (void)
 	  uae_sem_destroy(&display_sem);
 	  display_sem = 0;
 	}
+#else
+	{
+	SDL_VideoQuit();
+	}
+#endif
 }
 
 

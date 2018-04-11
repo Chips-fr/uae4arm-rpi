@@ -28,3 +28,16 @@ How to compile for raspberry:
 
       make PLATFORM=rpi1
 
+For all ARM boards with OpenGLES:
+
+   Install same packages as for raspberry.
+
+   Install development package for your OpenGLES board.
+
+   Ex for Mali:
+
+      sudo apt-get install libmali-sunxi-dev
+
+   Then compile the OpenGLES target:
+
+      make PLATFORM=gles

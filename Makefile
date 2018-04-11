@@ -22,12 +22,15 @@ else ifeq ($(PLATFORM),generic-sdl)
 	MORE_CFLAGS += -DARMV6T2
 	HAVE_SDL_DISPLAY = 1
 else ifeq ($(PLATFORM),gles)
+	# Autodetect Rpi
 	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
 	LDFLAGS += -lbcm_host
 	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	endif
-	# Uncomment below line for activating shader support. It's very slown on Allwinner.
+	# Uncomment below line to activate shader support. It's very slown on Allwinner.
 	#MORE_CFLAGS += -DSHADER_SUPPORT
+	# Uncomment below line to activate threading. This is buggy on Allwinner.
+        #MORE_CFLAGS += -DUSE_RENDER_THREAD
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
