@@ -334,4 +334,5 @@ ifndef DEBUG
 endif
 
 clean:
-	$(RM) $(PROG) $(OBJS)
+	$(RM) $(PROG) $(OBJS) $(CAPS)
+	(cd capsimg ; make clean )
