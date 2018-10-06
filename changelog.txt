@@ -1,3 +1,4 @@
+2018-10-06 - JIT: Bugfix for issue #1, MVMEL #<data>.W,(An)+
 2018-10-04 - JIT: Bugfix ROXR
 2018-04-01 - JIT: performance enhancements, implemented ROXR
 2018-03-09 - JIT: bugfixes and small enhancements

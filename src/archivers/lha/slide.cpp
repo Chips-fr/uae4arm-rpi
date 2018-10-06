@@ -14,11 +14,6 @@
 #include "lha.h"
 
 
-#ifdef DEBUG
-FILE *fout = NULL;
-static int noslide = 1;
-#endif
-
 /* ------------------------------------------------------------------------ */
 
 static unsigned long encoded_origsize;
@@ -98,7 +93,7 @@ static unsigned short hash1, hash2;
 
 #define HSHSIZ (((unsigned long)1) <<15)
 #define NIL 0
-#define LIMIT 0x100	/* chain Ĺ�� limit */
+#define LIMIT 0x100	/* chain Ä¹¤Î limit */
 
 static unsigned int txtsiz;
 
@@ -385,11 +380,6 @@ int decode(struct interfacing *lhinterface)
 	unsigned char *dtext;
 
 
-#ifdef DEBUG
-	fout = fopen("de", "wt");
-	if (fout == NULL) exit(1);
-#endif
-
 	infile = lhinterface->infile;
 	outfile = lhinterface->outfile;
 	dicbit = lhinterface->dicbit;
@@ -412,9 +402,6 @@ int decode(struct interfacing *lhinterface)
 	while (lhcount < origsize) {
 		c = decode_set.decode_c();
 		if (c <= UCHAR_MAX) {
-#ifdef DEBUG
-		  fprintf(fout, "%u C %02X\n", lhcount, c);
-#endif
 			dtext[loc++] = c;
 			if (loc == dicsiz) {
 				fwrite_crc(dtext, dicsiz, outfile);
@@ -425,25 +412,16 @@ int decode(struct interfacing *lhinterface)
 		else {
 			j = c - offset;
 			i = (loc - decode_set.decode_p() - 1) & dicsiz1;
-#ifdef DEBUG
-			fprintf(fout, "%u M %u %u ", lhcount, (loc-1-i) & dicsiz1, j);
-#endif
 			lhcount += j;
 			for (k = 0; k < j; k++) {
 				c = dtext[(i + k) & dicsiz1];
 
-#ifdef DEBUG
-				fprintf(fout, "%02X ", c & 0xff);
-#endif
 				dtext[loc++] = c;
 				if (loc == dicsiz) {
 					fwrite_crc(dtext, dicsiz, outfile);
 					loc = 0;
 				}
 			}
-#ifdef DEBUG
-			fprintf(fout, "\n");
-#endif
 		}
 	}
 	if (loc != 0) {
