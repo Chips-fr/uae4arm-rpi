@@ -1,3 +1,5 @@
+2018-12-03 - JIT: Bugfix CMPA.W (fixes OS3.9 installer)
+           - Fix for add folder as HD
 2018-10-06 - JIT: Bugfix for issue #1, MVMEL #<data>.W,(An)+
 2018-10-04 - JIT: Bugfix ROXR
 2018-04-01 - JIT: performance enhancements, implemented ROXR
