@@ -1,5 +1,5 @@
-#ifndef PANDORAUAE_SYSCONFIG_H
-#define PANDORAUAE_SYSCONFIG_H
+#ifndef UAE_SYSCONFIG_H
+#define UAE_SYSCONFIG_H
 
 #define SUPPORT_THREADS
 #define MAX_DPATH PATH_MAX
@@ -13,7 +13,9 @@
 #define FILESYS /* filesys emulation */
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
+#ifndef CPU_AARCH64
 #define JIT /* JIT compiler support */
+#endif
 /* #define USE_JIT_FPU */
 /* #define NATMEM_OFFSET regs.natmem_offset */
 /* #define CATWEASEL */ /* Catweasel MK2/3 support */
@@ -107,13 +109,17 @@
 
 #include <stdint.h>
 
+#ifdef CPU_AARCH64
+#define SIZEOF_VOID_P 8
+#else
 #define SIZEOF_VOID_P 4
+#endif
 
 #if !defined(AHI)
 #undef ENFORCER
 #endif
 
-typedef long uae_atomic;
+typedef int32_t uae_atomic;
 
 /* src/sysconfig.h.  Generated automatically by configure.  */
 /* src/sysconfig.h.in.  Generated automatically from configure.in by autoheader.  */
@@ -250,7 +256,11 @@ typedef long uae_atomic;
 #define SIZEOF_INT 4
 
 /* The number of bytes in a long.  */
+#ifdef CPU_AARCH64
+#define SIZEOF_LONG 8
+#else
 #define SIZEOF_LONG 4
+#endif
 
 /* The number of bytes in a long long.  */
 #define SIZEOF_LONG_LONG 8
@@ -546,4 +556,4 @@ typedef char TCHAR;
 #define _wunlink(x)         unlink(x)
 #define _istalnum(x)        isalnum(x)
 
-#endif /* PANDORAUAE_SYSCONFIG_H */
+#endif /* UAE_SYSCONFIG_H */

@@ -1179,7 +1179,7 @@ void AKIKO_hsync_handler (void)
 }
 
 /* cdrom data buffering thread */
-static void *akiko_thread (void *null)
+static int akiko_thread (void *null)
 {
 	int i;
 	uae_u8 *tmp1;

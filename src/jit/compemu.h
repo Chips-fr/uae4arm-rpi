@@ -32,7 +32,11 @@
 #ifndef COMPEMU_H
 #define COMPEMU_H
 
+#if defined(CPU_AARCH64)
+typedef uae_u64 uintptr;
+#else
 typedef uae_u32 uintptr;
+#endif
 
 /* Flags for Bernie during development/debugging. Should go away eventually */
 #define DISTRUST_CONSISTENT_MEM 0

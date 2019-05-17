@@ -27,7 +27,7 @@ ifneq (,$(findstring unix,$(platform)))
 	fpic := -fPIC
 	LDFLAGS := -lz -lpthread -lFLAC -lmpg123 -ldl
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
-   	ifneq (,$(findstring neon,$(platform)))
+	ifneq (,$(findstring neon,$(platform)))
 		# Uncomment below for rpi
 		#PLATFORM_DEFINES += -mfpu=neon -march=armv7-a
 		CFLAGS += $(PLATFORM_DEFINES)
@@ -36,10 +36,14 @@ ifneq (,$(findstring unix,$(platform)))
 		USE_PICASSO96 = 1
 		CPU_FLAGS +=  -marm
 	endif
+	ifneq (,$(findstring aarch64,$(platform)))
+		AARCH64 = 1
+		MORE_CFLAGS += -DCPU_AARCH64
+	endif
 else ifeq ($(platform), crosspi)
-   	TARGET := $(TARGET_NAME)_libretro.so
-   	fpic = -fPIC
-   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic = -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
@@ -49,15 +53,15 @@ else ifeq ($(platform), crosspi)
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
-   	CC = arm-linux-gnueabihf-gcc
-   	CXX = arm-linux-gnueabihf-g++ 
+	CC = arm-linux-gnueabihf-gcc
+	CXX = arm-linux-gnueabihf-g++ 
 	LDFLAGS += -lz -lpthread
 else ifeq ($(platform), crossand)
-   	TARGET := $(TARGET_NAME)_libretro.so
-   	fpic = -fPIC
-   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc  
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic = -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc  
 	PLATFORM_DEFINES +=  -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon
-        CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ 
+	CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ 
 
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
 	#-march=armv7-a -mfloat-abi=hard -mhard-float  
@@ -74,9 +78,9 @@ else ifeq ($(platform), crossand)
 	LD = @arm-linux-androideabi-g++ 
 	LDFLAGS += -lz -llog
 else ifeq ($(platform), rpi3)
-    	TARGET := $(TARGET_NAME)_libretro.so
-   	fpic = -fPIC
-   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic = -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a53 -mfpu=neon-fp-armv8  -mfloat-abi=hard
 	CPU_FLAGS +=  -marm -mcpu=cortex-a53 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
@@ -85,13 +89,13 @@ else ifeq ($(platform), rpi3)
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
-   	CC = gcc
-   	CXX = g++ 
+	CC = gcc
+	CXX = g++ 
 	LDFLAGS += -lz -lpthread -lFLAC -lmpg123 -ldl
 else ifeq ($(platform), rpi2)
-    	TARGET := $(TARGET_NAME)_libretro.so
-   	fpic = -fPIC
-   	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic = -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
@@ -100,8 +104,8 @@ else ifeq ($(platform), rpi2)
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
-   	CC = gcc
-   	CXX = g++ 
+	CC = gcc
+	CXX = g++ 
 	LDFLAGS += -lz -lpthread -lFLAC -lmpg123 -ldl
 
 	# use for raspberry pi
@@ -121,7 +125,7 @@ else ifeq ($(platform), classic_armv7_a7)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
-        MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
+	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CPU_FLAGS += -DARM -Ofast \
@@ -136,13 +140,13 @@ else ifeq ($(platform), classic_armv7_a7)
 	CPPFLAGS += $(CPU_FLAGS)
 	ASFLAGS += $(CPU_FLAGS)
 	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-	  CFLAGS += -march=armv7-a
+		CFLAGS += -march=armv7-a
 	else
-	  CFLAGS += -march=armv7ve
-	  # If gcc is 5.0 or later
-	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
-	    LDFLAGS += -static-libgcc -static-libstdc++
-	  endif
+		CFLAGS += -march=armv7ve
+		# If gcc is 5.0 or later
+		ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+			LDFLAGS += -static-libgcc -static-libstdc++
+		endif
 	endif
 # (armv8 a35, hard point, neon based) ###
 # PS Classic
@@ -165,13 +169,13 @@ else ifeq ($(platform), classic_armv8_a35)
 	CPPFLAGS += $(CPU_FLAGS)
 	ASFLAGS += $(CPU_FLAGS)
 	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-	  CFLAGS += -march=armv8-a
+		CFLAGS += -march=armv8-a
 	else
-	  CFLAGS += -march=armv8-a
-	  # If gcc is 5.0 or later
-	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
-	    LDFLAGS += -static-libgcc -static-libstdc++
-	  endif
+		CFLAGS += -march=armv8-a
+		# If gcc is 5.0 or later
+		ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+			LDFLAGS += -static-libgcc -static-libstdc++
+		endif
 	endif
 else ifeq ($(platform), osx)
 	TARGET := $(TARGET_NAME)_libretro.dylib
@@ -236,10 +240,12 @@ endif
 
 DEFINES += 
 
-DEFS += -DCPU_arm -DARMV6_ASSEMBLY -DGP2X -DPANDORA
+ifneq ($(AARCH64), 1)
+    DEFS += -DCPU_arm -DARMV6_ASSEMBLY
+endif
+
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
-DEFS += -DRASPBERRY -DWITH_INGAME_WARNING
-#-DANDROIDSDL 
+DEFS += -DGP2X -DPANDORA -DRASPBERRY -DWITH_INGAME_WARNING
 
 ifeq ($(USE_PICASSO96), 1)
 	DEFS += -DPICASSO96

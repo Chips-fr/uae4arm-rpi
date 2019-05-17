@@ -1548,7 +1548,7 @@ static void abort_async (struct hardfileprivdata *hfpd, uaecptr request, int err
 	}
 }
 
-static void *hardfile_thread (void *devs);
+static int hardfile_thread (void *devs);
 static int start_thread (TrapContext *ctx, int unit)
 {
   struct hardfileprivdata *hfpd = &hardfpd[unit];
@@ -1982,7 +1982,7 @@ static uae_u32 REGPARAM2 hardfile_beginio (TrapContext *ctx)
   }
 }
 
-static void *hardfile_thread (void *devs)
+static int hardfile_thread (void *devs)
 {
   struct hardfileprivdata *hfpd = (struct hardfileprivdata *)devs;
 

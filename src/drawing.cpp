@@ -133,7 +133,7 @@ static uae_u8 spritepixels[MAX_PIXELS_PER_LINE * 2];
 static int sprite_first_x, sprite_last_x;
 
 /* AGA mode color lookup tables */
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
 unsigned int xredcolors[256], xgreencolors[256], xbluecolors[256];
 #endif
 static int dblpf_ind1_aga[256], dblpf_ind2_aga[256];
@@ -574,7 +574,7 @@ static void dummy_worker (int start, int stop)
 {
 }
 
-#ifdef ARMV6T2
+#if defined(ARMV6T2)
 STATIC_INLINE int DECODE_HAM8_1(int col, int pv)
 {
   __asm__ (
@@ -621,6 +621,53 @@ STATIC_INLINE int DECODE_HAM6_3(int col, int pv)
     : [col] "+r" (col) : [pv] "r" (pv) );
   return (col);
 }
+#elif defined(CPU_AARCH64)
+STATIC_INLINE int DECODE_HAM8_1(int col, int pv)
+{
+  __asm__ (
+    "ubfx    %w[pv], %w[pv], #3, #5      \n\t"
+    "bfi     %w[col], %w[pv], #0, #5     \n\t"
+    : [col] "+r" (col) , [pv] "+r" (pv) );
+  return col;
+}
+STATIC_INLINE int DECODE_HAM8_2(int col, int pv)
+{
+  __asm__ (
+    "ubfx    %w[pv], %w[pv], #3, #5      \n\t"
+    "bfi     %w[col], %w[pv], #11, #5    \n\t"
+    : [col] "+r" (col) , [pv] "+r" (pv) );
+  return col;
+}
+STATIC_INLINE int DECODE_HAM8_3(int col, int pv)
+{
+  __asm__ (
+    "ubfx    %w[pv], %w[pv], #2, #6      \n\t"
+    "bfi     %w[col], %w[pv], #5, #6     \n\t"
+    : [col] "+r" (col) , [pv] "+r" (pv) );
+  return col;
+}
+
+STATIC_INLINE int DECODE_HAM6_1(int col, int pv)
+{
+  __asm__ (
+    "bfi     %w[col], %w[pv], #1, #4     \n\t"
+    : [col] "+r" (col) : [pv] "r" (pv) );
+  return (col);
+}
+STATIC_INLINE int DECODE_HAM6_2(int col, int pv)
+{
+  __asm__ (
+    "bfi     %w[col], %w[pv], #12, #4     \n\t"
+    : [col] "+r" (col) : [pv] "r" (pv) );
+  return (col);
+}
+STATIC_INLINE int DECODE_HAM6_3(int col, int pv)
+{
+  __asm__ (
+    "bfi     %w[col], %w[pv], #7, #4     \n\t"
+    : [col] "+r" (col) : [pv] "r" (pv) );
+  return (col);
+}
 #endif
 
 static int ham_decode_pixel;
@@ -653,7 +700,7 @@ static void init_ham_decoding (void)
 				switch (pv & 0x3) 
         {
 					case 0x0: ham_lastcolor = colors_for_drawing.acolors[pv >> 2]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 					case 0x1: ham_lastcolor = DECODE_HAM8_1(ham_lastcolor, pv); break;
 					case 0x2: ham_lastcolor = DECODE_HAM8_2(ham_lastcolor, pv); break;
 					case 0x3: ham_lastcolor = DECODE_HAM8_3(ham_lastcolor, pv); break;
@@ -671,7 +718,7 @@ static void init_ham_decoding (void)
 				switch (pv & 0x30) 
         {
 					case 0x00: ham_lastcolor = colors_for_drawing.acolors[pv]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 					case 0x10: ham_lastcolor = DECODE_HAM8_1(ham_lastcolor, pc); break;
 					case 0x20: ham_lastcolor = DECODE_HAM8_2(ham_lastcolor, pc); break;
 					case 0x30: ham_lastcolor = DECODE_HAM8_3(ham_lastcolor, pc); break;
@@ -690,7 +737,7 @@ static void init_ham_decoding (void)
 			switch (pv & 0x30) 
       {
 				case 0x00: ham_lastcolor = colors_for_drawing.acolors[pv]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 				case 0x10: ham_lastcolor = DECODE_HAM6_1(ham_lastcolor, pv); break;
 				case 0x20: ham_lastcolor = DECODE_HAM6_2(ham_lastcolor, pv); break;
 				case 0x30: ham_lastcolor = DECODE_HAM6_3(ham_lastcolor, pv); break;
@@ -732,7 +779,7 @@ static void decode_ham (int pix, int stoppos)
 				switch (pv & 0x3) 
         {
 					case 0x0: ham_lastcolor = colors_for_drawing.acolors[pv >> 2]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 					case 0x1: ham_lastcolor = DECODE_HAM8_1(ham_lastcolor, pv); break;
 					case 0x2: ham_lastcolor = DECODE_HAM8_2(ham_lastcolor, pv); break;
 					case 0x3: ham_lastcolor = DECODE_HAM8_3(ham_lastcolor, pv); break;
@@ -751,7 +798,7 @@ static void decode_ham (int pix, int stoppos)
 				switch (pv & 0x30) 
         {
 					case 0x00: ham_lastcolor = colors_for_drawing.acolors[pv]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 					case 0x10: ham_lastcolor = DECODE_HAM8_1(ham_lastcolor, pc); break;
 					case 0x20: ham_lastcolor = DECODE_HAM8_2(ham_lastcolor, pc); break;
 					case 0x30: ham_lastcolor = DECODE_HAM8_3(ham_lastcolor, pc); break;
@@ -771,7 +818,7 @@ static void decode_ham (int pix, int stoppos)
 			switch (pv & 0x30) 
       {
 				case 0x00: ham_lastcolor = colors_for_drawing.acolors[pv]; break;
-#ifdef ARMV6T2
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 				case 0x10: ham_lastcolor = DECODE_HAM6_1(ham_lastcolor, pv); break;
 				case 0x20: ham_lastcolor = DECODE_HAM6_2(ham_lastcolor, pv); break;
 				case 0x30: ham_lastcolor = DECODE_HAM6_3(ham_lastcolor, pv); break;
@@ -2457,7 +2504,7 @@ static void gen_direct_drawing_table(void)
 	}
 }
 
-static void *render_thread (void *unused)
+static int render_thread (void *unused)
 {
   for(;;) {
     uae_u32 signal = read_comm_pipe_u32_blocking(render_pipe);

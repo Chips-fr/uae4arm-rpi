@@ -1430,7 +1430,7 @@ static uae_u32 REGPARAM2 bsdsocklib_SocketBaseTagList(TrapContext *ctx)
 
 				case SBTC_FDCALLBACK:
 					BSDTRACE ((_T("SBTC_FDCALLBACK),%08x"), currval));
-					tagcopy(ctx, currtag, currval, tagptr, &sb->fdcallback);
+					tagcopy(ctx, currtag, currval, tagptr, (uae_u32*)&sb->fdcallback);
 					break;
 
 				case SBTC_LOGSTAT:

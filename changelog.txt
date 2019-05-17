@@ -1,3 +1,10 @@
+2019-05-17   First version for aarch64
+ - Tested on Raspberry Pi 3B with Ubuntu Mate 64Bit.
+ - Compiled native on Raspberry (GCC 7.4.0) or using cross-compiler on Ubuntu PC (GCC 8.3.0).
+ - There is still work to do:
+    * No JIT (rewrite of code generator needed, because of different instruction set and instruction encoding)
+    * Fix for atomic functions (get segfaults when using GCC builtins)
+    * Optimize for aarch64
 2018-12-03 - JIT: Bugfix CMPA.W (fixes OS3.9 installer)
            - Fix for add folder as HD
 2018-10-06 - JIT: Bugfix for issue #1, MVMEL #<data>.W,(An)+

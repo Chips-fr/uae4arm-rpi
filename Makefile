@@ -4,22 +4,32 @@ endif
 
 ifeq ($(PLATFORM),rpi2)
 	CPU_FLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV -DARMV6_ASSEMBLY -marm
 	LDFLAGS += -lbcm_host
 	HAVE_NEON = 1
 	HAVE_DISPMANX = 1
 	USE_PICASSO96 = 1
 else ifeq ($(PLATFORM),rpi1)
 	CPU_FLAGS += -mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard
-	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6_ASSEMBLY -marm
 	LDFLAGS += -lbcm_host
 	HAVE_DISPMANX = 1
 	USE_PICASSO96 = 1
+else ifeq ($(PLATFORM),rpi64bits)
+	CPU_FLAGS += -march=armv8.1-a -mtune=cortex-a53
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DCPU_AARCH64
+	LDFLAGS += -lbcm_host
+	AARCH64 = 1
+	#HAVE_DISPMANX = 1
+	#HAVE_SDL_DISPLAY = 1
+	HAVE_GLES_DISPLAY = 1
+	USE_PICASSO96 = 1
+	LDFLAGS +=  -L/usr/lib/aarch64-linux-gnu/
 else ifeq ($(PLATFORM),generic-sdl)
 	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
 	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	endif
-	MORE_CFLAGS += -DARMV6T2
+	MORE_CFLAGS += -DARMV6T2 -DARMV6_ASSEMBLY -marm
 	HAVE_SDL_DISPLAY = 1
 else ifeq ($(PLATFORM),gles)
 	# Autodetect Rpi
@@ -30,8 +40,8 @@ else ifeq ($(PLATFORM),gles)
 	# Uncomment below line to activate shader support. It's very slown on Allwinner.
 	#MORE_CFLAGS += -DSHADER_SUPPORT
 	# Uncomment below line to activate threading. This is buggy on Allwinner.
-        #MORE_CFLAGS += -DUSE_RENDER_THREAD
-	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU
+	#MORE_CFLAGS += -DUSE_RENDER_THREAD
+	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARMV6_ASSEMBLY -marm
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
@@ -61,7 +71,7 @@ PANDORA=1
 SDL_CFLAGS = `sdl-config --cflags`
 
 DEFS +=  `xml2-config --cflags`
-DEFS += -DCPU_arm -DARMV6_ASSEMBLY -DPANDORA -DRP9_SUPPORT -DWITH_MPEG2
+DEFS += -DCPU_arm -DPANDORA -DRP9_SUPPORT -DWITH_MPEG2
 DEFS += -DWITH_INGAME_WARNING
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
 DEFS += -DUSE_SDL
@@ -77,7 +87,7 @@ endif
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
 
 MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/archivers -Isrc/od-pandora -Wno-unused -Wno-format  -DGCCCONSTFUNC="__attribute__((const))"
-MORE_CFLAGS += -fexceptions -fpermissive -std=gnu++11 -marm
+MORE_CFLAGS += -fexceptions -fpermissive -std=gnu++11
 
 LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl -lmpeg2convert -lmpeg2
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
@@ -281,7 +291,7 @@ ifneq (,$(wildcard /opt/vc/lib/libbrcmGLESv2.so))
 LDFLAGS += -lbrcmEGL -lbrcmGLESv2
 else
 LDFLAGS += -L/usr/lib/arm-linux-gnueabihf/mali-egl
-LDFLAGS += -lEGL -lGLESv2
+LDFLAGS += -lEGL -lGLESv2 -lGLESv1_CM
 endif
 endif
 
@@ -294,7 +304,9 @@ ifeq ($(USE_PICASSO96), 1)
 	OBJS += src/od-pandora/picasso96.o
 endif
 
-ifeq ($(HAVE_NEON), 1)
+ifeq ($(AARCH64), 1)
+	OBJS += src/od-pandora/aarch64_helper.o
+else ifeq ($(HAVE_NEON), 1)
 	OBJS += src/od-pandora/neon_helper.o
 else
 	OBJS += src/od-pandora/arm_helper.o
@@ -321,6 +333,9 @@ src/od-pandora/neon_helper.o: src/od-pandora/neon_helper.s
 
 src/od-pandora/arm_helper.o: src/od-pandora/arm_helper.s
 	$(CXX) -Wall -o src/od-pandora/arm_helper.o -c src/od-pandora/arm_helper.s
+
+src/od-pandora/aarch64_helper.o: src/od-pandora/aarch64_helper.s
+	$(CXX) $(ASFLAGS) -Wall -o src/od-pandora/aarch64_helper.o -c src/od-pandora/aarch64_helper.s
 
 
 

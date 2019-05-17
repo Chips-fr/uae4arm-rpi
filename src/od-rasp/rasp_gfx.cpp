@@ -91,7 +91,7 @@ void vsync_callback(unsigned int a, void* b)
 
 
 
-static void *display_thread (void *unused)
+static int display_thread (void *unused)
 {
 	VC_DISPMANX_ALPHA_T alpha = {
 		(DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS), 

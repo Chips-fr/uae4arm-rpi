@@ -135,7 +135,7 @@ void signal_open(void)
 
 
 #ifdef USE_RENDER_THREAD
-static void *display_thread (void *unused)
+static int display_thread (void *unused)
 {
 
   for(;;) {

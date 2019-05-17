@@ -1382,8 +1382,8 @@ STATIC_INLINE void long_fetch_64 (int plane, int nwords, int weird_number_of_bit
 			    "rev     %[val], %[val]        \n\t"
 			    : [val] "=r" (fetchval0), [pt] "+r" (real_pt) );
 #else
-			fetchval = ((uae_u64)do_get_mem_long (real_pt)) << 32;
-			fetchval |= do_get_mem_long (real_pt + 1);
+			fetchval1 = do_get_mem_long (real_pt);
+			fetchval0 = do_get_mem_long (real_pt + 1);
 			real_pt += 2;
 #endif
 		}

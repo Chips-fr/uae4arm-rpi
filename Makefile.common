@@ -125,8 +125,10 @@ ifeq ($(USE_PICASSO96), 1)
 	OBJS += $(EMU)/od-pandora/picasso96.o
 endif
 
-ifeq ($(HAVE_NEON), 1)
-	OBJS += $(EMU)/od-pandora/neon_helper.o
+ifeq ($(AARCH64), 1)
+	OBJS += src/od-pandora/aarch64_helper.o
+else ifeq ($(HAVE_NEON), 1)
+	OBJS += src/od-pandora/neon_helper.o
 else
 	OBJS += $(EMU)/od-pandora/arm_helper.o
 endif

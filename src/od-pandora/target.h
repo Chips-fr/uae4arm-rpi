@@ -16,6 +16,14 @@
 #undef USE_JIT_FPU
 #endif
 
+#define MAKEBD(x,y,z) ((((x) - 2000) * 10000 + (y)) * 100 + (z))
+#define GETBDY(x) ((x) / 1000000 + 2000)
+#define GETBDM(x) (((x) - ((x / 10000) * 10000)) / 100)
+#define GETBDD(x) ((x) % 100)
+
+
+#define UAE4ARMDATE MAKEBD(2019, 5, 17)
+
 
 STATIC_INLINE FILE *uae_tfopen(const TCHAR *path, const TCHAR *mode)
 {
@@ -135,6 +143,48 @@ STATIC_INLINE int max(int x, int y)
     return x > y ? x : y;
 }
 
+#if defined(CPU_AARCH64)
+
+/* Atomic functions causing crash in current aarch64 environment. Need fix. */
+
+STATIC_INLINE void atomic_and(volatile uae_atomic *p, uae_u32 v)
+{
+//	__atomic_and_fetch(p, v, __ATOMIC_SEQ_CST);
+	*p = *p & v;
+}
+STATIC_INLINE void atomic_or(volatile uae_atomic *p, uae_u32 v)
+{
+//	__atomic_or_fetch(p, v, __ATOMIC_SEQ_CST);
+	*p = *p | v;
+}
+STATIC_INLINE uae_atomic atomic_inc(volatile uae_atomic *p)
+{
+//	return __atomic_add_fetch(p, 1, __ATOMIC_SEQ_CST);
+	*p = *p + 1;
+	return *p;
+}
+STATIC_INLINE uae_u32 atomic_bit_test_and_reset(volatile uae_atomic *p, uae_u32 v)
+{
+//  uae_u32 mask = (1 << v);
+//  uae_u32 res = __atomic_fetch_and(p, ~mask, __ATOMIC_SEQ_CST);
+//	return (res & mask);
+  uae_u32 mask = (1 << v);
+  uae_u32 res = *p & mask;
+  *p = *p & ~mask;
+	return (res);
+}
+STATIC_INLINE void atomic_set(volatile uae_atomic *p, uae_u32 v)
+{
+//  __atomic_store_n(p, v, __ATOMIC_SEQ_CST);
+  *p = v;
+}
+
+#else
+
+STATIC_INLINE uae_u32 atomic_fetch(volatile uae_atomic *p)
+{
+	return *p;
+}
 STATIC_INLINE void atomic_and(volatile uae_atomic *p, uae_u32 v)
 {
 	__sync_and_and_fetch(p, v);
@@ -147,20 +197,18 @@ STATIC_INLINE uae_atomic atomic_inc(volatile uae_atomic *p)
 {
 	return __sync_add_and_fetch(p, 1);
 }
-STATIC_INLINE uae_atomic atomic_dec(volatile uae_atomic *p)
-{
-	return __sync_sub_and_fetch(p, 1);
-}
 STATIC_INLINE uae_u32 atomic_bit_test_and_reset(volatile uae_atomic *p, uae_u32 v)
 {
-  long mask = (1 << v);
+  uae_u32 mask = (1 << v);
   uae_u32 res = __sync_fetch_and_and(p, ~mask);
-	return (res && mask);
+	return (res & mask);
 }
 STATIC_INLINE void atomic_set(volatile uae_atomic *p, uae_u32 v)
 {
   __sync_lock_test_and_set(p, v);
 }
+
+#endif
 
 #ifdef USE_JIT_FPU
 #ifdef __cplusplus

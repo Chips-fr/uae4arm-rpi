@@ -874,7 +874,7 @@ uae_u32 bsdthr_blockingstuff (uae_u32 (*tryfunc)(SB), SB)
 }
 
 
-static void *bsdlib_threadfunc (void *arg)
+static int bsdlib_threadfunc (void *arg)
 {
   struct socketbase *sb = static_cast<struct socketbase *>(arg);
 
@@ -890,7 +890,7 @@ static void *bsdlib_threadfunc (void *arg)
 	    case 0:       /* kill thread (CloseLibrary) */
 	    	DEBUG_LOG ("THREAD_END\n");
     		uae_sem_destroy (&sb->sem);
-    		return NULL;
+    		return 0;
 
 	    case 1:       /* Connect */
     		sb->resultval = bsdthr_SendRecvAcceptConnect (bsdthr_Connect_2, sb);
@@ -942,7 +942,7 @@ static void *bsdlib_threadfunc (void *arg)
 	  SETSIGNAL;
   }
 
-  return NULL;        /* Just to keep GCC happy.. */
+  return 0;        /* Just to keep GCC happy.. */
 }
 
 

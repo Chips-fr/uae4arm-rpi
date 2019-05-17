@@ -1289,7 +1289,7 @@ void ide_write_reg (struct ide_hdf *ide, int ide_reg, uae_u32 val)
 	}
 }
 
-static void *ide_thread (void *idedata)
+static int ide_thread (void *idedata)
 {
 	struct ide_thread_state *its = (struct ide_thread_state*)idedata;
 	for (;;) {

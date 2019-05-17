@@ -323,7 +323,7 @@ static int setstate (struct cdunit *cdu, int state, int playpos)
 	return 0;
 }
 
-static void *cdda_unpack_func (void *v)
+static int cdda_unpack_func (void *v)
 {
 	cdimage_unpack_thread = 1;
 	mp3decoder *mp3dec = NULL;
@@ -383,7 +383,7 @@ static void audio_unpack (struct cdunit *cdu, struct cdtoc *t)
 static volatile int cda_bufon[2];
 static cda_audio *cda;
 
-static void *cdda_play_func (void *v)
+static int *cdda_play_func (void *v)
 {
 	int cdda_pos;
 	int bufnum;
@@ -621,7 +621,7 @@ end:
 	cdu->cdda_play = 0;
 	write_log (_T("IMAGE CDDA: thread killed\n"));
 	cdu->thread_active = false;
-	return NULL;
+	return 0;
 }
 
 
