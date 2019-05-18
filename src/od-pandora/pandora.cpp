@@ -177,7 +177,7 @@ void sleep_millis (int ms)
 
 int sleep_millis_main (int ms)
 {
-	unsigned long start = read_processor_time ();
+	uae_u32 start = read_processor_time ();
   usleep(ms * 1000);
   idletime += read_processor_time () - start;
   return 0;

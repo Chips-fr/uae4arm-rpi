@@ -269,10 +269,10 @@ static int copper_enabled_thisline;
 /*
  * Statistics
  */
-static unsigned long lastframetime = 0;
-unsigned long timeframes = 0;
-unsigned long hsync_counter = 0;
-unsigned long int idletime;
+static uae_u32 lastframetime = 0;
+uae_u32 timeframes = 0;
+uae_u32 hsync_counter = 0;
+uae_u32 idletime;
 
 /* Recording of custom chip register changes.  */
 struct sprite_entry *curr_sprite_entries = 0;
@@ -656,7 +656,7 @@ static int toscr_delay[2];
    we can do more work at once.  */
 static int toscr_nbits;
 
-static void record_color_change2 (int hpos, int regno, unsigned long value)
+static void record_color_change2 (int hpos, int regno, uae_u32 value)
 {
 	int pos = hpos * 2;
 	if (regno == 0x1000 + 0x10c) {
@@ -1925,7 +1925,7 @@ STATIC_INLINE void decide_line (int hpos)
 
 /* Called when a color is about to be changed (write to a color register),
  * but the new color has not been entered into the table yet. */
-static void record_color_change (int hpos, int regno, unsigned long value)
+static void record_color_change (int hpos, int regno, uae_u32 value)
 {
 	if (regno < 0x1000 && nodraw ())
 		return;

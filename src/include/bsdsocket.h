@@ -192,7 +192,7 @@ extern uae_u32 host_Inet_LnaOf (void);
 extern uae_u32 host_Inet_NetOf (void);
 extern uae_u32 host_Inet_MakeAddr (void);
 extern uae_u32 host_inet_network (void);
-extern void host_gethostbynameaddr (TrapContext *, SB, uae_u32, uae_u32, long);
+extern void host_gethostbynameaddr (TrapContext *, SB, uae_u32, uae_u32, uae_s32);
 extern uae_u32 host_getnetbyname (void);
 extern uae_u32 host_getnetbyaddr (void);
 extern void host_getservbynameport (TrapContext *, SB, uae_u32, uae_u32, uae_u32);

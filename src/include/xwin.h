@@ -63,8 +63,8 @@ extern bool target_graphics_buffer_update (void);
 
 extern void screenshot (int);
 
-extern int bits_in_mask (unsigned long mask);
-extern int mask_shift (unsigned long mask);
+extern int bits_in_mask (uae_u32 mask);
+extern int mask_shift (uae_u32 mask);
 extern unsigned int doMask (int p, int bits, int shift);
 extern unsigned int doMask256 (int p, int bits, int shift);
 extern void alloc_colors64k (int, int, int, int, int, int, int);

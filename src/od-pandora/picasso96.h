@@ -560,29 +560,29 @@ struct Line {
 /************************************************************************/
 struct picasso96_state_struct
 {
-    uae_u32		RGBFormat;   /* true-colour, CLUT, hi-colour, etc. */
-    struct MyCLUTEntry	CLUT[256];   /* Duh! */
-    uaecptr		Address;     /* Active screen address (Amiga-side) */
-    uaecptr		Extent;	     /* End address of screen (Amiga-side) */
-    uae_u16		Width;	     /* Active display width  (From SetGC) */
-    uae_u16		VirtualWidth;/* Total screen width (From SetPanning) */
-    uae_u16		BytesPerRow; /* Total screen width in bytes (From SetGC) */
-    uae_u16		Height;	     /* Active display height (From SetGC) */
-    uae_u16		VirtualHeight; /* Total screen height */
-    uae_u8		GC_Depth;    /* From SetGC() */
-    uae_u8		GC_Flags;    /* From SetGC() */
-    long		XOffset;     /* From SetPanning() */
-    long		YOffset;     /* From SetPanning() */
-    uae_u8		SwitchState; /* From SetSwitch() - 0 is Amiga, 1 is Picasso */
-    uae_u8		BytesPerPixel;
-    uae_u8		CardFound;
-    //here follow winuae additional entrys
-    uae_u8    *HostAddress; /* Active screen address (PC-side) */
-    // host address is need because Windows
-    // support NO direct access all the time to gfx Card
-    // everytime windows can remove your surface from card so the mainrender place
-    // must be in memory
-    long		XYOffset;
+  RGBFTYPE		RGBFormat;   /* true-colour, CLUT, hi-colour, etc. */
+  struct MyCLUTEntry	CLUT[256];   /* Duh! */
+  uaecptr		Address;     /* Active screen address (Amiga-side) */
+  uaecptr		Extent;	     /* End address of screen (Amiga-side) */
+  uae_u16		Width;	     /* Active display width  (From SetGC) */
+  uae_u16		VirtualWidth;/* Total screen width (From SetPanning) */
+  uae_u16		BytesPerRow; /* Total screen width in bytes (From SetGC) */
+  uae_u16		Height;	     /* Active display height (From SetGC) */
+  uae_u16		VirtualHeight; /* Total screen height */
+  uae_u8		GC_Depth;    /* From SetGC() */
+  uae_u8		GC_Flags;    /* From SetGC() */
+  uae_s32		XOffset;     /* From SetPanning() */
+  uae_s32		YOffset;     /* From SetPanning() */
+  uae_u8		SwitchState; /* From SetSwitch() - 0 is Amiga, 1 is Picasso */
+  uae_u8		BytesPerPixel;
+  uae_u8		CardFound;
+  //here follow winuae additional entrys
+  uae_u8    *HostAddress; /* Active screen address (PC-side) */
+  // host address is need because Windows
+  // support NO direct access all the time to gfx Card
+  // everytime windows can remove your surface from card so the mainrender place
+  // must be in memory
+  uae_s32		XYOffset;
 };
 
 extern void InitPicasso96 (void);

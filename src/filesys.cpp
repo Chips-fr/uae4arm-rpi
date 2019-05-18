@@ -2897,7 +2897,7 @@ static a_inode *find_aino (TrapContext *ctx, Unit *unit, uaecptr lock, const TCH
   return a;
 }
 
-static uaecptr make_lock (TrapContext *ctx, Unit *unit, uae_u32 uniq, long mode)
+static uaecptr make_lock (TrapContext *ctx, Unit *unit, uae_u32 uniq, uae_s32 mode)
 {
   /* allocate lock from the list kept by the assembly code */
   uaecptr lock;
@@ -4751,7 +4751,7 @@ static void	action_change_mode(TrapContext *ctx, Unit *unit, dpacket *packet)
    * or MODE_OLDFILE/MODE_NEWFILE/MODE_READWRITE if CHANGE_FH *
    * Above is wrong, it is always *_LOCK. TW. */
 	int mode = GET_PCK_ARG3 (packet);
-  unsigned long uniq;
+  uae_u32 uniq;
   a_inode *a = NULL, *olda = NULL;
   int err = 0;
 	TRACE((_T("ACTION_CHANGE_MODE(0x%x,%d,%d)\n"), object, type, mode));
@@ -4801,7 +4801,7 @@ static void	action_change_mode(TrapContext *ctx, Unit *unit, dpacket *packet)
   }
 }
 
-static void	action_parent_common(TrapContext *ctx, Unit *unit, dpacket *packet, unsigned long uniq)
+static void	action_parent_common(TrapContext *ctx, Unit *unit, dpacket *packet, uae_u32 uniq)
 {
   a_inode *olda = lookup_aino (unit, uniq);
   if (olda == 0) {
@@ -5408,7 +5408,7 @@ static void action_change_file_position64(TrapContext *ctx, Unit *unit, dpacket 
   Key *k = lookup_key (unit, GET_PCK64_ARG1 (packet));
   uae_s64 pos = GET_PCK64_ARG2 (packet);
 	int mode = (uae_s32)GET_PCK64_ARG3 (packet);
-  long whence = SEEK_CUR;
+  uae_s32 whence = SEEK_CUR;
   uae_s64 res, cur;
 
   PUT_PCK64_RES0 (packet, DP64_INIT);
@@ -5624,7 +5624,7 @@ static void action_seek64(TrapContext *ctx, Unit *unit, dpacket *packet)
 	Key *k = lookup_key(unit, GET_PCK_ARG1(packet));
 	uae_s64 pos = get_quadp(ctx, GET_PCK64_ARG2(packet));
 	int mode = GET_PCK_ARG3(packet);
-	long whence = SEEK_CUR;
+	uae_s32 whence = SEEK_CUR;
 	uae_s64 res, cur;
 
 	if (k == 0) {

@@ -43,9 +43,8 @@ restore_host_fp_regs:
 //
 //----------------------------------------------------------------
 copy_screen_8bit:
-copy_screen_8bit_loop:
   mov       x7, #64
-copy_screen_8bit_loop_2:
+copy_screen_8bit_loop:
   ldrsw     x4, [x1], #4
   and       x5, x4, #255
   ldrsw     x6, [x3, x5, lsl #2]
@@ -62,9 +61,9 @@ copy_screen_8bit_loop_2:
   ldrsw     x6, [x3, x5, lsl #2]
   subs      x7, x7, #4
   strh      w6, [x0], #2
-  bgt       copy_screen_8bit_loop_2
-  subs      x2, x2, #64
   bgt       copy_screen_8bit_loop
+  subs      x2, x2, #64
+  bgt       copy_screen_8bit
   ret
   
 
@@ -109,4 +108,5 @@ copy_screen_32bit_to_16bit:
   orr    w6, w6, w4, lsl #11
   strh   w6, [x0], #2
   subs   w2, w2, #4
+  bne    copy_screen_32bit_to_16bit
   ret

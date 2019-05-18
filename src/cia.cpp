@@ -52,18 +52,18 @@ static unsigned int ciaacra, ciaacrb, ciabcra, ciabcrb;
 static unsigned int ciaastarta, ciaastartb, ciabstarta, ciabstartb;
 
 /* Values of the CIA timers.  */
-static unsigned long ciaata, ciaatb, ciabta, ciabtb;
+static uae_u32 ciaata, ciaatb, ciabta, ciabtb;
 /* Computed by compute_passed_time.  */
-static unsigned long ciaata_passed, ciaatb_passed, ciabta_passed, ciabtb_passed;
+static uae_u32 ciaata_passed, ciaatb_passed, ciabta_passed, ciabtb_passed;
 
-static unsigned long ciaatod, ciabtod, ciaatol, ciabtol, ciaaalarm, ciabalarm;
+static uae_u32 ciaatod, ciabtod, ciaatol, ciabtol, ciaaalarm, ciabalarm;
 static int ciaatlatch, ciabtlatch;
 static bool oldovl, oldcd32mute;
 static bool led;
 
 static unsigned int ciabpra;
 
-static unsigned long ciaala, ciaalb, ciabla, ciablb;
+static uae_u32 ciaala, ciaalb, ciabla, ciablb;
 static int ciaatodon, ciabtodon;
 static unsigned int ciaapra, ciaaprb, ciaadra, ciaadrb, ciaasdr, ciaasdr_cnt;
 static unsigned int ciabprb, ciabdra, ciabdrb, ciabsdr, ciabsdr_cnt;
@@ -135,14 +135,14 @@ void rethink_cias (void)
 
 static void compute_passed_time (void)
 {
-  unsigned long int ccount = (get_cycles () - eventtab[ev_cia].oldcycles + div10);
-  unsigned long int ciaclocks = ccount / DIV10;
+  uae_u32 ccount = (get_cycles () - eventtab[ev_cia].oldcycles + div10);
+  uae_u32 ciaclocks = ccount / DIV10;
 
   ciaata_passed = ciaatb_passed = ciabta_passed = ciabtb_passed = 0;
 
   /* CIA A timers */
   if ((ciaacra & 0x21) == 0x01) {
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (cc > ciaastarta)
 			cc -= ciaastarta;
 		else
@@ -150,7 +150,7 @@ static void compute_passed_time (void)
 		ciaata_passed = cc;
   }
   if ((ciaacrb & 0x61) == 0x01) {
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (cc > ciaastartb)
 			cc -= ciaastartb;
 		else
@@ -160,7 +160,7 @@ static void compute_passed_time (void)
 
   /* CIA B timers */
   if ((ciabcra & 0x21) == 0x01) {
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (cc > ciabstarta)
 			cc -= ciabstarta;
 		else
@@ -168,7 +168,7 @@ static void compute_passed_time (void)
 		ciabta_passed = cc;
   }
   if ((ciabcrb & 0x61) == 0x01) {
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (cc > ciabstartb)
 			cc -= ciabstartb;
 		else
@@ -183,8 +183,8 @@ static void compute_passed_time (void)
 
 static int CIA_update_check (void)
 {
-  unsigned long int ccount = (get_cycles () - eventtab[ev_cia].oldcycles + div10);
-  unsigned long int ciaclocks = ccount / DIV10;
+  uae_u32 ccount = (get_cycles () - eventtab[ev_cia].oldcycles + div10);
+  uae_u32 ciaclocks = ccount / DIV10;
 
   int aovfla = 0, aovflb = 0, asp = 0, bovfla = 0, bovflb = 0, bsp = 0;
 	int icr = 0;
@@ -194,7 +194,7 @@ static int CIA_update_check (void)
   /* CIA A timers */
   if ((ciaacra & 0x21) == 0x01) {
 		bool check = true;
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (ciaastarta > 0) {
 			if (cc > ciaastarta) {
 				cc -= ciaastarta;
@@ -219,7 +219,7 @@ static int CIA_update_check (void)
   }
   if ((ciaacrb & 0x61) == 0x01) {
 		bool check = true;
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (ciaastartb > 0) {
 			if (cc > ciaastartb) {
 				cc -= ciaastartb;
@@ -239,7 +239,7 @@ static int CIA_update_check (void)
   /* CIA B timers */
   if ((ciabcra & 0x21) == 0x01) {
 		bool check = true;
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (ciabstarta > 0) {
 			if (cc > ciabstarta) {
 				cc -= ciabstarta;
@@ -264,7 +264,7 @@ static int CIA_update_check (void)
   }
   if ((ciabcrb & 0x61) == 0x01) {
 		bool check = true;
-		unsigned long int cc = ciaclocks;
+		uae_u32 cc = ciaclocks;
 		if (ciabstartb > 0) {
 			if (cc > ciabstartb) {
 				cc -= ciabstartb;
@@ -330,7 +330,7 @@ static void CIA_update (void)
 
 static void CIA_calctimers (void)
 {
-  long int ciaatimea = -1, ciaatimeb = -1, ciabtimea = -1, ciabtimeb = -1;
+  uae_s32 ciaatimea = -1, ciaatimeb = -1, ciabtimea = -1, ciabtimeb = -1;
 	int div10diff = DIV10 - div10;
 
   eventtab[ev_cia].oldcycles = get_cycles ();
@@ -352,7 +352,7 @@ static void CIA_calctimers (void)
   eventtab[ev_cia].active = (ciaatimea != -1 || ciaatimeb != -1
 	  || ciabtimea != -1 || ciabtimeb != -1);
   if (eventtab[ev_cia].active) {
-	  unsigned long int ciatime = ~0L;
+	  uae_u32 ciatime = ~0L;
 	  if (ciaatimea != -1) 
       ciatime = ciaatimea;
 	  if (ciaatimeb != -1 && ciaatimeb < ciatime) 
@@ -378,7 +378,7 @@ void cia_diskindex (void)
   RethinkICRB();
 }
 
-static bool checkalarm (unsigned long tod, unsigned long alarm, bool inc)
+static bool checkalarm (uae_u32 tod, uae_u32 alarm, bool inc)
 {
   if (tod == alarm)
   	return true;

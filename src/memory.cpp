@@ -1441,7 +1441,7 @@ void map_banks_cond (addrbank *bank, int start, int size, int realsize)
 static void map_banks2 (addrbank *bank, int start, int size, int realsize, int quick)
 {
   int bnr;
-  unsigned long int hioffs = 0, endhioffs = 0x100;
+  uae_u32 hioffs = 0, endhioffs = 0x100;
   uae_u32 realstart = start;
 
   flush_icache_hard (3);	/* Sure don't want to keep any old mappings around! */

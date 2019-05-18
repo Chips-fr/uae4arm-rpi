@@ -80,7 +80,7 @@ static uae_u32 fake_tt0_030, fake_tt1_030, fake_tc_030;
 static uae_u16 fake_mmusr_030;
 
 #if COUNT_INSTRS
-static unsigned long int instrcount[65536];
+static uae_u32 instrcount[65536];
 static uae_u16 opcodenums[65536];
 
 static int compfn (const void *el1, const void *el2)
@@ -99,7 +99,7 @@ static TCHAR *icountfilename (void)
 void dump_counts (void)
 {
 	FILE *f = fopen (icountfilename (), "w");
-	unsigned long int total;
+	uae_u32 total;
 	int i;
 
 	write_log (_T("Writing instruction count file...\n"));
@@ -111,7 +111,7 @@ void dump_counts (void)
 
 	fprintf (f, "Total: %lu\n", total);
 	for (i=0; i < 65536; i++) {
-		unsigned long int cnt = instrcount[opcodenums[i]];
+		uae_u32 cnt = instrcount[opcodenums[i]];
 		struct instr *dp;
 		struct mnemolookup *lookup;
 		if (!cnt)
@@ -260,7 +260,7 @@ static const struct cputbl *cputbls[5][3] =
 static void build_cpufunctbl (void)
 {
   int i;
-  unsigned long opcode;
+  uae_u32 opcode;
   const struct cputbl *tbl = 0;
 	int lvl, mode;
 
@@ -375,8 +375,8 @@ static void build_cpufunctbl (void)
   set_cpu_caches (true);
 }
 
-static unsigned long cycles_shift;
-static unsigned long cycles_shift_2;
+static uae_u32 cycles_shift;
+static uae_u32 cycles_shift_2;
 
 static void update_68k_cycles (void)
 {
@@ -493,9 +493,9 @@ STATIC_INLINE int in_rtarea (uaecptr pc)
   return (munge24 (pc) & 0xFFFF0000) == rtarea_base && (uae_boot_rom_type || currprefs.uaeboard > 0);
 }
 
-STATIC_INLINE unsigned long adjust_cycles(unsigned long cycles)
+STATIC_INLINE uae_u32 adjust_cycles(uae_u32 cycles)
 {
-  unsigned long res = cycles >> cycles_shift;
+  uae_u32 res = cycles >> cycles_shift;
   if(cycles_shift_2)
     return res + (cycles >> cycles_shift_2);
   return res;  

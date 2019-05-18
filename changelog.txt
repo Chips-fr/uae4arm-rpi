@@ -1,3 +1,4 @@
+2019-05-18 - aarch64: fix 32bpp in Picasso, reduced size of some vars
 2019-05-17   First version for aarch64
  - Tested on Raspberry Pi 3B with Ubuntu Mate 64Bit.
  - Compiled native on Raspberry (GCC 7.4.0) or using cross-compiler on Ubuntu PC (GCC 8.3.0).

@@ -370,7 +370,7 @@ extern int posixemu_rmdir (const TCHAR *);
 #define unlink posixemu_unlink
 extern int posixemu_unlink (const TCHAR *);
 #define truncate posixemu_truncate
-extern int posixemu_truncate (const TCHAR *, long int);
+extern int posixemu_truncate (const TCHAR *, uae_s32);
 #define rename posixemu_rename
 extern int posixemu_rename (const TCHAR *, const TCHAR *);
 #define chmod posixemu_chmod
@@ -389,7 +389,7 @@ extern void closedir (DIR *);
 /* This isn't the best place for this, but it fits reasonably well. The logic
  * is that you probably don't have POSIX errnos if you don't have the above
  * functions. */
-extern long dos_errno (void);
+extern uae_s32 dos_errno (void);
 
 #endif
 

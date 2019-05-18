@@ -15,7 +15,7 @@
 #include "memory.h"
 #include "newcpu.h"
 
-unsigned long int nextevent, currcycle;
+uae_u32 nextevent, currcycle;
 int is_syncline;
 frame_time_t vsyncmintime, vsyncmaxtime, vsyncwaittime;
 int vsynctimebase;
@@ -24,10 +24,10 @@ void events_schedule (void)
 {
   int i;
 
-  unsigned long int mintime = ~0L;
+  uae_u32 mintime = ~0L;
   for (i = 0; i < ev_max; i++) {
   	if (eventtab[i].active) {
-	    unsigned long int eventtime = eventtab[i].evtime - currcycle;
+	    uae_u32 eventtime = eventtab[i].evtime - currcycle;
 	    if (eventtime < mintime)
     		mintime = eventtime;
   	}
@@ -35,7 +35,7 @@ void events_schedule (void)
   nextevent = currcycle + mintime;
 }
 
-void do_cycles_cpu_fastest (unsigned long cycles_to_add)
+void do_cycles_cpu_fastest (uae_u32 cycles_to_add)
 {
   if ((regs.pissoff -= cycles_to_add) > 0)
   	return;
@@ -73,7 +73,7 @@ void do_cycles_cpu_fastest (unsigned long cycles_to_add)
   currcycle += cycles_to_add;
 }
 
-void do_cycles_cpu_norm (unsigned long cycles_to_add)
+void do_cycles_cpu_norm (uae_u32 cycles_to_add)
 {
   while ((nextevent - currcycle) <= cycles_to_add) {
 	  int i;

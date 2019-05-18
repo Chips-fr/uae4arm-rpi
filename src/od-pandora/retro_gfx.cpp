@@ -45,8 +45,8 @@ extern SDL_Surface *prSDLScreen;
 
 static int fbdev = -1;
 static unsigned int current_vsync_frame = 0;
-unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
-static unsigned long last_synctime;
+uae_u32 time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+static uae_u32 last_synctime;
 
 /* Possible screen modes (x and y resolutions) */
 #define MAX_SCREEN_MODES 7
@@ -79,7 +79,7 @@ int delay_savestate_frame = 0;
 #endif
 
 
-static unsigned long next_synctime = 0;
+static uae_u32 next_synctime = 0;
 
 int graphics_setup (void)
 {
@@ -358,7 +358,7 @@ extern DISK_GUI_change (void);
 
 void show_screen (int mode)
 {
-  unsigned long start;
+  uae_u32 start;
 
   DISK_GUI_change();
 
@@ -374,7 +374,7 @@ void show_screen (int mode)
   	gfxvidinfo.drawbuffer.bufmem = (uae_u8 *)prSDLScreen->pixels;
 
 #if 0
-  if (last_synctime - next_synctime > time_per_frame - (long)5000)
+  if (last_synctime - next_synctime > time_per_frame - (uae_u32)5000)
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
@@ -382,7 +382,7 @@ void show_screen (int mode)
 }
 
 
-unsigned long target_lastsynctime(void)
+uae_u32 target_lastsynctime(void)
 {
   return last_synctime;
 }
@@ -420,7 +420,7 @@ static void graphics_subinit (void)
 	}
 }
 
-STATIC_INLINE int bitsInMask (unsigned long mask)
+STATIC_INLINE int bitsInMask (uae_u32 mask)
 {
 	/* count bits in mask */
 	int n = 0;
@@ -433,7 +433,7 @@ STATIC_INLINE int bitsInMask (unsigned long mask)
 }
 
 
-STATIC_INLINE int maskShift (unsigned long mask)
+STATIC_INLINE int maskShift (uae_u32 mask)
 {
 	/* determine how far mask is shifted */
 	int n = 0;

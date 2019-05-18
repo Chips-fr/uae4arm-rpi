@@ -728,7 +728,7 @@ uae_u32 bsdthr_WaitSelect (SB)
 uae_u32 bsdthr_Accept_2 (SB)
 {
   int foo, s, s2;
-  long flags;
+  uae_s32 flags;
   struct sockaddr_in addr;
   socklen_t hlen = sizeof (struct sockaddr_in);
 
@@ -821,7 +821,7 @@ uae_u32 bsdthr_SendRecvAcceptConnect (uae_u32 (*tryfunc)(SB), SB)
 uae_u32 bsdthr_blockingstuff (uae_u32 (*tryfunc)(SB), SB)
 {
   int done = 0, foo;
-  long flags;
+  uae_s32 flags;
   int nonblock;
   if ((flags = fcntl (sb->s, F_GETFL)) == -1)
   	flags = 0;
@@ -1106,7 +1106,7 @@ uae_u32 host_getpeername (TrapContext *ctx, SB, uae_u32 sd, uae_u32 name, uae_u3
   return -1;
 }
 
-void host_gethostbynameaddr (TrapContext *ctx, SB, uae_u32 name, uae_u32 namelen, long addrtype)
+void host_gethostbynameaddr (TrapContext *ctx, SB, uae_u32 name, uae_u32 namelen, uae_s32 addrtype)
 {
   sb->name      = name;
   sb->a_addrlen = namelen;
@@ -1626,7 +1626,7 @@ uae_u32 host_IoctlSocket (TrapContext *ctx, SB, uae_u32 sd, uae_u32 request, uae
 {
   int sock = getsock (ctx, sb, sd + 1);
   int r, argval = trap_get_long (ctx, arg);
-  long flags;
+  uae_s32 flags;
 
   if (sock == -1) {
 		sb->resultval = -1;

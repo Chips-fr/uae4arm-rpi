@@ -43,12 +43,12 @@ extern int z3base_adr;
 
 extern int currVSyncRate;
 
-extern unsigned long time_per_frame;
+extern uae_u32 time_per_frame;
 
 void run_gui(void);
 void init_max_signals(void);
 void wait_for_vsync(void);
-unsigned long target_lastsynctime(void);
+uae_u32 target_lastsynctime(void);
 extern int screen_is_picasso;
 
 bool HandleA3000Mem(int lowsize, int highsize);

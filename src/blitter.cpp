@@ -42,8 +42,8 @@ enum blitter_states bltstate;
 static int blit_cyclecounter;
 static int blit_slowdown;
 
-static long blit_firstline_cycles;
-static long blit_first_cycle;
+static uae_s32 blit_firstline_cycles;
+static uae_s32 blit_first_cycle;
 static int blit_last_cycle, blit_dmacount, blit_dmacount2;
 static int blit_nod;
 static const int *blit_diag;

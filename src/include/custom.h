@@ -42,7 +42,7 @@ extern void init_custom (void);
 
 extern bool picasso_requested_on, picasso_requested_forced_on, picasso_on;
 
-extern unsigned long int hsync_counter;
+extern uae_u32 hsync_counter;
 
 extern uae_u16 dmacon;
 extern uae_u16 intreq;
@@ -129,7 +129,7 @@ extern float hblank_hz;
 #define DMA_MASTER    0x0200
 #define DMA_BLITPRI   0x0400
 
-extern unsigned long timeframes;
+extern uae_u32 timeframes;
 
 /* 100 words give you 1600 horizontal pixels. Should be more than enough for
  * superhires. Don't forget to update the definition in genp2c.c as well.
@@ -175,7 +175,7 @@ STATIC_INLINE int GET_PLANES(uae_u16 bplcon0)
 }
 
 extern void fpscounter_reset (void);
-extern unsigned long idletime;
+extern uae_u32 idletime;
 
 extern int current_maxvpos (void);
 extern struct chipset_refresh *get_chipset_refresh (void);

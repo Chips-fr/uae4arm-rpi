@@ -45,8 +45,8 @@ static unsigned int current_vsync_frame = 0;
 /* Dummy SDL variable for screen init */
 SDL_Surface *Dummy_prSDLScreen = NULL;
 
-unsigned long time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
-static unsigned long last_synctime;
+uae_u32 time_per_frame = 20000; // Default for PAL (50 Hz): 20000 microsecs
+static uae_u32 last_synctime;
 static int vsync_modulo = 1;
 static int host_hz = 50;
 
@@ -89,9 +89,9 @@ static void CreateScreenshot(void);
 static int save_thumb(char *path);
 int delay_savestate_frame = 0;
 
-static long next_synctime = 0;
+static uae_u32 next_synctime = 0;
 
-long start;
+uae_u32 start;
 
 static volatile uae_atomic vsync_counter = 0;
 
@@ -435,7 +435,7 @@ void unlockscr (void)
 
 void wait_for_vsync(void)
 {
-  unsigned long start = read_processor_time();
+  uae_u32 start = read_processor_time();
   int wait_till = current_vsync_frame;
   do 
   {
@@ -468,7 +468,7 @@ bool render_screen (bool immediate)
 
 void show_screen(int mode)
 {
-  unsigned long start = read_processor_time();
+  uae_u32 start = read_processor_time();
 
   int wait_till = current_vsync_frame;
   if(vsync_modulo == 1) {
@@ -485,7 +485,7 @@ void show_screen(int mode)
     }
   } else {
     // Amiga framerate differs from host framerate
-    unsigned long wait_till_time = (next_synctime != 0) ? next_synctime : last_synctime + time_per_frame;
+    uae_u32 wait_till_time = (next_synctime != 0) ? next_synctime : last_synctime + time_per_frame;
     if(current_vsync_frame % vsync_modulo == 0) {
       // Real vsync
       if(start < wait_till_time) {
@@ -522,14 +522,14 @@ void show_screen(int mode)
 
   idletime += last_synctime - start;
 
-  if (last_synctime - next_synctime > time_per_frame - (long)5000)
+  if (last_synctime - next_synctime > time_per_frame - (uae_u32)5000)
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
 }
 
 
-unsigned long target_lastsynctime(void)
+uae_u32 target_lastsynctime(void)
 {
   return last_synctime;
 }
@@ -563,7 +563,7 @@ static void graphics_subinit(void)
 	}
 }
 
-STATIC_INLINE int bitsInMask(unsigned long mask)
+STATIC_INLINE int bitsInMask(uae_u32 mask)
 {
 	/* count bits in mask */
 	int n = 0;
@@ -576,7 +576,7 @@ STATIC_INLINE int bitsInMask(unsigned long mask)
 }
 
 
-STATIC_INLINE int maskShift(unsigned long mask)
+STATIC_INLINE int maskShift(uae_u32 mask)
 {
 	/* determine how far mask is shifted */
 	int n = 0;
