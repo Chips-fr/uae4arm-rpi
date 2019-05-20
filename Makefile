@@ -4,7 +4,7 @@ endif
 
 ifeq ($(PLATFORM),rpi2)
 	CPU_FLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV -DARMV6_ASSEMBLY -marm
+	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DARM_HAS_DIV -DARMV6_ASSEMBLY -marm
 	LDFLAGS += -lbcm_host
 	HAVE_NEON = 1
 	HAVE_DISPMANX = 1
@@ -41,7 +41,7 @@ else ifeq ($(PLATFORM),gles)
 	#MORE_CFLAGS += -DSHADER_SUPPORT
 	# Uncomment below line to activate threading. This is buggy on Allwinner.
 	#MORE_CFLAGS += -DUSE_RENDER_THREAD
-	MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARMV6_ASSEMBLY -marm
+	MORE_CFLAGS += -DARMV6T2 -DARMV6_ASSEMBLY -marm
 	HAVE_GLES_DISPLAY = 1
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
@@ -70,11 +70,8 @@ PANDORA=1
 
 SDL_CFLAGS = `sdl-config --cflags`
 
-DEFS +=  `xml2-config --cflags`
-DEFS += -DCPU_arm -DPANDORA -DRP9_SUPPORT -DWITH_MPEG2
-DEFS += -DWITH_INGAME_WARNING
-DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
-DEFS += -DUSE_SDL
+DEFS += `xml2-config --cflags`
+DEFS += -DCPU_arm -DPANDORA -DRP9_SUPPORT -DWITH_MPEG2 -DWITH_INGAME_WARNING -DUSE_SDL
 
 ifeq ($(USE_PICASSO96), 1)
 	DEFS += -DPICASSO96
@@ -93,8 +90,7 @@ LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
-MORE_CFLAGS += -O3 -fomit-frame-pointer
-MORE_CFLAGS += -finline -fno-builtin
+MORE_CFLAGS += -O3 -fomit-frame-pointer -finline
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING
 

@@ -24,6 +24,10 @@ How to compile for raspberry:
 
       make
 
+   Of for Raspberry Pi 4 in 64 Bits (with OpenGLES by default otherwise see Makefile):
+
+      make PLATFORM=rpi64bits
+
    Or for Raspberry Pi 1:  
 
       make PLATFORM=rpi1
@@ -44,9 +48,7 @@ For all ARM boards with OpenGLES:
 
 # uae4arm-libretro core
 
-Early port.
-
-How to compile (ex for Raspberry Pi 2):
+How to compile (ex for Raspberry Pi 2 and above):
 
      make -f Makefile.libretro platform=rpi2
 

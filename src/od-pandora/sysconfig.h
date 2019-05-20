@@ -13,10 +13,12 @@
 #define FILESYS /* filesys emulation */
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
-#ifndef CPU_AARCH64
+#if !defined(CPU_AARCH64)
 #define JIT /* JIT compiler support */
 #endif
-/* #define USE_JIT_FPU */
+#if defined(ARMV6T2)
+#define USE_JIT_FPU
+#endif
 /* #define NATMEM_OFFSET regs.natmem_offset */
 /* #define CATWEASEL */ /* Catweasel MK2/3 support */
 /* #define AHI */ /* AHI sound emulation */

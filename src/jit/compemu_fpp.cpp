@@ -10,12 +10,10 @@
 
 #include <math.h>
 
-#include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
 #include "memory.h"
-#include "custom.h"
 #include "newcpu.h"
 #include "compemu.h"
 #include "flags_arm.h"
@@ -96,8 +94,7 @@ STATIC_INLINE int comp_fp_get (uae_u32 opcode, uae_u16 extra, int treg)
   			}
   			case 2: /* (d16,PC) */
   			{
-  				uae_u32 address = start_pc + ((uae_char*) comp_pc_p - (uae_char*) start_pc_p) +
-  					m68k_pc_offset;
+  				uae_u32 address = start_pc + ((uae_char*) comp_pc_p - (uae_char*) start_pc_p) +	m68k_pc_offset;
   				uae_s32 PC16off = (uae_s32) (uae_s16) comp_get_iword ((m68k_pc_offset += 2) - 2);
   				mov_l_ri (S1, address + PC16off);
   				break;
@@ -336,12 +333,6 @@ STATIC_INLINE int comp_fp_adr (uae_u32 opcode)
 	}
 }
 
-void comp_fdbcc_opp (uae_u32 opcode, uae_u16 extra)
-{
-	FAIL (1);
-	return;
-}
-
 void comp_fscc_opp (uae_u32 opcode, uae_u16 extra)
 {
 	int reg;
@@ -383,12 +374,6 @@ void comp_fscc_opp (uae_u32 opcode, uae_u16 extra)
 		  case 15: fp_fscc_ri(reg, NATIVE_CC_AL); break;
 	  }
   }
-}
-
-void comp_ftrapcc_opp (uae_u32 opcode, uaecptr oldpc)
-{
-	FAIL (1);
-	return;
 }
 
 void comp_fbcc_opp (uae_u32 opcode)
@@ -455,18 +440,6 @@ void comp_fbcc_opp (uae_u32 opcode)
 	}
 }
 
-void comp_fsave_opp (uae_u32 opcode)
-{
-	FAIL (1);
-	return;
-}
-
-void comp_frestore_opp (uae_u32 opcode)
-{
-	FAIL (1);
-	return;
-}
-
 static uae_u32 dhex_pi[]    ={0x54442D18, 0x400921FB};
 static uae_u32 dhex_exp_1[] ={0x8B145769, 0x4005BF0A};
 static uae_u32 dhex_l2_e[]  ={0x652B82FE, 0x3FF71547};
@@ -479,9 +452,7 @@ static uae_u32 dhex_1e32[]  ={0xB5056E17, 0x4693B8B5};
 static uae_u32 dhex_1e64[]  ={0xE93FF9F5, 0x4D384F03};
 static uae_u32 dhex_1e128[] ={0xF9301D32, 0x5A827748};
 static uae_u32 dhex_1e256[] ={0x7F73BF3C, 0x75154FDD};
-static uae_u32 dhex_inf[]   ={0x00000000, 0x7ff00000};
-static uae_u32 dhex_nan[]   ={0xffffffff, 0x7fffffff};
-extern double fp_1e8;
+static double fp_1e8;
 
 void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 {
@@ -508,7 +479,7 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 		case 4: /* FMOVE.L  <EA>, ControlReg */
 		  if (!(opcode & 0x30)) { /* Dn or An */
 			  if (extra & 0x1000) { /* FPCR */
-				  mov_l_mr (uae_p32(&regs.fpcr), opcode & 15);
+				  mov_l_mr ((uintptr)&regs.fpcr, opcode & 15);
 				  return;
 			  }
 			  if (extra & 0x0800) { /* FPSR */
@@ -517,13 +488,13 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 				  // set_fpsr(m68k_dreg (regs, opcode & 15));
 			  }
 			  if (extra & 0x0400) { /* FPIAR */
-				  mov_l_mr (uae_p32(&regs.fpiar), opcode & 15); return;
+				  mov_l_mr ((uintptr)&regs.fpiar, opcode & 15); return;
 			  }
 		  }
 		  else if ((opcode & 0x3f) == 0x3c) {
 			  if (extra & 0x1000) { /* FPCR */
 				  uae_u32 val = comp_get_ilong ((m68k_pc_offset += 4) - 4);
-				  mov_l_mi (uae_p32(&regs.fpcr), val);
+				  mov_l_mi ((uintptr)&regs.fpcr, val);
 	        switch(val & 0x30) {
 	          case 0x00:
 	            // round to nearest
@@ -551,7 +522,7 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 			  }
 			  if (extra & 0x0400) { /* FPIAR */
 				  uae_u32 val = comp_get_ilong ((m68k_pc_offset += 4) - 4);
-				  mov_l_mi (uae_p32(&regs.fpiar), val);
+				  mov_l_mi ((uintptr)&regs.fpiar, val);
 				  return;
 			  }
 		  }
@@ -560,14 +531,14 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 		case 5: /* FMOVE.L  ControlReg, <EA> */
 		  if (!(opcode & 0x30)) { /* Dn or An */
 			  if (extra & 0x1000) { /* FPCR */
-				  mov_l_rm (opcode & 15, uae_p32(&regs.fpcr)); return;
+				  mov_l_rm (opcode & 15, (uintptr)&regs.fpcr); return;
 			  }
 			  if (extra & 0x0800) { /* FPSR */
 				  FAIL (1);
 				  return;
 			  }
 			  if (extra & 0x0400) { /* FPIAR */
-				  mov_l_rm (opcode & 15, uae_p32(&regs.fpiar)); return;
+				  mov_l_rm (opcode & 15, (uintptr)&regs.fpiar); return;
 			  }
 		  }
 		  FAIL (1);
@@ -696,28 +667,28 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 			  //write_log (_T("JIT FMOVECR %x\n"), opmode);
 			  switch (opmode) {
 				  case 0x00:
-				    fmov_d_rm (dreg, uae_p32(&dhex_pi));
+				    fmov_d_rm (dreg, (uintptr)&dhex_pi);
 				    break;
 				  case 0x0b:
-				    fmov_d_rm (dreg, uae_p32(&dhex_l10_2));
+				    fmov_d_rm (dreg, (uintptr)&dhex_l10_2);
 				    break;
 				  case 0x0c:
-				    fmov_d_rm (dreg, uae_p32(&dhex_exp_1));
+				    fmov_d_rm (dreg, (uintptr)&dhex_exp_1);
 				    break;
 				  case 0x0d:
-				    fmov_d_rm (dreg, uae_p32(&dhex_l2_e));
+				    fmov_d_rm (dreg, (uintptr)&dhex_l2_e);
 				    break;
 				  case 0x0e:
-				    fmov_d_rm (dreg, uae_p32(&dhex_l10_e));
+				    fmov_d_rm (dreg, (uintptr)&dhex_l10_e);
 				    break;
 				  case 0x0f:
             fmov_d_ri_0 (dreg);
 				    break;
 				  case 0x30:
-				    fmov_d_rm (dreg, uae_p32(&dhex_ln_2));
+				    fmov_d_rm (dreg, (uintptr)&dhex_ln_2);
 				    break; 
 				  case 0x31:
-				    fmov_d_rm (dreg, uae_p32(&dhex_ln_10));
+				    fmov_d_rm (dreg, (uintptr)&dhex_ln_10);
 				    break;
 				  case 0x32:
             fmov_d_ri_1 (dreg);
@@ -732,22 +703,22 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 				    fmov_l_ri (dreg, 10000);
 				    break;
 				  case 0x36:
-				    fmov_rm (dreg, uae_p32(&fp_1e8));
+				    fmov_rm (dreg, (uintptr)&fp_1e8);
 				    break;
 				  case 0x37:
-				    fmov_d_rm (dreg, uae_p32(&dhex_1e16));
+				    fmov_d_rm (dreg, (uintptr)&dhex_1e16);
 				    break;
 				  case 0x38:
-				    fmov_d_rm (dreg, uae_p32(&dhex_1e32));
+				    fmov_d_rm (dreg, (uintptr)&dhex_1e32);
 				    break;
 				  case 0x39:
-				    fmov_d_rm (dreg, uae_p32(&dhex_1e64));
+				    fmov_d_rm (dreg, (uintptr)&dhex_1e64);
 				    break;
 				  case 0x3a:
-				    fmov_d_rm (dreg, uae_p32(&dhex_1e128));
+				    fmov_d_rm (dreg, (uintptr)&dhex_1e128);
 				    break;
 				  case 0x3b:
-				    fmov_d_rm (dreg, uae_p32(&dhex_1e256));
+				    fmov_d_rm (dreg, (uintptr)&dhex_1e256);
 				    break;
 				  default:
 				    FAIL (1);
