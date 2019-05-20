@@ -1597,12 +1597,10 @@ static void m68k_run_1 (void)
 
 #ifdef JIT  /* Completely different run_2 replacement */
 
-extern uae_u32 jit_exception;
-
 void execute_exception(void)
 {
-  Exception_cpu(jit_exception);
-  jit_exception = 0;
+  Exception_cpu(regs.jit_exception);
+  regs.jit_exception = 0;
   cpu_cycles = adjust_cycles(4 * CYCLE_UNIT / 2);
   do_cycles (cpu_cycles);
   // after leaving this function, we fall back to execute_normal()

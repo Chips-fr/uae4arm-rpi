@@ -46,17 +46,15 @@ copy_screen_8bit:
   mov       x7, #64
 copy_screen_8bit_loop:
   ldrsw     x4, [x1], #4
-  and       x5, x4, #255
+  ubfx      x5, x4, #0, #8
   ldrsw     x6, [x3, x5, lsl #2]
-  lsr       x5, x4, #8
-  and       x5, x5, #255
+  ubfx      x5, x4, #8, #8
   strh      w6, [x0], #2
   ldrsw     x6, [x3, x5, lsl #2]
-  lsr       x5, x4, #16
-  and       x5, x5, #255
+  ubfx      x5, x4, #16, #8
   strh      w6, [x0], #2
   ldrsw     x6, [x3, x5, lsl #2]
-  lsr       x5, x4, #24
+  ubfx      x5, x4, #24, #8
   strh      w6, [x0], #2
   ldrsw     x6, [x3, x5, lsl #2]
   subs      x7, x7, #4
@@ -78,10 +76,13 @@ copy_screen_8bit_loop:
 //
 //----------------------------------------------------------------
 copy_screen_16bit_swap:
-  ldrsw     x3, [x1], #4
-  rev16     w3, w3
-  str       w3, [x0], #4
-  subs      w2, w2, #4
+  ld4       {v0.2D-v3.2D}, [x1], #64
+  rev16     v0.16b, v0.16b
+  rev16     v1.16b, v1.16b
+  rev16     v2.16b, v2.16b
+  rev16     v3.16b, v3.16b
+  subs      w2, w2, #64
+  st4       {v0.2D-v3.2D}, [x0], #64
   bne copy_screen_16bit_swap
   ret
   
@@ -97,16 +98,25 @@ copy_screen_16bit_swap:
 //
 //----------------------------------------------------------------
 copy_screen_32bit_to_16bit:
-  ldrsw  x3, [x1], #4
-  rev    w3, w3
-  lsr    w4, w3, #27
-  lsr    w5, w3, #18
-  and    w5, w5, #63
-  lsr    w6, w3, #11
-  and    w6, w6, #31
-  orr    w6, w6, w5, lsl #5
-  orr    w6, w6, w4, lsl #11
-  strh   w6, [x0], #2
-  subs   w2, w2, #4
-  bne    copy_screen_32bit_to_16bit
+  ldr       x3, =Masks_rgb
+  ld2r      {v0.4S-v1.4S}, [x3]
+copy_screen_32bit_to_16bit_loop:
+  ld1       {v3.4S}, [x1], #16
+  rev64     v3.16B, v3.16B
+  ushr      v4.4S, v3.4S, #16
+  ushr      v5.4S, v3.4S, #13
+  ushr      v3.4S, v3.4S, #11
+  bit       v3.16B, v4.16B, v0.16B
+  bit       v3.16B, v5.16B, v1.16B
+  xtn       v3.4H, v3.4S
+  rev32     v3.4H, v3.4H
+  subs      w2, w2, #16
+  st1       {v3.4H}, [x0], #8
+  bne       copy_screen_32bit_to_16bit_loop
   ret
+
+
+.align 8
+
+Masks_rgb:
+  .long 0x0000f800, 0x000007e0
