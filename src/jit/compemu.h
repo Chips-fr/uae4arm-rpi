@@ -38,8 +38,6 @@ typedef uae_u64 uintptr;
 typedef uae_u32 uintptr;
 #endif
 
-/* Flags for Bernie during development/debugging. Should go away eventually */
-#define DISTRUST_CONSISTENT_MEM 0
 /* Now that we do block chaining, and also have linked lists on each tag,
    TAGMASK can be much smaller and still do its job. Saves several megs
    of memory! */
@@ -73,18 +71,6 @@ typedef union {
  */
 #define USE_SEPARATE_BIA 1
 
-/* Use chain of checksum_info_t to compute the block checksum */
-#define USE_CHECKSUM_INFO 1
-
-/* Use code inlining, aka follow-up of constant jumps */
-#define USE_INLINING 1
-
-/* Inlining requires the chained checksuming information */
-#if USE_INLINING
-#undef  USE_CHECKSUM_INFO
-#define USE_CHECKSUM_INFO 1
-#endif
-
 #define COMP_DEBUG 0
 
 #if COMP_DEBUG
@@ -110,7 +96,6 @@ typedef union {
 #define MAX_HOLD_BI 3  /* One for the current block, and up to two
 			  for jump targets */
 
-#define INDIVIDUAL_INST 0
 #if 1
 // gb-- my format from readcpu.cpp is not the same
 #define FLAG_X    0x0010
@@ -134,8 +119,7 @@ typedef union {
 #define ALIGN_NOT_NEEDED
 
 #if defined(CPU_AARCH64)
-#define N_REGS 18   /* really 32, but 29 to 31 are FP, LR, SP; 18 has special meaning; 27 holds memstart and 28 holds regs-struct */
-                    /* 19-28 are callee-saved, maybe we use them to hold A0-A7/D0-D7 later. */
+#define N_REGS 27   /* really 32, but 29 to 31 are FP, LR, SP; 18 has special meaning; 27 holds memstart and 28 holds regs-struct */
 #else
 #define N_REGS 10  /* really 16, but 13 to 15 are SP, LR, PC; 12 is scratch reg, 10 holds memstart and 11 holds regs-struct */
 #endif
@@ -364,12 +348,7 @@ typedef struct blockinfo_t {
 
   uae_u32 c1;
   uae_u32 c2;
-#if USE_CHECKSUM_INFO
   checksum_info *csi;
-#else
-  uae_u32 len;
-  uae_u32 min_pcp;
-#endif
 
   struct blockinfo_t* next_same_cl;
   struct blockinfo_t** prev_same_cl_p;

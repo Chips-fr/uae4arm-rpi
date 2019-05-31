@@ -1,3 +1,4 @@
+2019-05-31 - aarch64 JIT: first opcodes working
 2019-05-31 - Fix atomic functions for aarch64
 2019-05-20 - Preparations for aarch64 JIT
 2019-05-18 - aarch64: fix 32bpp in Picasso, reduced size of some vars

@@ -540,28 +540,28 @@
 #define CCMP_xxfc(Xn,Xm,nzcv,cond)  _W((0b11111010010 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (nzcv))
 
 /* conditionl increment */
-#define CINC_wwc(Wd,Wn,cond)      _W((0b00011010100 << 21) | ((Wn) << 16) | ((cond) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CINC_xxc(Xd,Xn,cond)      _W((0b10011010100 << 21) | ((Xn) << 16) | ((cond) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
+#define CINC_wwc(Wd,Wn,cond)      _W((0b00011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
+#define CINC_xxc(Xd,Xn,cond)      _W((0b10011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
 
 /* conditional invert */
-#define CINV_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
-#define CINV_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (Xd))
+#define CINV_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
+#define CINV_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b00 << 10) | ((Xn) << 5) | (Xd))
 
 /* conditional negate */
-#define CNEG_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CNEG_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
+#define CNEG_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
+#define CNEG_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
 
 /* conditional select */
 #define CSEL_wwwc(Wd,Wn,Wm,cond)  _W((0b00011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
 #define CSEL_xxxc(Xd,Xn,Xm,cond)  _W((0b10011010100 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (Xd))
 
 /* conditional set */
-#define CSET_wc(Wd,cond)          _W((0b00011010100 << 21) | (0b11111 << 16) | ((cond) << 12) | (0b01 << 10) | (0b11111 << 5) | (Wd))
-#define CSET_xc(Xd,cond)          _W((0b10011010100 << 21) | (0b11111 << 16) | ((cond) << 12) | (0b01 << 10) | (0b11111 << 5) | (Xd))
+#define CSET_wc(Wd,cond)          _W((0b00011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b01 << 10) | (0b11111 << 5) | (Wd))
+#define CSET_xc(Xd,cond)          _W((0b10011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b01 << 10) | (0b11111 << 5) | (Xd))
 
 /* conditional set mask */
-#define CSETM_wc(Wd,cond)         _W((0b01011010100 << 21) | (0b11111 << 16) | ((cond) << 12) | (0b00 << 10) | (0b11111 << 5) | (Wd))
-#define CSETM_xc(Xd,cond)         _W((0b11011010100 << 21) | (0b11111 << 16) | ((cond) << 12) | (0b00 << 10) | (0b11111 << 5) | (Xd))
+#define CSETM_wc(Wd,cond)         _W((0b01011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b00 << 10) | (0b11111 << 5) | (Wd))
+#define CSETM_xc(Xd,cond)         _W((0b11011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b00 << 10) | (0b11111 << 5) | (Xd))
 
 /* conditional select inc */
 #define CSINC_wwwc(Wd,Wn,Wm,cond) _W((0b00011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
