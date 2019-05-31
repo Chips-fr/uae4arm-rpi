@@ -1447,7 +1447,7 @@ static void freescratch(void)
   int i;
   for (i = 0; i < N_REGS; i++)
 #if defined(CPU_AARCH64) 
-  	if (live.nat[i].locked && i > 4 && i < 16) {
+  	if (live.nat[i].locked && i > 18 && i < 27) {
 #elif defined(CPU_arm)
   	if (live.nat[i].locked && i != 2 && i != 3 && i != 10 && i != 11 && i != 12) {
 #else
@@ -2362,12 +2362,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   			    /* We can forget about flags */
   			    dont_care_flags();
   		    }
-#if INDIVIDUAL_INST
-  		    flush(1);
-  		    nop();
-  		    flush(1);
-  		    was_comp = 0;
-#endif
     		}
 
   		  if (failure) {

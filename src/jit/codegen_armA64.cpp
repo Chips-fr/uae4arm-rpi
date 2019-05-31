@@ -76,7 +76,7 @@
 
 #define R_MEMSTART 27
 #define R_REGSTRUCT 28
-uae_s8 always_used[] = {2,3,4,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r4 are work register in emitted code, r18 special use reg
+uae_s8 always_used[] = {2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r4 are work register in emitted code, r18 special use reg
 
 uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1,1,1, 1,0,0,0};
 
@@ -153,24 +153,24 @@ STATIC_INLINE void LOAD_U64(int r, uae_u64 val)
 }
 
 
-#define NUM_PUSH_CMDS 2
-#define NUM_POP_CMDS 2
+#define NUM_PUSH_CMDS 6
+#define NUM_POP_CMDS 6
 /* NUMBER_REGS_TO_PRESERVE must be even to keep SP aligned to 16 */
-#define NUMBER_REGS_TO_PRESERVE 2
+#define NUMBER_REGS_TO_PRESERVE 10
 STATIC_INLINE void raw_push_regs_to_preserve(void) {
   SUB_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
-//	STP_xxXi(19, 20, RSP_INDEX, 0 * 8);
-//	STP_xxXi(21, 22, RSP_INDEX, 2 * 8);
-//	STP_xxXi(23, 24, RSP_INDEX, 4 * 8);
-//	STP_xxXi(25, 26, RSP_INDEX, 6 * 8);
+	STP_xxXi(19, 20, RSP_INDEX, 0 * 8);
+	STP_xxXi(21, 22, RSP_INDEX, 2 * 8);
+	STP_xxXi(23, 24, RSP_INDEX, 4 * 8);
+	STP_xxXi(25, 26, RSP_INDEX, 6 * 8);
 	STP_xxXi(27, 28, RSP_INDEX, 8 * 8);
 }
 
 STATIC_INLINE void raw_pop_preserved_regs(void) {
-//	LDP_xxXi(19, 20, RSP_INDEX, 0 * 8);
-//	LDP_xxXi(21, 22, RSP_INDEX, 2 * 8);
-//	LDP_xxXi(23, 24, RSP_INDEX, 4 * 8);
-//	LDP_xxXi(25, 26, RSP_INDEX, 6 * 8);
+	LDP_xxXi(19, 20, RSP_INDEX, 0 * 8);
+	LDP_xxXi(21, 22, RSP_INDEX, 2 * 8);
+	LDP_xxXi(23, 24, RSP_INDEX, 4 * 8);
+	LDP_xxXi(25, 26, RSP_INDEX, 6 * 8);
 	LDP_xxXi(27, 28, RSP_INDEX, 8 * 8);
   ADD_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
 }
@@ -585,8 +585,9 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
   }
 	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
 
+  CC_B_i(NATIVE_CC_MI, 2);   // skip branch
 	tba = (uae_u32*)get_target();
-  CC_B_i(NATIVE_CC_MI^1, 0); // <target set by caller>
+  B_i(0); // <target set by caller>
   
   LDR_xPCi(REG_WORK1, 16 + 4 * NUM_POP_CMDS); // <v>
   offs = (uintptr)&regs.pc_p - (uintptr)&regs;

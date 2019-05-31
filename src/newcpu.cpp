@@ -1648,7 +1648,7 @@ void execute_normal(void)
 		regs.instruction_pc = m68k_getpc ();
 		r->opcode = get_diword(0);
 
-  	special_mem = DISTRUST_CONSISTENT_MEM;
+  	special_mem = 0;
   	pc_hist[blocklen].location = (uae_u16*)r->pc_p;
 
   	cpu_cycles = (*cpufunctbl[r->opcode])(r->opcode);
