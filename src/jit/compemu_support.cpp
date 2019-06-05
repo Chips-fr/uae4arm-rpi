@@ -554,7 +554,7 @@ static uae_u8* target;
 STATIC_INLINE void emit_long(uae_u32 x)
 {
   *((uae_u32*)target) = x;
-	target += 4;
+  target += 4;
 }
 
 STATIC_INLINE void emit_longlong(uae_u64 x)
@@ -763,7 +763,7 @@ STATIC_INLINE void writeback_const(int r)
   set_status(r, INMEM);
 }
 
-static  void evict(int r)
+static void evict(int r)
 {
   int rr;
 
@@ -820,7 +820,7 @@ STATIC_INLINE void set_const(int r, uae_u32 val)
   set_status(r, ISCONST);
 }
 
-static  int alloc_reg_hinted(int r, int willclobber, int hint)
+static int alloc_reg_hinted(int r, int willclobber, int hint)
 {
   int bestreg;
   uae_s32 when;
@@ -893,7 +893,7 @@ static void unlock2(int r)
   live.nat[r].locked--;
 }
 
-static  void setlock(int r)
+static void setlock(int r)
 {
   live.nat[r].locked++;
 }
@@ -1966,6 +1966,7 @@ STATIC_INLINE void create_popalls(void)
 			return;
     }
   }
+	write_log("JIT popallspace: %p-%p\n", popallspace, popallspace + POPALLSPACE_SIZE);
 
   current_compile_p = popallspace;
   set_target(current_compile_p);
@@ -1986,6 +1987,11 @@ STATIC_INLINE void create_popalls(void)
   current_compile_p = get_target();
   pushall_call_handler = get_target();
   raw_push_regs_to_preserve();
+#ifdef DEBUG
+  write_log("Address of regs: 0x%016x, regs.pc_p: 0x%016x\n", &regs, &regs.pc_p);
+  write_log("Address of natmem_offset: 0x%016x, natmem_offset = 0x%016x\n", &regs.natmem_offset, regs.natmem_offset);
+  write_log("Address of cache_tags: 0x%016x\n", cache_tags);
+#endif
   compemu_raw_init_r_regstruct((uintptr)&regs);
   r = REG_PC_TMP;
   compemu_raw_tag_pc(r, (uintptr)&regs.pc_p);
@@ -2338,6 +2344,9 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		  uae_u32 opcode = DO_GET_OPCODE(pc_hist[i].location);
   		  needed_flags = (liveflags[i + 1] & prop[opcode].set_flags);
   		  special_mem = pc_hist[i].specmem;
+#ifdef DEBUG
+    		write_log("    location=0x%016llx, opcode=0x%04x, target=0x%016llx, need_flags=%d\n", pc_hist[i].location, opcode, get_target(), needed_flags);
+#endif
     		if (!needed_flags) {
 		      cputbl = cpufunctbl;
 		      comptbl = nfcompfunctbl;
@@ -2380,7 +2389,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 
   		    if (i < blocklen - 1) {
       			uae_s8* branchadd;
-  
+
   			    compemu_raw_mov_l_rm(0, (uintptr)specflags);
   			    compemu_raw_test_l_rr(0, 0);
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
@@ -2411,6 +2420,9 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		  uae_u32* tba;
   		  bigstate tmp;
   		  blockinfo* tbi;
+#ifdef DEBUG
+     		write_log("    branch detected: t1=0x%016llx, t2=0x%016llx, cc=%d\n", t1, t2, cc);
+#endif
   
     		if (taken_pc_p < next_pc_p) {
   	      /* backward branch. Optimize for the "taken" case ---
@@ -2430,11 +2442,11 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 #endif
     		compemu_raw_jcc_l_oponly(cc);  // Last emitted opcode is branch to target
   		  branchadd = (uae_u32*)get_target() - 1;
-		
+	
   		  /* predicted outcome */
   		  tbi = get_blockinfo_addr_new((void*)t1);
   		  match_states(tbi);
-		  
+		 
   		  tba = compemu_raw_endblock_pc_isconst(scaled_cycles(totcycles), t1);
   		  write_jmp_target(tba, get_handler(t1));
   		  create_jmpdep(bi, 0, tba, t1);

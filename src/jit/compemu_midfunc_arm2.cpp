@@ -3502,9 +3502,9 @@ MIDFUNC(2,jff_LSR_b_imm,(RW1 d, IM8 i))
 	else
 		d = readreg(d);
 
-	UNSIGNED8_REG_2_REG(REG_WORK1, d);
 	MSR_CPSRf_i(0);
 	if (i) {
+  	UNSIGNED8_REG_2_REG(REG_WORK1, d);
 		LSRS_rri(REG_WORK1, REG_WORK1, i);
 #ifdef ARMV6T2
 	  BFI_rrii(d, REG_WORK1, 0, 7);
@@ -3515,6 +3515,7 @@ MIDFUNC(2,jff_LSR_b_imm,(RW1 d, IM8 i))
 #endif
 		DUPLICACTE_CARRY
 	} else {
+  	SIGNED8_REG_2_REG(REG_WORK1, d);
 		TST_rr(REG_WORK1, REG_WORK1);
 	}
 
@@ -3529,13 +3530,14 @@ MIDFUNC(2,jff_LSR_w_imm,(RW2 d, IM8 i))
 	else
 		d = readreg(d);
 
-	UNSIGNED16_REG_2_REG(REG_WORK1, d);
 	MSR_CPSRf_i(0);
 	if (i) {
+  	UNSIGNED16_REG_2_REG(REG_WORK1, d);
 		LSRS_rri(REG_WORK1, REG_WORK1, i);
 	  PKHTB_rrr(d, d, REG_WORK1);
 		DUPLICACTE_CARRY
 	} else {
+	  SIGNED16_REG_2_REG(REG_WORK1, d);
 		TST_rr(REG_WORK1, REG_WORK1);
 	}
 
@@ -5862,13 +5864,13 @@ MIDFUNC(2,jff_ROR_l_imm,(RW4 d, IM8 i))
 	if(i & 0x1f) {
 	  RORS_rri(d, d, i & 0x1f);
   } else if (i > 0x1f) {
-    TST_ri(d, d);
+    TST_rr(d, d);
     // We need to copy MSB to carry
   	MRS_CPSR(REG_WORK1); // carry is cleared
 	  CC_ORR_rri(NATIVE_CC_MI, REG_WORK1, REG_WORK1, ARM_C_FLAG);
     MSR_CPSRf_r(REG_WORK1);
   } else {
-    TST_ri(d, d);
+    TST_rr(d, d);
   }
 
 	unlock2(d);

@@ -13512,7 +13512,7 @@ return 0;
 /* DIVL.L #<data>.W,Dn */
 uae_u32 REGPARAM2 op_4c40_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13545,7 +13545,7 @@ return 0;
 /* DIVL.L #<data>.W,(An) */
 uae_u32 REGPARAM2 op_4c50_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13580,7 +13580,7 @@ return 0;
 /* DIVL.L #<data>.W,(An)+ */
 uae_u32 REGPARAM2 op_4c58_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13616,7 +13616,7 @@ return 0;
 /* DIVL.L #<data>.W,-(An) */
 uae_u32 REGPARAM2 op_4c60_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13652,7 +13652,7 @@ return 0;
 /* DIVL.L #<data>.W,(d16,An) */
 uae_u32 REGPARAM2 op_4c68_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13688,7 +13688,7 @@ return 0;
 /* DIVL.L #<data>.W,(d8,An,Xn) */
 uae_u32 REGPARAM2 op_4c70_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13724,7 +13724,7 @@ return 0;
 /* DIVL.L #<data>.W,(xxx).W */
 uae_u32 REGPARAM2 op_4c78_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13759,7 +13759,7 @@ return 0;
 /* DIVL.L #<data>.W,(xxx).L */
 uae_u32 REGPARAM2 op_4c79_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13794,7 +13794,7 @@ return 0;
 /* DIVL.L #<data>.W,(d16,PC) */
 uae_u32 REGPARAM2 op_4c7a_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13832,7 +13832,7 @@ return 0;
 /* DIVL.L #<data>.W,(d8,PC,Xn) */
 uae_u32 REGPARAM2 op_4c7b_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -13871,7 +13871,7 @@ return 0;
 /* DIVL.L #<data>.W,#<data>.L */
 uae_u32 REGPARAM2 op_4c7c_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19709,7 +19709,7 @@ return 0;
 /* DIVU.W Dn,Dn */
 uae_u32 REGPARAM2 op_80c0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19731,7 +19731,7 @@ return 0;
 /* DIVU.W (An),Dn */
 uae_u32 REGPARAM2 op_80d0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19755,7 +19755,7 @@ return 0;
 /* DIVU.W (An)+,Dn */
 uae_u32 REGPARAM2 op_80d8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19780,7 +19780,7 @@ return 0;
 /* DIVU.W -(An),Dn */
 uae_u32 REGPARAM2 op_80e0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19805,7 +19805,7 @@ return 0;
 /* DIVU.W (d16,An),Dn */
 uae_u32 REGPARAM2 op_80e8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19830,7 +19830,7 @@ return 0;
 /* DIVU.W (d8,An,Xn),Dn */
 uae_u32 REGPARAM2 op_80f0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19855,7 +19855,7 @@ return 0;
 /* DIVU.W (xxx).W,Dn */
 uae_u32 REGPARAM2 op_80f8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19879,7 +19879,7 @@ return 0;
 /* DIVU.W (xxx).L,Dn */
 uae_u32 REGPARAM2 op_80f9_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19903,7 +19903,7 @@ return 0;
 /* DIVU.W (d16,PC),Dn */
 uae_u32 REGPARAM2 op_80fa_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19929,7 +19929,7 @@ return 0;
 /* DIVU.W (d8,PC,Xn),Dn */
 uae_u32 REGPARAM2 op_80fb_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -19956,7 +19956,7 @@ return 0;
 /* DIVU.W #<data>.W,Dn */
 uae_u32 REGPARAM2 op_80fc_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20389,7 +20389,7 @@ return 0;
 /* DIVS.W Dn,Dn */
 uae_u32 REGPARAM2 op_81c0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20411,7 +20411,7 @@ return 0;
 /* DIVS.W (An),Dn */
 uae_u32 REGPARAM2 op_81d0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20435,7 +20435,7 @@ return 0;
 /* DIVS.W (An)+,Dn */
 uae_u32 REGPARAM2 op_81d8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20460,7 +20460,7 @@ return 0;
 /* DIVS.W -(An),Dn */
 uae_u32 REGPARAM2 op_81e0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20485,7 +20485,7 @@ return 0;
 /* DIVS.W (d16,An),Dn */
 uae_u32 REGPARAM2 op_81e8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20510,7 +20510,7 @@ return 0;
 /* DIVS.W (d8,An,Xn),Dn */
 uae_u32 REGPARAM2 op_81f0_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20535,7 +20535,7 @@ return 0;
 /* DIVS.W (xxx).W,Dn */
 uae_u32 REGPARAM2 op_81f8_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20559,7 +20559,7 @@ return 0;
 /* DIVS.W (xxx).L,Dn */
 uae_u32 REGPARAM2 op_81f9_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20583,7 +20583,7 @@ return 0;
 /* DIVS.W (d16,PC),Dn */
 uae_u32 REGPARAM2 op_81fa_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20609,7 +20609,7 @@ return 0;
 /* DIVS.W (d8,PC,Xn),Dn */
 uae_u32 REGPARAM2 op_81fb_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -20636,7 +20636,7 @@ return 0;
 /* DIVS.W #<data>.W,Dn */
 uae_u32 REGPARAM2 op_81fc_0_comp_ff(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41463,7 +41463,7 @@ return 0;
 /* DIVL.L #<data>.W,Dn */
 uae_u32 REGPARAM2 op_4c40_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41495,7 +41495,7 @@ return 0;
 /* DIVL.L #<data>.W,(An) */
 uae_u32 REGPARAM2 op_4c50_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41529,7 +41529,7 @@ return 0;
 /* DIVL.L #<data>.W,(An)+ */
 uae_u32 REGPARAM2 op_4c58_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41564,7 +41564,7 @@ return 0;
 /* DIVL.L #<data>.W,-(An) */
 uae_u32 REGPARAM2 op_4c60_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41599,7 +41599,7 @@ return 0;
 /* DIVL.L #<data>.W,(d16,An) */
 uae_u32 REGPARAM2 op_4c68_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41634,7 +41634,7 @@ return 0;
 /* DIVL.L #<data>.W,(d8,An,Xn) */
 uae_u32 REGPARAM2 op_4c70_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41669,7 +41669,7 @@ return 0;
 /* DIVL.L #<data>.W,(xxx).W */
 uae_u32 REGPARAM2 op_4c78_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41703,7 +41703,7 @@ return 0;
 /* DIVL.L #<data>.W,(xxx).L */
 uae_u32 REGPARAM2 op_4c79_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41737,7 +41737,7 @@ return 0;
 /* DIVL.L #<data>.W,(d16,PC) */
 uae_u32 REGPARAM2 op_4c7a_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41774,7 +41774,7 @@ return 0;
 /* DIVL.L #<data>.W,(d8,PC,Xn) */
 uae_u32 REGPARAM2 op_4c7b_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -41812,7 +41812,7 @@ return 0;
 /* DIVL.L #<data>.W,#<data>.L */
 uae_u32 REGPARAM2 op_4c7c_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47519,7 +47519,7 @@ return 0;
 /* DIVU.W Dn,Dn */
 uae_u32 REGPARAM2 op_80c0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47540,7 +47540,7 @@ return 0;
 /* DIVU.W (An),Dn */
 uae_u32 REGPARAM2 op_80d0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47563,7 +47563,7 @@ return 0;
 /* DIVU.W (An)+,Dn */
 uae_u32 REGPARAM2 op_80d8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47587,7 +47587,7 @@ return 0;
 /* DIVU.W -(An),Dn */
 uae_u32 REGPARAM2 op_80e0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47611,7 +47611,7 @@ return 0;
 /* DIVU.W (d16,An),Dn */
 uae_u32 REGPARAM2 op_80e8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47635,7 +47635,7 @@ return 0;
 /* DIVU.W (d8,An,Xn),Dn */
 uae_u32 REGPARAM2 op_80f0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47659,7 +47659,7 @@ return 0;
 /* DIVU.W (xxx).W,Dn */
 uae_u32 REGPARAM2 op_80f8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47682,7 +47682,7 @@ return 0;
 /* DIVU.W (xxx).L,Dn */
 uae_u32 REGPARAM2 op_80f9_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47705,7 +47705,7 @@ return 0;
 /* DIVU.W (d16,PC),Dn */
 uae_u32 REGPARAM2 op_80fa_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47730,7 +47730,7 @@ return 0;
 /* DIVU.W (d8,PC,Xn),Dn */
 uae_u32 REGPARAM2 op_80fb_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -47756,7 +47756,7 @@ return 0;
 /* DIVU.W #<data>.W,Dn */
 uae_u32 REGPARAM2 op_80fc_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48167,7 +48167,7 @@ return 0;
 /* DIVS.W Dn,Dn */
 uae_u32 REGPARAM2 op_81c0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48188,7 +48188,7 @@ return 0;
 /* DIVS.W (An),Dn */
 uae_u32 REGPARAM2 op_81d0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48211,7 +48211,7 @@ return 0;
 /* DIVS.W (An)+,Dn */
 uae_u32 REGPARAM2 op_81d8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48235,7 +48235,7 @@ return 0;
 /* DIVS.W -(An),Dn */
 uae_u32 REGPARAM2 op_81e0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48259,7 +48259,7 @@ return 0;
 /* DIVS.W (d16,An),Dn */
 uae_u32 REGPARAM2 op_81e8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48283,7 +48283,7 @@ return 0;
 /* DIVS.W (d8,An,Xn),Dn */
 uae_u32 REGPARAM2 op_81f0_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48307,7 +48307,7 @@ return 0;
 /* DIVS.W (xxx).W,Dn */
 uae_u32 REGPARAM2 op_81f8_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48330,7 +48330,7 @@ return 0;
 /* DIVS.W (xxx).L,Dn */
 uae_u32 REGPARAM2 op_81f9_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48353,7 +48353,7 @@ return 0;
 /* DIVS.W (d16,PC),Dn */
 uae_u32 REGPARAM2 op_81fa_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48378,7 +48378,7 @@ return 0;
 /* DIVS.W (d8,PC,Xn),Dn */
 uae_u32 REGPARAM2 op_81fb_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else
@@ -48404,7 +48404,7 @@ return 0;
 /* DIVS.W #<data>.W,Dn */
 uae_u32 REGPARAM2 op_81fc_0_comp_nf(uae_u32 opcode)
 {
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
   FAIL(1);
   return 0;
 #else

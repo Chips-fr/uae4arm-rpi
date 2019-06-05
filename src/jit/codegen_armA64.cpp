@@ -71,12 +71,13 @@
 #define REG_WORK1 R2_INDEX
 #define REG_WORK2 R3_INDEX
 #define REG_WORK3 R4_INDEX
+#define REG_WORK4 R5_INDEX
 
 #define REG_PC_TMP R1_INDEX /* Another register that is not the above */
 
 #define R_MEMSTART 27
 #define R_REGSTRUCT 28
-uae_s8 always_used[] = {2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r4 are work register in emitted code, r18 special use reg
+uae_s8 always_used[] = {2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r5 are work register in emitted code, r18 special use reg
 
 uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1,1,1, 1,0,0,0};
 
@@ -89,7 +90,7 @@ uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1
    - r19 - r26 not in use, so no need to preserve
    - if you change need_to_preserve, modify raw_push_regs_to_preserve() and raw_pop_preserved_regs()
 */
-static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,0, 0,0,0,0, 0,0,0,1, 1,0,0,0};
+static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,0,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,0, 0,0,0,0, 0,0,0,1, 1,0,0,0};
 
 #include "codegen_armA64.h"
 
@@ -130,10 +131,6 @@ STATIC_INLINE void UNSIGNED16_REG_2_REG(W4 d, RR4 s) {
 STATIC_INLINE void SIGNED16_REG_2_REG(W4 d, RR4 s) {
 	SXTH_ww(d, s);
 }
-
-#define ZERO_EXTEND_16_REG_2_REG(d,s) UNSIGNED16_REG_2_REG(d,s)
-#define SIGN_EXTEND_8_REG_2_REG(d,s) SIGNED8_REG_2_REG(d,s)
-#define SIGN_EXTEND_16_REG_2_REG(d,s) SIGNED16_REG_2_REG(d,s)
 
 STATIC_INLINE void LOAD_U32(int r, uae_u32 val)
 {
