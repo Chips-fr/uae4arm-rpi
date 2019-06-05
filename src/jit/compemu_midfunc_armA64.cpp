@@ -551,13 +551,18 @@ STATIC_INLINE void flush_cpu_icache(void *start, void *stop)
 
 STATIC_INLINE void write_jmp_target(uae_u32* jmpaddr, uintptr a) 
 {
-	uintptr off = ((uintptr)a - (uintptr)jmpaddr) >> 2;
-  if((*(jmpaddr) & 0xfc000000) == 0x14000000)
+	uintptr off = (a - (uintptr)jmpaddr) >> 2;
+  if((*(jmpaddr) & 0xfc000000) == 0x14000000) {
     /* branch always */
-    *(jmpaddr) = (*(jmpaddr) & 0xfc000000) | (off & 0x03ffffff);
-  else
-    /* conditional branch */
-    *(jmpaddr) = (*(jmpaddr) & 0xff00001f) | ((off << 5) & 0x00ffffe0);
+    off = off & 0x3ffffff;
+    *(jmpaddr) = (*(jmpaddr) & 0xfc000000) | off;
+  } else {
+      /* conditional branch */
+    if((a > (uintptr)jmpaddr && off > 0x3ffff) || (a < (uintptr)jmpaddr && (~off) > 0x3ffff))
+      write_log("JIT: Branch to target too long.\n");
+    off = off & 0x7ffff;
+    *(jmpaddr) = (*(jmpaddr) & 0xff00001f) | (off << 5);
+  }
 
   flush_cpu_icache((void *)jmpaddr, (void *)&jmpaddr[1]);
 }

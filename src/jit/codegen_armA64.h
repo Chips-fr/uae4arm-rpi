@@ -96,10 +96,10 @@
 
 /* test bit and branch */
 // these instructions do not affect condition flags
-#define TBNZ_xii(Xt,bit,i)  _W(((((bit) & 0x20) >> 5) << 31) | (0b0110111 << 24) | (((bit) & 0x1f) << 19) | ((((i)/4) % 0x3fff) << 5) | (Xt))
-#define TBNZ_wii(Wt,bit,i)  _W((0 << 31) | (0b0110111 << 24) | (((bit) & 0x1f) << 19) | ((((i)/4) % 0x3fff) << 5) | (Wt))
-#define TBZ_xii(Xt,bit,i)   _W(((((bit) & 0x20) >> 5) << 31) | (0b0110110 << 24) | (((bit) & 0x1f) << 19) | ((((i)/4) % 0x3fff) << 5) | (Xt))
-#define TBZ_wii(Wt,bit,i)   _W((0 << 31) | (0b0110110 << 24) | (((bit) & 0x1f) << 19) | ((((i)/4) % 0x3fff) << 5) | (Wt))
+#define TBNZ_xii(Xt,bit,i)  _W(((((bit) & 0x20) >> 5) << 31) | (0b0110111 << 24) | (((bit) & 0x1f) << 19) | ((((i)) % 0x3fff) << 5) | (Xt))
+#define TBNZ_wii(Wt,bit,i)  _W((0 << 31) | (0b0110111 << 24) | (((bit) & 0x1f) << 19) | ((((i)) % 0x3fff) << 5) | (Wt))
+#define TBZ_xii(Xt,bit,i)   _W(((((bit) & 0x20) >> 5) << 31) | (0b0110110 << 24) | (((bit) & 0x1f) << 19) | ((((i)) % 0x3fff) << 5) | (Xt))
+#define TBZ_wii(Wt,bit,i)   _W((0 << 31) | (0b0110110 << 24) | (((bit) & 0x1f) << 19) | ((((i)) % 0x3fff) << 5) | (Wt))
 
 
 /*----------------------------------------
@@ -260,9 +260,9 @@
 // Xd = (Xn*Xm)[127...64]
 #define SMULH_xxx(Xd,Xn,Xm)       _W((0b10011011010 << 21) | ((Xm) << 16) | (0b011111 << 10) | ((Xn) << 5) | (Xd))
 #define UMULH_xxx(Xd,Xn,Xm)       _W((0b10011011110 << 21) | ((Xm) << 16) | (0b011111 << 10) | ((Xn) << 5) | (Xd))
-// Xd = (Xn*Xm)[63...0]
-#define SMULL_xxx(Xd,Xn,Xm)       _W((0b10011011001 << 21) | ((Xm) << 16) | (0b011111 << 10) | ((Xn) << 5) | (Xd))
-#define UMULL_xxx(Xd,Xn,Xm)       _W((0b10011011101 << 21) | ((Xm) << 16) | (0b011111 << 10) | ((Xn) << 5) | (Xd))
+// Xd = (Wn*Wm)[63...0]
+#define SMULL_xww(Xd,Wn,Wm)       _W((0b10011011001 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Xd))
+#define UMULL_xww(Xd,Wn,Wm)       _W((0b10011011101 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Xd))
 
 /* multiply add */
 // Wd = Wa + (Wn * Wm)
@@ -609,11 +609,14 @@
 #define EOR_xxCflag(Xd,Xn)        _W(immCflag | immOP_EOR | ((Xn) << 5) | (Xd))
 #define CLEAR_xxZflag(Xd,Xn)      _W(immZflagInv | immOP_AND | ((Xn) << 5) | (Xd))
 #define SET_xxZflag(Xd,Xn)        _W(immZflag | immOP_ORR | ((Xn) << 5) | (Xd))
+#define SET_xxVflag(Xd,Xn)        _W(immVflag | immOP_ORR | ((Xn) << 5) | (Xd))
+#define SET_xxCflag(Xd,Xn)        _W(immCflag | immOP_ORR | ((Xn) << 5) | (Xd))
 
 #define EOR_xxbit(Xd,Xn,bit)      _W(immOP_EOR | immEncode(1, ((-(bit)) & 0x3f), 0b000000) | ((Xn) << 5) | (Xd))
 #define CLEAR_xxbit(Xd,Xn,bit)    _W(immOP_AND | immEncode(1, ((-((bit)+1)) & 0x3f), 0b111110) | ((Xn) << 5) | (Xd))
 #define SET_xxbit(Xd,Xn,bit)      _W(immOP_ORR | immEncode(1, ((-(bit)) & 0x3f), 0b000000) | ((Xn) << 5) | (Xd))
 
+#define CLEAR_LOW4_xx(Xd,Xn)      _W(immOP_AND | immEncode(1, 0b111100, 0b111011) | ((Xn) << 5) | (Xd))
 #define CLEAR_LOW8_xx(Xd,Xn)      _W(immOP_AND | immEncode(1, 0b111000, 0b110111) | ((Xn) << 5) | (Xd))
 #define CLEAR_LOW16_xx(Xd,Xn)     _W(immOP_AND | immEncode(1, 0b110000, 0b101111) | ((Xn) << 5) | (Xd))
 
