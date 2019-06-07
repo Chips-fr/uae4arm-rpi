@@ -745,7 +745,7 @@ static void tomem(int r)
   if (live.state[r].status == DIRTY) {
 	  compemu_raw_mov_l_mr((uintptr)live.state[r].mem, rr);
 	  set_status(r, CLEAN);
-  }
+ }
 }
 
 STATIC_INLINE int isconst(int r)
@@ -1447,7 +1447,7 @@ static void freescratch(void)
   int i;
   for (i = 0; i < N_REGS; i++)
 #if defined(CPU_AARCH64) 
-  	if (live.nat[i].locked && i > 18 && i < 27) {
+  	if (live.nat[i].locked && i > 5 && i < 16) {
 #elif defined(CPU_arm)
   	if (live.nat[i].locked && i != 2 && i != 3 && i != 10 && i != 11 && i != 12) {
 #else
@@ -1993,9 +1993,7 @@ STATIC_INLINE void create_popalls(void)
   write_log("Address of cache_tags: 0x%016x\n", cache_tags);
 #endif
   compemu_raw_init_r_regstruct((uintptr)&regs);
-  r = REG_PC_TMP;
-  compemu_raw_tag_pc(r, (uintptr)&regs.pc_p);
-  compemu_raw_jmp_m_indexed((uintptr)cache_tags, r, SIZEOF_VOID_P);
+  compemu_raw_jmp_pc_tag((uintptr)cache_tags);
 
   /* now the exit points */
   popall_execute_normal = get_target();
@@ -2029,14 +2027,12 @@ static void prepare_block(blockinfo* bi)
 
   set_target(current_compile_p);
   bi->direct_pen = (cpuop_func *)get_target();
-  compemu_raw_mov_l_rm(0, (uintptr)&(bi->pc_p));
-  compemu_raw_set_pc_r(0);
+  compemu_raw_set_pc_m((uintptr)&(bi->pc_p));
   raw_pop_preserved_regs();
   compemu_raw_jmp((uintptr)execute_normal);
 
   bi->direct_pcc = (cpuop_func *)get_target();
-  compemu_raw_mov_l_rm(0, (uintptr)&(bi->pc_p));
-  compemu_raw_set_pc_r(0);
+  compemu_raw_set_pc_m((uintptr)&(bi->pc_p));
 	raw_pop_preserved_regs();
   compemu_raw_jmp((uintptr)check_checksum);
   flush_cpu_icache((void *)current_compile_p, (void *)target);
@@ -2255,7 +2251,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 	  uintptr max_pcp = (uintptr)pc_hist[blocklen - 1].location;
 	  uintptr min_pcp = max_pcp;
 	  uae_u32 cl = cacheline(pc_hist[0].location);
-	  void* specflags = (void*)&regs.spcflags;
 	  blockinfo* bi = NULL;
 	  blockinfo* bi2;
 
@@ -2388,19 +2383,10 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 #endif
 
   		    if (i < blocklen - 1) {
-      			uae_s8* branchadd;
-
-  			    compemu_raw_mov_l_rm(0, (uintptr)specflags);
-  			    compemu_raw_test_l_rr(0, 0);
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
             data_check_end(8, 64);
 #endif
-  			    branchadd = (uae_s8 *)get_target();
-  			    compemu_raw_jz_b_oponly();
-  			    compemu_raw_sub_l_mi((uintptr)&countdown, scaled_cycles(totcycles));
-					  raw_pop_preserved_regs();
-  			    compemu_raw_jmp((uintptr)do_nothing);
-  			    write_jmp_target((uae_u32*)branchadd, (uintptr)get_target());
+            compemu_raw_maybe_do_nothing(scaled_cycles(totcycles), (uintptr)do_nothing);
   		    }
 	    	} else if(may_raise_exception) {
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)

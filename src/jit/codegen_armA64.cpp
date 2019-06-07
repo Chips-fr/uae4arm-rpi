@@ -77,7 +77,7 @@
 
 #define R_MEMSTART 27
 #define R_REGSTRUCT 28
-uae_s8 always_used[] = {2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r5 are work register in emitted code, r18 special use reg
+uae_s8 always_used[] = {2,3,4,5,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r5 are work register in emitted code, r18 special use reg
 
 uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1,1,1, 1,0,0,0};
 
@@ -145,31 +145,20 @@ STATIC_INLINE void LOAD_U64(int r, uae_u64 val)
   MOVK_xish(r, val >> 16, 16);
   if(val >> 32) {
     MOVK_xish(r, val >> 32, 32);
-    MOVK_xish(r, val >> 48, 48);
+    if(val >> 48)
+      MOVK_xish(r, val >> 48, 48);
   }
 }
 
 
-#define NUM_PUSH_CMDS 6
-#define NUM_POP_CMDS 6
-/* NUMBER_REGS_TO_PRESERVE must be even to keep SP aligned to 16 */
-#define NUMBER_REGS_TO_PRESERVE 10
+#define NUM_PUSH_CMDS 1
+#define NUM_POP_CMDS 1
 STATIC_INLINE void raw_push_regs_to_preserve(void) {
-  SUB_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
-	STP_xxXi(19, 20, RSP_INDEX, 0 * 8);
-	STP_xxXi(21, 22, RSP_INDEX, 2 * 8);
-	STP_xxXi(23, 24, RSP_INDEX, 4 * 8);
-	STP_xxXi(25, 26, RSP_INDEX, 6 * 8);
-	STP_xxXi(27, 28, RSP_INDEX, 8 * 8);
+	STP_xxXpre(27, 28, RSP_INDEX, -16);
 }
 
 STATIC_INLINE void raw_pop_preserved_regs(void) {
-	LDP_xxXi(19, 20, RSP_INDEX, 0 * 8);
-	LDP_xxXi(21, 22, RSP_INDEX, 2 * 8);
-	LDP_xxXi(23, 24, RSP_INDEX, 4 * 8);
-	LDP_xxXi(25, 26, RSP_INDEX, 6 * 8);
-	LDP_xxXi(27, 28, RSP_INDEX, 8 * 8);
-  ADD_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
+  LDP_xxXpost(27, 28, RSP_INDEX, 16);
 }
 
 STATIC_INLINE void raw_flags_evicted(int r)
@@ -235,12 +224,30 @@ LOWFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 }
 LENDFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 
+LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_m,(MEMR s))
+{
+  uintptr idx;
+  if(s >= (uintptr) &regs && s < ((uintptr) &regs) + sizeof(struct regstruct)) {
+    idx = s - (uintptr) & regs;
+    if(s == (uintptr) &(regs.pc_p))
+      LDR_xXi(REG_WORK1, R_REGSTRUCT, idx);
+    else
+      LDR_wXi(REG_WORK1, R_REGSTRUCT, idx);
+  } else {
+    LOAD_U64(REG_WORK1, s);
+	  LDR_xXi(REG_WORK1, REG_WORK1, 0);
+  }
+
+  idx = (uintptr) &(regs.pc_p) - (uintptr) &regs;
+  STR_xXi(REG_WORK1, R_REGSTRUCT, idx);
+}
+LENDFUNC(NONE,WRITE,1,compemu_raw_set_pc_m,(MEMR s))
+
 LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_i,(IMPTR s))
 {
-  /* s is always >= NATMEM_OFFSETX and < NATMEM_OFFSETX + max. Amiga mem */
-  LOAD_U64(REG_WORK2, s);
+  LOAD_U64(REG_WORK1, s);
   uintptr idx = (uintptr) &(regs.pc_p) - (uintptr) &regs;
-  STR_xXi(REG_WORK2, R_REGSTRUCT, idx);
+  STR_xXi(REG_WORK1, R_REGSTRUCT, idx);
 }
 LENDFUNC(NONE,WRITE,1,compemu_raw_set_pc_i,(IMPTR s))
 
@@ -255,13 +262,6 @@ LOWFUNC(NONE,WRITE,2,compemu_raw_mov_l_mi,(MEMW d, IM32 s))
     STR_wXi(REG_WORK2, R_REGSTRUCT, idx);
 }
 LENDFUNC(NONE,WRITE,2,compemu_raw_mov_l_mi,(MEMW d, IM32 s))
-
-LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_r,(RR4 s))
-{
-  uintptr idx = (uintptr) &(regs.pc_p) - (uintptr) &regs;
-  STR_xXi(s, R_REGSTRUCT, idx);
-}
-LENDFUNC(NONE,WRITE,1,compemu_raw_set_pc_r,(RR4 s))
 
 LOWFUNC(NONE,WRITE,2,compemu_raw_mov_l_mr,(MEMW d, RR4 s))
 {
@@ -312,49 +312,20 @@ LOWFUNC(WRITE,RMW,1,compemu_raw_dec_m,(MEMRW d))
 }
 LENDFUNC(WRITE,RMW,1,compemu_raw_dec_m,(MEMRW ds))
 
-LOWFUNC(WRITE,RMW,2,compemu_raw_sub_l_mi,(MEMRW d, IM32 s))
-{
-  /* d points always to memory in regs struct */
-  clobber_flags();
-
-  uintptr idx = d - (uintptr) & regs;
-  LDR_wXi(REG_WORK2, R_REGSTRUCT, idx);
-
-  if((s & ~0xfff) == 0) {
-    SUBS_wwi(REG_WORK2, REG_WORK2, s);
-  } else {
-    LOAD_U32(REG_WORK1, s);
-	  SUBS_www(REG_WORK2, REG_WORK2, REG_WORK1);
-  }
-  STR_wXi(REG_WORK2, R_REGSTRUCT, idx);
-}
-LENDFUNC(WRITE,RMW,2,compemu_raw_sub_l_mi,(MEMRW d, IM32 s))
-
-LOWFUNC(WRITE,NONE,2,compemu_raw_test_l_rr,(RR4 d, RR4 s))
-{
-  clobber_flags();
-	TST_ww(d, s);
-}
-LENDFUNC(WRITE,NONE,2,compemu_raw_test_l_rr,(RR4 d, RR4 s))
-
 STATIC_INLINE void compemu_raw_call(uintptr t)
 {
   LOAD_U64(REG_WORK1, t);
 
-  SUB_xxi(RSP_INDEX, RSP_INDEX, 16);
-	STR_xXi(RLR_INDEX, RSP_INDEX, 0);
+	STR_xXpre(RLR_INDEX, RSP_INDEX, -16);
 	BLR_x(REG_WORK1);
-	LDR_xXi(RLR_INDEX, RSP_INDEX, 0);
-  ADD_xxi(RSP_INDEX, RSP_INDEX, 16);
+	LDR_xXpost(RLR_INDEX, RSP_INDEX, 16);
 }
 
 STATIC_INLINE void compemu_raw_call_r(RR4 r)
 {
-  SUB_xxi(RSP_INDEX, RSP_INDEX, 16);
-	STR_xXi(RLR_INDEX, RSP_INDEX, 0);
+	STR_xXpre(RLR_INDEX, RSP_INDEX, -16);
 	BLR_x(r);
-	LDR_xXi(RLR_INDEX, RSP_INDEX, 0);
-  ADD_xxi(RSP_INDEX, RSP_INDEX, 16);
+	LDR_xXpost(RLR_INDEX, RSP_INDEX, 16);
 }
 
 STATIC_INLINE void compemu_raw_jcc_l_oponly(int cc)
@@ -498,14 +469,12 @@ STATIC_INLINE void compemu_raw_jmp(uintptr t)
   emit_longlong(t);
 }
 
-STATIC_INLINE void compemu_raw_jmp_m_indexed(uintptr base, uae_u32 r, uae_u32 m)
+STATIC_INLINE void compemu_raw_jmp_pc_tag(uintptr base)
 {
-	int shft=0;
-	if(m)
-	  shft=1;
-
-  LDR_xPCi(REG_WORK1, 12);
-	LDR_xXxLSLi(REG_WORK1, REG_WORK1, r, shft);
+  uintptr idx = (uintptr)&regs.pc_p - (uintptr)&regs;
+  LDRH_wXi(REG_WORK1, R_REGSTRUCT, idx);
+  LDR_xPCi(REG_WORK2, 12);
+	LDR_xXxLSLi(REG_WORK1, REG_WORK2, REG_WORK1, 1);
 	BR_x(REG_WORK1);
 	emit_longlong(base);
 }
@@ -519,9 +488,30 @@ STATIC_INLINE void compemu_raw_maybe_cachemiss(uintptr t)
   emit_longlong(t);
 }
 
-STATIC_INLINE void compemu_raw_jz_b_oponly(void)
+STATIC_INLINE void compemu_raw_maybe_do_nothing(IM32 cycles, uintptr adr)
 {
-  BEQ_i(0);   // Real distance set by caller
+  uintptr idx = (uintptr)&regs.spcflags - (uintptr) & regs;
+  LDR_wXi(REG_WORK1, R_REGSTRUCT, idx);
+  uae_s8 *branchadd = (uae_s8 *)get_target();
+  CBZ_wi(REG_WORK1, 0);  // <end>
+
+  idx = (uintptr)&countdown - (uintptr) & regs;
+  LDR_wXi(REG_WORK2, R_REGSTRUCT, idx);
+  if((cycles & ~0xfff) == 0) {
+    SUB_wwi(REG_WORK2, REG_WORK2, cycles);
+  } else {
+    LOAD_U32(REG_WORK1, cycles);
+	  SUB_www(REG_WORK2, REG_WORK2, REG_WORK1);
+  }
+  STR_wXi(REG_WORK2, R_REGSTRUCT, idx);
+
+  raw_pop_preserved_regs();
+  LDR_xPCi(REG_WORK1, 8);
+  BR_x(REG_WORK1);
+  emit_longlong(adr);
+
+  // <end>
+  write_jmp_target((uae_u32 *)branchadd, (uintptr)get_target());
 }
 
 // Optimize access to struct regstruct with and memory with fixed registers
@@ -598,11 +588,3 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
 
 	return tba;  
 }
-
-LOWFUNC(NONE,READ,2,compemu_raw_tag_pc,(W4 d, MEMR s))
-{
-  uintptr idx = (uintptr)(s) - (uintptr)&regs;
-  LDRH_wXi(d, R_REGSTRUCT, idx);
-  SXTW_xw(d, d);
-}
-LENDFUNC(NONE,READ,2,compemu_raw_tag_pc,(W4 d, MEMR s))

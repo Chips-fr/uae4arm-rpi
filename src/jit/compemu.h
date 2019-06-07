@@ -119,7 +119,7 @@ typedef union {
 #define ALIGN_NOT_NEEDED
 
 #if defined(CPU_AARCH64)
-#define N_REGS 27   /* really 32, but 29 to 31 are FP, LR, SP; 18 has special meaning; 27 holds memstart and 28 holds regs-struct */
+#define N_REGS 16   /* really 32, but 29 to 31 are FP, LR, SP; 18 has special meaning; 27 holds memstart and 28 holds regs-struct */
 #else
 #define N_REGS 10  /* really 16, but 13 to 15 are SP, LR, PC; 12 is scratch reg, 10 holds memstart and 11 holds regs-struct */
 #endif

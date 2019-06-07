@@ -108,9 +108,11 @@
 // i is number of bytes
 #define LDP_wwXi(Wt1,Wt2,Xn,i)    _W((0b0010100101 << 22) | ((((i)/4) & 0x7f) << 15) | ((Wt2) << 10) | ((Xn) << 5) | (Wt1))
 #define LDP_xxXi(Xt1,Xt2,Xn,i)    _W((0b1010100101 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
+#define LDP_xxXpost(Xt1,Xt2,Xn,i) _W((0b1010100011 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
 #define LDPSW_xxXi(Xt1,Xt2,Xn,i)  _W((0b0110100101 << 22) | ((((i)/4) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
 #define LDR_wXi(Wt,Xn,i)          _W((0b1011100101 << 22) | ((((i)/4) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define LDR_xXi(Xt,Xn,i)          _W((0b1111100101 << 22) | ((((i)/8) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
+#define LDR_xXpost(Xt,Xn,i)       _W((0b11111000010 << 21) | (((i) & 0x1ff) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xt))
 #define LDR_wPCi(Wt,i)            _W((0b00011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Wt))
 #define LDR_xPCi(Xt,i)            _W((0b01011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Xt))
 #define LDRSW_xPCi(Xt,i)          _W((0b10011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Xt))
@@ -139,8 +141,10 @@
 
 #define STP_wwXi(Wt1,Wt2,Xn,i)    _W((0b0010100100 << 22) | ((((i)/4) & 0x7f) << 15) | ((Wt2) << 10) | ((Xn) << 5) | (Wt1))
 #define STP_xxXi(Xt1,Xt2,Xn,i)    _W((0b1010100100 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
+#define STP_xxXpre(Xt1,Xt2,Xn,i)  _W((0b1010100110 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
 #define STR_wXi(Wt,Xn,i)          _W((0b1011100100 << 22) | ((((i)/4) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define STR_xXi(Xt,Xn,i)          _W((0b1111100100 << 22) | ((((i)/8) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
+#define STR_xXpre(Xt,Xn,i)        _W((0b11111000000 << 21) | (((i) & 0x1ff) << 12) | (0b11 << 10) | ((Xn) << 5) | (Xt))
 #define STR_wXx(Wt,Xn,Xm)         _W((0b10111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STR_xXx(Xt,Xn,Xm)         _W((0b11111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
 // i=0 no shift, i=1 LSL 2 (W) or LSL 3 (X)
