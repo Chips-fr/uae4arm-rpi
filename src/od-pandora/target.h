@@ -12,7 +12,7 @@
 
 #define OPTIONSFILENAME "uaeconfig"
 
-#ifndef ARMV6T2
+#if !defined(ARMV6T2) && !defined(CPU_AARCH64)
 #undef USE_JIT_FPU
 #endif
 

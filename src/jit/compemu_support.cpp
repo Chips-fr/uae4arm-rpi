@@ -1987,7 +1987,7 @@ STATIC_INLINE void create_popalls(void)
   current_compile_p = get_target();
   pushall_call_handler = get_target();
   raw_push_regs_to_preserve();
-#ifdef DEBUG
+#ifdef JIT_DEBUG
   write_log("Address of regs: 0x%016x, regs.pc_p: 0x%016x\n", &regs, &regs.pc_p);
   write_log("Address of natmem_offset: 0x%016x, natmem_offset = 0x%016x\n", &regs.natmem_offset, regs.natmem_offset);
   write_log("Address of cache_tags: 0x%016x\n", cache_tags);
@@ -2339,7 +2339,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		  uae_u32 opcode = DO_GET_OPCODE(pc_hist[i].location);
   		  needed_flags = (liveflags[i + 1] & prop[opcode].set_flags);
   		  special_mem = pc_hist[i].specmem;
-#ifdef DEBUG
+#ifdef JIT_DEBUG
     		write_log("    location=0x%016llx, opcode=0x%04x, target=0x%016llx, need_flags=%d\n", pc_hist[i].location, opcode, get_target(), needed_flags);
 #endif
     		if (!needed_flags) {
@@ -2406,7 +2406,7 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		  uae_u32* tba;
   		  bigstate tmp;
   		  blockinfo* tbi;
-#ifdef DEBUG
+#ifdef JIT_DEBUG
      		write_log("    branch detected: t1=0x%016llx, t2=0x%016llx, cc=%d\n", t1, t2, cc);
 #endif
   

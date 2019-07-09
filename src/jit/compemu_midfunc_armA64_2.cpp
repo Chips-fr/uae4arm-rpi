@@ -148,7 +148,7 @@ MIDFUNC(2,jnf_ADD_w_imm,(RW2 d, IM16 v))
 	INIT_REG_w(d);
 
 	if(targetIsReg) {
-	  if((v & ~0xfff) == 0) {
+	  if(v >= 0 && v <= 0xfff) {
 	    ADD_wwi(REG_WORK1, d, v);
 	  } else {
 		  MOV_xi(REG_WORK1, v & 0xffff);
@@ -156,7 +156,7 @@ MIDFUNC(2,jnf_ADD_w_imm,(RW2 d, IM16 v))
 	  }
 	  BFI_xxii(d, REG_WORK1, 0, 16);
 	} else{
-	  if((v & ~0xfff) == 0) {
+	  if(v >= 0 && v <= 0xfff) {
 	    ADD_wwi(d, d, v);
 	  } else {
 		  MOV_xi(REG_WORK1, v & 0xffff);
@@ -197,7 +197,7 @@ MIDFUNC(2,jnf_ADD_l_imm,(RW4 d, IM32 v))
 
 	d = rmw(d);
 
-  if((v & ~0xfff) == 0) {
+  if(v >= 0 && v <= 0xfff) {
     ADD_wwi(d, d, v);
   } else {
     LOAD_U32(REG_WORK1, v);
@@ -293,7 +293,7 @@ MIDFUNC(2,jff_ADD_l_imm,(RW4 d, IM32 v))
 {
 	d = rmw(d);
 
-  if((v & ~0xfff) == 0) {
+  if(v >= 0 && v <=0xfff) {
     ADDS_wwi(d, d, v);
   } else {
     LOAD_U32(REG_WORK2, v);

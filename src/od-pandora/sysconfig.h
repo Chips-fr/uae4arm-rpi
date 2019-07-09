@@ -14,7 +14,7 @@
 #define UAE_FILESYS_THREADS
 #define AUTOCONFIG /* autoconfig support, fast ram, harddrives etc.. */
 #define JIT /* JIT compiler support */
-#if defined(ARMV6T2)
+#if defined(ARMV6T2) || defined(CPU_AARCH64)
 #define USE_JIT_FPU
 #endif
 /* #define NATMEM_OFFSET regs.natmem_offset */

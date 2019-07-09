@@ -56,8 +56,10 @@
 /* read/write flags */
 // move from sysreg
 #define MRS_NZCV_x(Xt)    _W((0b1101010100111 << 19) | (MIN_EL0 << 16) | (0b0100 << 12) | (0b0010 << 8) | (0b000 << 5) | (Xt))
+#define MRS_FPCR_x(Xt)    _W((0b1101010100111 << 19) | (MIN_EL0 << 16) | (0b0100 << 12) | (0b0100 << 8) | (0b000 << 5) | (Xt))
 // move to sysreg
 #define MSR_NZCV_x(Xt)		_W((0b1101010100011 << 19) | (MIN_EL0 << 16) | (0b0100 << 12) | (0b0010 << 8) | (0b000 << 5) | (Xt))
+#define MSR_FPCR_x(Xt)    _W((0b1101010100011 << 19) | (MIN_EL0 << 16) | (0b0100 << 12) | (0b0100 << 8) | (0b000 << 5) | (Xt))
 
 
 /*----------------------------------------
@@ -529,6 +531,9 @@
 #define REV16_xx(Xd,Xn)           _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000001 << 10) | ((Xn) << 5) | (Xd))
 #define REV32_xx(Xd,Xn)           _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000010 << 10) | ((Xn) << 5) | (Xd))
 
+#define CLS_ww(Wd,Wn)         _W((0b01011010110 << 21) | (0b00000000101 << 10) | ((Wn) << 5) | (Wd))
+#define CLZ_ww(Wd,Wn)         _W((0b01011010110 << 21) | (0b00000000100 << 10) | ((Wn) << 5) | (Wd))
+
 
 /*----------------------------------------
  * conditional ops
@@ -623,5 +628,58 @@
 #define CLEAR_LOW4_xx(Xd,Xn)      _W(immOP_AND | immEncode(1, 0b111100, 0b111011) | ((Xn) << 5) | (Xd))
 #define CLEAR_LOW8_xx(Xd,Xn)      _W(immOP_AND | immEncode(1, 0b111000, 0b110111) | ((Xn) << 5) | (Xd))
 #define CLEAR_LOW16_xx(Xd,Xn)     _W(immOP_AND | immEncode(1, 0b110000, 0b101111) | ((Xn) << 5) | (Xd))
+
+#define SET_LOW8_xx(Xd,Xn)        _W(immOP_ORR | immEncode(1, 0b000000, 0b000111) | ((Xn) << 5) | (Xd))
+
+// Floatingpoint
+
+#define LDR_dXi(Dt,Xn,i)      _W((0b1111110101 << 22) | (((i)/8) << 10) | ((Xn) << 5) | (Dt))
+#define LDR_sXi(St,Xn,i)      _W((0b1011110101 << 22) | (((i)/4) << 10) | ((Xn) << 5) | (St))
+
+#define STR_dXi(Dt,Xn,i)      _W((0b1111110100 << 22) | (((i)/8) << 10) | ((Xn) << 5) | (Dt))
+#define STR_sXi(St,Xn,i)      _W((0b1011110100 << 22) | (((i)/4) << 10) | ((Xn) << 5) | (St))
+
+#define FMOV_dd(Dd,Dn)        _W((0b00011110011 << 21) | (0b00000010000 << 10) | ((Dn) << 5) | (Dd))
+#define FMOV_ss(Sd,Sn)        _W((0b00011110001 << 21) | (0b00000010000 << 10) | ((Sn) << 5) | (Sd))
+#define FMOV_dx(Dd,Xn)        _W((0b10011110011 << 21) | (0b00111000000 << 10) | ((Xn) << 5) | (Dd))
+#define FMOV_xd(Xd,Dn)        _W((0b10011110011 << 21) | (0b00110000000 << 10) | ((Dn) << 5) | (Xd))
+#define FMOV_sw(Sd,Wn)        _W((0b00011110001 << 21) | (0b00111000000 << 10) | ((Wn) << 5) | (Sd))
+#define FMOV_ws(Wd,Sn)        _W((0b00011110001 << 21) | (0b00110000000 << 10) | ((Sn) << 5) | (Wd))
+#define FMOV_di(Dd,i)         _W((0b00011110011 << 21) | ((i) << 13) | (0b10000000 << 5) | (Dd))
+#define FMOV_si(Sd,i)         _W((0b00011110001 << 21) | ((i) << 13) | (0b10000000 << 5) | (Sd))
+#define MOVI_di(Dd,i)         _W((0b0010111100000 << 19) | ((((i) >> 5) & 0x7) << 16) | (0b111001 << 10) | (((i) & 0x1f) << 5) | (Dd))
+#define FCVT_ds(Dd,Sn)        _W((0b00011110001 << 21) | (0b00010110000 << 10) | ((Sn) << 5) | (Dd))
+#define FCVT_sd(Sd,Dn)        _W((0b00011110011 << 21) | (0b00010010000 << 10) | ((Dn) << 5) | (Sd))
+#define FRINTI_dd(Dd,Dn)      _W((0b00011110011 << 21) | (0b00111110000 << 10) | ((Dn) << 5) | (Dd))
+#define FCVTAS_wd(Wd,Dn)      _W((0b00011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Wd))
+#define FCVTAS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Xd))
+#define FCVTAS_ws(Wd,Sn)      _W((0b00011110001 << 21) | (0b00100000000 << 10) | ((Sn) << 5) | (Wd))
+#define FCVTZS_wd(Wd,Dn)      _W((0b00011110011 << 21) | (0b11000000000 << 10) | ((Dn) << 5) | (Wd))
+#define FCVTZS_ws(Wd,Sn)      _W((0b00011110001 << 21) | (0b11000000000 << 10) | ((Sn) << 5) | (Wd))
+#define FCVTZS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b11000000000 << 10) | ((Dn) << 5) | (Xd))
+#define FCVTMS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b10000000000 << 10) | ((Dn) << 5) | (Xd))
+#define SCVTF_dw(Dd,Wn)       _W((0b00011110011 << 21) | (0b00010000000 << 10) | ((Wn) << 5) | (Dd))
+#define SCVTF_sw(Sd,Wn)       _W((0b00011110001 << 21) | (0b00010000000 << 10) | ((Wn) << 5) | (Sd))
+#define SCVTF_dx(Dd,Xn)       _W((0b10011110011 << 21) | (0b00010000000 << 10) | ((Xn) << 5) | (Dd))
+
+#define FABS_dd(Dd,Dn)        _W((0b00011110011 << 21) | (0b00000110000 << 10) | ((Dn) << 5) | (Dd))
+#define FABS_ss(Sd,Sn)        _W((0b00011110001 << 21) | (0b00000110000 << 10) | ((Sn) << 5) | (Sd))
+#define FADD_ddd(Dd,Dn,Dm)    _W((0b00011110011 << 21) | ((Dm) << 16) | (0b001010 << 10) | ((Dn) << 5) | (Dd))
+#define FADD_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b001010 << 10) | ((Sn) << 5) | (Sd))
+#define FCMP_dd(Dn,Dm)        _W((0b00011110011 << 21) | ((Dm) << 16) | (0b001000 << 10) | ((Dn) << 5) | (0b00000))
+#define FCMP_d0(Dn)           _W((0b00011110011 << 21) | (0 << 16) | (0b001000 << 10) | ((Dn) << 5) | (0b01000))
+#define FCMP_ss(Sn,Sm)        _W((0b00011110001 << 21) | ((Sm) << 16) | (0b001000 << 10) | ((Sn) << 5) | (0b00000))
+#define FDIV_ddd(Dd,Dn,Dm)    _W((0b00011110011 << 21) | ((Dm) << 16) | (0b000110 << 10) | ((Dn) << 5) | (Dd))
+#define FDIV_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b000110 << 10) | ((Sn) << 5) | (Sd))
+#define FMUL_ddd(Dd,Dn,Dm)    _W((0b00011110011 << 21) | ((Dm) << 16) | (0b000010 << 10) | ((Dn) << 5) | (Dd))
+#define FMUL_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b000010 << 10) | ((Sn) << 5) | (Sd))
+#define FNEG_dd(Dd,Dn)        _W((0b00011110011 << 21) | (0b00001010000 << 10) | ((Dn) << 5) | (Dd))
+#define FNEG_ss(Sd,Sn)        _W((0b00011110001 << 21) | (0b00001010000 << 10) | ((Sn) << 5) | (Sd))
+#define FSQRT_dd(Dd,Dn)       _W((0b00011110011 << 21) | (0b00001110000 << 10) | ((Dn) << 5) | (Dd))
+#define FSQRT_ss(Sd,Sn)       _W((0b00011110001 << 21) | (0b00001110000 << 10) | ((Sn) << 5) | (Sd))
+#define FSUB_ddd(Dd,Dn,Dm)    _W((0b00011110011 << 21) | ((Dm) << 16) | (0b001110 << 10) | ((Dn) << 5) | (Dd))
+#define FSUB_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b001110 << 10) | ((Sn) << 5) | (Sd))
+
+#define REV64_dd(Vd,Vn)       _W((0b0000111000 << 22) | (0b100000000010 << 10) | ((Vn) << 5) | (Vd))
 
 #endif /* ARM_ASMA64_H */

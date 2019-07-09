@@ -30,6 +30,7 @@
  */
 
 #include "flags_arm.h"
+#include <math.h>
 
 /*************************************************************************
  * Some basic information about the the target CPU                       *
@@ -98,9 +99,9 @@ static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,0,1,1, 1,1,1,1, 1,1,1,1, 1,
 STATIC_INLINE void SIGNED8_IMM_2_REG(W4 r, IM8 v) {
 	uae_s16 v16 = (uae_s16)(uae_s8)v;
 	if (v16 & 0x8000) {
-		MOVN_wi(r, (uae_u16) ~v16);
+		MOVN_xi(r, (uae_u16) ~v16);
 	} else {
-		MOV_wi(r, (uae_u16) v16);
+		MOV_xi(r, (uae_u16) v16);
 	}
 }
 
@@ -110,9 +111,9 @@ STATIC_INLINE void UNSIGNED16_IMM_2_REG(W4 r, IM16 v) {
 
 STATIC_INLINE void SIGNED16_IMM_2_REG(W4 r, IM16 v) {
 	if (v & 0x8000) {
-		MOVN_wi(r, (uae_u16) ~v);
+		MOVN_xi(r, (uae_u16) ~v);
 	} else {
-		MOV_wi(r, (uae_u16) v);
+		MOV_xi(r, (uae_u16) v);
 	}
 }
 
@@ -121,7 +122,7 @@ STATIC_INLINE void UNSIGNED8_REG_2_REG(W4 d, RR4 s) {
 }
 
 STATIC_INLINE void SIGNED8_REG_2_REG(W4 d, RR4 s) {
-	SXTB_ww(d, s);
+	SXTB_xx(d, s);
 }
 
 STATIC_INLINE void UNSIGNED16_REG_2_REG(W4 d, RR4 s) {
@@ -129,7 +130,7 @@ STATIC_INLINE void UNSIGNED16_REG_2_REG(W4 d, RR4 s) {
 }
 
 STATIC_INLINE void SIGNED16_REG_2_REG(W4 d, RR4 s) {
-	SXTH_ww(d, s);
+	SXTH_xx(d, s);
 }
 
 STATIC_INLINE void LOAD_U32(int r, uae_u32 val)
@@ -220,7 +221,7 @@ LENDFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
 LOWFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 {
   LOAD_U32(REG_WORK1, offset);
-	ADD_www(d, s, REG_WORK1);
+	ADD_xxx(d, s, REG_WORK1);
 }
 LENDFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 
@@ -228,7 +229,7 @@ LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_m,(MEMR s))
 {
   uintptr idx;
   if(s >= (uintptr) &regs && s < ((uintptr) &regs) + sizeof(struct regstruct)) {
-    idx = s - (uintptr) & regs;
+    idx = s - (uintptr) &regs;
     if(s == (uintptr) &(regs.pc_p))
       LDR_xXi(REG_WORK1, R_REGSTRUCT, idx);
     else
@@ -255,7 +256,7 @@ LOWFUNC(NONE,WRITE,2,compemu_raw_mov_l_mi,(MEMW d, IM32 s))
 {
   /* d points always to memory in regs struct */
   LOAD_U32(REG_WORK2, s);
-  uintptr idx = d - (uintptr) & regs;
+  uintptr idx = d - (uintptr) &regs;
   if(d == (uintptr) &(regs.pc_p))
     STR_xXi(REG_WORK2, R_REGSTRUCT, idx);
   else
@@ -266,7 +267,7 @@ LENDFUNC(NONE,WRITE,2,compemu_raw_mov_l_mi,(MEMW d, IM32 s))
 LOWFUNC(NONE,WRITE,2,compemu_raw_mov_l_mr,(MEMW d, RR4 s))
 {
   /* d points always to memory in regs struct */
-  uintptr idx = d - (uintptr) & regs;
+  uintptr idx = d - (uintptr) &regs;
   if(d == (uintptr) &(regs.pc_p))
     STR_xXi(s, R_REGSTRUCT, idx);
   else
@@ -283,7 +284,7 @@ LENDFUNC(NONE,NONE,2,compemu_raw_mov_l_ri,(W4 d, IM32 s))
 LOWFUNC(NONE,READ,2,compemu_raw_mov_l_rm,(W4 d, MEMR s))
 {
   if(s >= (uintptr) &regs && s < ((uintptr) &regs) + sizeof(struct regstruct)) {
-    uintptr idx = s - (uintptr) & regs;
+    uintptr idx = s - (uintptr) &regs;
     if(s == (uintptr) &(regs.pc_p))
       LDR_xXi(d, R_REGSTRUCT, idx);
     else
@@ -428,15 +429,13 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 
   uintptr idx = (uintptr)(&regs.jit_exception) - (uintptr)(&regs);
   LDR_wXi(REG_WORK1, R_REGSTRUCT, idx);
-	TST_ww(REG_WORK1, REG_WORK1);
-
 	branchadd = (uae_u32*)get_target();
-	BEQ_i(0);		// no exception, jump to next instruction
+  CBZ_wi(REG_WORK1, 0);  // no exception, jump to next instruction
 	
   // countdown -= scaled_cycles(totcycles);
   offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & ~0xfff) == 0) {
+  if(cycles >= 0 && cycles <= 0xfff) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
     LOAD_U32(REG_WORK2, cycles);
@@ -490,14 +489,14 @@ STATIC_INLINE void compemu_raw_maybe_cachemiss(uintptr t)
 
 STATIC_INLINE void compemu_raw_maybe_do_nothing(IM32 cycles, uintptr adr)
 {
-  uintptr idx = (uintptr)&regs.spcflags - (uintptr) & regs;
+  uintptr idx = (uintptr)&regs.spcflags - (uintptr) &regs;
   LDR_wXi(REG_WORK1, R_REGSTRUCT, idx);
   uae_s8 *branchadd = (uae_s8 *)get_target();
   CBZ_wi(REG_WORK1, 0);  // <end>
 
-  idx = (uintptr)&countdown - (uintptr) & regs;
+  idx = (uintptr)&countdown - (uintptr) &regs;
   LDR_wXi(REG_WORK2, R_REGSTRUCT, idx);
-  if((cycles & ~0xfff) == 0) {
+  if(cycles >= 0 && cycles <= 0xfff) {
     SUB_wwi(REG_WORK2, REG_WORK2, cycles);
   } else {
     LOAD_U32(REG_WORK1, cycles);
@@ -532,7 +531,7 @@ LOWFUNC(NONE,NONE,2,compemu_raw_endblock_pc_inreg,(RR4 rr_pc, IM32 cycles))
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & ~0xfff) == 0) {
+  if(cycles >= 0 && cycles <=0xfff) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -564,7 +563,7 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & ~0xfff) == 0) {
+  if(cycles >= 0 && cycles <=0xfff) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -588,3 +587,582 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
 
 	return tba;  
 }
+
+/*************************************************************************
+* FPU stuff                                                             *
+*************************************************************************/
+
+#ifdef USE_JIT_FPU
+
+LOWFUNC(NONE,NONE,2,raw_fmov_rr,(FW d, FR s))
+{
+	FMOV_dd(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_rr,(FW d, FR s))
+
+LOWFUNC(NONE,WRITE,2,compemu_raw_fmov_mr_drop,(MEMW mem, FR s))
+{
+  if(mem >= (uintptr) &regs && mem < (uintptr) &regs + 32760 && ((mem - (uintptr) &regs) & 0x7) == 0) {
+    STR_dXi(s, R_REGSTRUCT, (mem - (uintptr) &regs));
+  } else {
+    LOAD_U64(REG_WORK1, mem);
+    STR_dXi(s, REG_WORK1, 0);
+  }
+}
+LENDFUNC(NONE,WRITE,2,compemu_raw_fmov_mr_drop,(MEMW mem, FR s))
+
+LOWFUNC(NONE,READ,2,compemu_raw_fmov_rm,(FW d, MEMR mem))
+{
+  if(mem >= (uintptr) &regs && mem < (uintptr) &regs + 32760 && ((mem - (uintptr) &regs) & 0x7) == 0) {
+    LDR_dXi(d, R_REGSTRUCT, (mem - (uintptr) &regs));
+  } else {
+    LOAD_U64(REG_WORK1, mem);
+    LDR_dXi(d, REG_WORK1, 0);
+  }
+}
+LENDFUNC(NONE,READ,2,compemu_raw_fmov_rm,(FW d, MEMW mem))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_l_rr,(FW d, RR4 s))
+{
+  SCVTF_dw(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_l_rr,(FW d, RR4 s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_s_rr,(FW d, RR4 s))
+{
+  FMOV_sw(SCRATCH_F64_1, s);
+  FCVT_ds(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_s_rr,(FW d, RR4 s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_w_rr,(FW d, RR2 s))
+{
+  SIGNED16_REG_2_REG(REG_WORK1, s);
+  SCVTF_dw(d, REG_WORK1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_w_rr,(FW d, RR2 s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_b_rr,(FW d, RR1 s))
+{
+  SIGNED8_REG_2_REG(REG_WORK1, s);
+  SCVTF_dw(d, REG_WORK1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_b_rr,(FW d, RR1 s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_d_rrr,(FW d, RR4 s1, RR4 s2))
+{
+  BFI_xxii(s1, s2, 32, 32);
+  FMOV_dx(d, s1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_d_rrr,(FW d, RR4 s1, RR4 s2))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_to_l_rr,(W4 d, FR s))
+{
+  FRINTI_dd(SCRATCH_F64_1, s);
+  FCVTAS_wd(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_to_l_rr,(W4 d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_to_s_rr,(W4 d, FR s))
+{
+  FCVT_sd(SCRATCH_F64_1, s);
+  FMOV_ws(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_to_s_rr,(W4 d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fmov_to_w_rr,(W4 d, FR s, int targetIsReg))
+{
+  clobber_flags();
+  
+  FRINTI_dd(SCRATCH_F64_1, s);
+  FCVTAS_wd(REG_WORK1, SCRATCH_F64_1);
+
+  // maybe saturate...
+  TBZ_xii(REG_WORK1, 31, 6); // positive
+  CLS_ww(REG_WORK2, REG_WORK1); // negative: if 17 bits are 1 -> no saturate
+  CMP_wi(REG_WORK2, 15);
+  BHI_i(7); // done
+  MOV_wi(REG_WORK1, 0x8000); // max. negative value in 16 bit
+  B_i(5);
+
+  // positive
+  CLZ_ww(REG_WORK2, REG_WORK1); // positive: if 17 bits are 0 -> no saturate
+  CMP_wi(REG_WORK2, 16);
+  BHI_i(2);
+  MOV_wi(REG_WORK1, 0x7fff); // max. positive value in 16 bit
+  
+  // done
+  BFI_wwii(d, REG_WORK1, 0, 16);
+}
+LENDFUNC(NONE,NONE,2,raw_fmov_to_w_rr,(W4 d, FR s, int targetIsReg))
+
+LOWFUNC(NONE,NONE,3,raw_fmov_to_b_rr,(W4 d, FR s, int targetIsReg))
+{
+  clobber_flags();
+
+  FRINTI_dd(SCRATCH_F64_1, s);
+  FCVTAS_wd(REG_WORK1, SCRATCH_F64_1);
+
+  // maybe saturate...
+  TBZ_xii(REG_WORK1, 31, 6); // positive
+  CLS_ww(REG_WORK2, REG_WORK1); // negative: if 25 bits are 1 -> no saturate
+  CMP_wi(REG_WORK2, 23);
+  BHI_i(7); // done
+  MOV_wi(REG_WORK1, 0x80); // max. negative value in 8 bit
+  B_i(5);
+
+  // positive
+  CLZ_ww(REG_WORK2, REG_WORK1); // positive: if 25 bits are 0 -> no saturate
+  CMP_wi(REG_WORK2, 24);
+  BHI_i(2);
+  MOV_wi(REG_WORK1, 0x7f); // max. positive value in 8 bit
+
+  // done
+  BFI_wwii(d, REG_WORK1, 0, 8);
+}
+LENDFUNC(NONE,NONE,3,raw_fmov_to_b_rr,(W4 d, FR s, int targetIsReg))
+
+LOWFUNC(NONE,NONE,1,raw_fmov_d_ri_0,(FW r))
+{
+	MOVI_di(r, 0);
+}
+LENDFUNC(NONE,NONE,1,raw_fmov_d_ri_0,(FW r))
+
+LOWFUNC(NONE,NONE,1,raw_fmov_d_ri_1,(FW r))
+{
+  FMOV_di(r, 0b01110000);
+}
+LENDFUNC(NONE,NONE,1,raw_fmov_d_ri_1,(FW r))
+
+LOWFUNC(NONE,NONE,1,raw_fmov_d_ri_10,(FW r))
+{
+  FMOV_di(r, 0b00100100);
+}
+LENDFUNC(NONE,NONE,1,raw_fmov_d_ri_10,(FW r))
+
+LOWFUNC(NONE,NONE,1,raw_fmov_d_ri_100,(FW r))
+{
+  MOV_wi(REG_WORK1, 100);
+  SCVTF_dw(r, REG_WORK1);
+}
+LENDFUNC(NONE,NONE,1,raw_fmov_d_ri_100,(FW r))
+
+LOWFUNC(NONE,READ,2,raw_fmov_d_rm,(FW r, MEMR m))
+{
+  LOAD_U64(REG_WORK1, m);
+  LDR_dXi(r, REG_WORK1, 0);
+}
+LENDFUNC(NONE,READ,2,raw_fmov_d_rm,(FW r, MEMR m))
+
+LOWFUNC(NONE,READ,2,raw_fmovs_rm,(FW r, MEMR m))
+{
+  LOAD_U64(REG_WORK1, m);
+  LDR_sXi(r, REG_WORK1, 0);
+  FCVT_ds(r, r);
+}
+LENDFUNC(NONE,READ,2,raw_fmovs_rm,(FW r, MEMR m))
+
+LOWFUNC(NONE,NONE,3,raw_fmov_to_d_rrr,(W4 d1, W4 d2, FR s))
+{
+  FMOV_xd(d1, s);
+  LSR_xxi(d2, d1, 32);
+}
+LENDFUNC(NONE,NONE,3,raw_fmov_to_d_rrr,(W4 d1, W4 d2, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fsqrt_rr,(FW d, FR s))
+{
+	FSQRT_dd(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fsqrt_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fabs_rr,(FW d, FR s))
+{
+	FABS_dd(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fabs_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fneg_rr,(FW d, FR s))
+{
+	FNEG_dd(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fneg_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fdiv_rr,(FRW d, FR s))
+{
+	FDIV_ddd(d, d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fdiv_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fadd_rr,(FRW d, FR s))
+{
+	FADD_ddd(d, d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fadd_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fmul_rr,(FRW d, FR s))
+{
+	FMUL_ddd(d, d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fmul_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fsub_rr,(FRW d, FR s))
+{
+	FSUB_ddd(d, d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_fsub_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_frndint_rr,(FW d, FR s))
+{
+  FRINTI_dd(d, s);
+}
+LENDFUNC(NONE,NONE,2,raw_frndint_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_frndintz_rr,(FW d, FR s))
+{
+	FCVTZS_xd(REG_WORK1, s);
+	SCVTF_dx(d, REG_WORK1);
+}
+LENDFUNC(NONE,NONE,2,raw_frndintz_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fmod_rr,(FRW d, FR s))
+{
+	FDIV_ddd(SCRATCH_F64_1, d, s);
+	FCVTZS_xd(REG_WORK1, SCRATCH_F64_1);
+	SCVTF_dx(SCRATCH_F64_1, REG_WORK1);
+	FMUL_ddd(SCRATCH_F64_1, SCRATCH_F64_1, s);
+	FSUB_ddd(d, d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmod_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fsgldiv_rr,(FRW d, FR s))
+{
+	FCVT_sd(SCRATCH_F64_1, d);
+	FCVT_sd(SCRATCH_F64_2, s);
+	FDIV_sss(SCRATCH_F64_1, SCRATCH_F64_1, SCRATCH_F64_2);
+	FCVT_ds(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fsgldiv_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,1,raw_fcuts_r,(FRW r))
+{
+	FCVT_sd(SCRATCH_F64_1, r);
+	FCVT_ds(r, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,1,raw_fcuts_r,(FRW r))
+
+LOWFUNC(NONE,NONE,2,raw_frem1_rr,(FRW d, FR s))
+{
+  FDIV_ddd(SCRATCH_F64_2, d, s);
+  FCVTAS_xd(REG_WORK1, SCRATCH_F64_2);
+  SCVTF_dx(SCRATCH_F64_2, REG_WORK1);
+  FMUL_ddd(SCRATCH_F64_1, SCRATCH_F64_2, s);
+  FSUB_ddd(d, d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_frem1_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fsglmul_rr,(FRW d, FR s))
+{
+	FCVT_sd(SCRATCH_F64_1, d);
+	FCVT_sd(SCRATCH_F64_2, s);
+	FMUL_sss(SCRATCH_F64_1, SCRATCH_F64_1, SCRATCH_F64_2);
+	FCVT_ds(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fsglmul_rr,(FRW d, FR s))
+
+LOWFUNC(NONE,NONE,2,raw_fmovs_rr,(FW d, FR s))
+{
+	FCVT_sd(SCRATCH_F64_1, s);
+	FCVT_ds(d, SCRATCH_F64_1);
+}
+LENDFUNC(NONE,NONE,2,raw_fmovs_rr,(FW d, FR s))
+
+LOWFUNC(NONE,NONE,3,raw_ffunc_rr,(double (*func)(double), FW d, FR s))
+{
+	FMOV_dd(0, s);
+
+  LOAD_U64(REG_WORK1, (uintptr)func);
+
+	STR_xXpre(RLR_INDEX, RSP_INDEX, -16);
+	BLR_x(REG_WORK1);
+	LDR_xXpost(RLR_INDEX, RSP_INDEX, 16);
+
+	FMOV_dd(d, 0);
+}
+LENDFUNC(NONE,NONE,3,raw_ffunc_rr,(double (*func)(double), FW d, FR s))
+
+LOWFUNC(NONE,NONE,3,raw_fpowx_rr,(uae_u32 x, FW d, FR s))
+{
+	double (*func)(double,double) = pow;
+
+	if(x == 2) {
+		FMOV_di(0, 0b00000000); // load imm #2 into first reg
+	} else {
+		FMOV_di(0, 0b00100100); // load imm #10 into first reg
+	}
+
+	FMOV_dd(1, s);
+		
+  LOAD_U64(REG_WORK1, (uintptr)func);
+
+	STR_xXpre(RLR_INDEX, RSP_INDEX, -16);
+	BLR_x(REG_WORK1);
+	LDR_xXpost(RLR_INDEX, RSP_INDEX, 16);
+
+	FMOV_dd(d, 0);
+}
+LENDFUNC(NONE,NONE,3,raw_fpowx_rr,(uae_u32 x, FW d, FR s))
+
+LOWFUNC(NONE,WRITE,2,raw_fp_from_exten_mr,(RR4 adr, FR s))
+{
+  FMOV_xd(REG_WORK1, s);
+  FCMP_d0(s);
+
+  uae_u32* branchadd_iszero = (uae_u32*)get_target();
+  BEQ_i(0); // iszero
+
+  UBFX_xxii(REG_WORK2, REG_WORK1, 52, 11); // get exponent 
+	MOV_xi(REG_WORK3, 2047);
+	CMP_xx(REG_WORK2, REG_WORK3);
+  
+  uae_u32* branchadd_isnan = (uae_u32*)get_target();
+	BEQ_i(0); 				// isnan
+
+  MOV_xi(REG_WORK3, 15360);              	    // diff of bias between double and long double
+  ADD_xxx(REG_WORK2, REG_WORK2, REG_WORK3); 	// exponent done
+  UBFX_xxii(REG_WORK3, REG_WORK1, 63, 1);     // extract sign
+  LSL_xxi(REG_WORK3, REG_WORK3, 31);
+  ORR_xxxLSLi(REG_WORK2, REG_WORK3, REG_WORK2, 16); // merge sign and exponent
+
+	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
+
+  REV32_xx(REG_WORK2, REG_WORK2);
+  STRH_wXi(REG_WORK2, REG_WORK3, 0);         	// write exponent
+  ADD_xxi(REG_WORK3, REG_WORK3, 4);
+
+  LSL_xxi(REG_WORK1, REG_WORK1, 11);          // shift mantissa to correct position
+  REV_xx(REG_WORK1, REG_WORK1);
+  SET_xxbit(REG_WORK1, REG_WORK1, 7);        // insert explicit 1
+  STR_xXi(REG_WORK1, REG_WORK3, 0);
+  uae_u32* branchadd_end = (uae_u32*)get_target();
+  B_i(0);            // end_of_op
+
+  // isnan
+  write_jmp_target(branchadd_isnan, (uintptr)get_target());
+  LOAD_U32(REG_WORK1, 0x7fff);
+  LSL_xxi(REG_WORK1, REG_WORK1, 16);
+  MOVN_xi(REG_WORK2, 0);
+  B_i(4);
+  
+  // iszero
+  write_jmp_target(branchadd_iszero, (uintptr)get_target());
+  UBFX_xxii(REG_WORK1, REG_WORK1, 63, 1);     // extract sign
+  LSL_xxi(REG_WORK1, REG_WORK1, 31);
+  MOV_xi(REG_WORK2, 0);
+
+	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
+
+  REV32_xx(REG_WORK1, REG_WORK1);
+  STR_wXi(REG_WORK1, REG_WORK3, 0);
+  ADD_xxi(REG_WORK3, REG_WORK3, 4);
+  STR_xXi(REG_WORK2, REG_WORK3, 0);
+
+  // end_of_op
+  write_jmp_target(branchadd_end, (uintptr)get_target());
+}
+LENDFUNC(NONE,WRITE,2,raw_fp_from_exten_mr,(RR4 adr, FR s))
+
+LOWFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
+{
+	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
+
+  ADD_xxi(REG_WORK1, REG_WORK3, 4);
+	LDR_xXi(REG_WORK1, REG_WORK1, 0);
+	CLEAR_xxbit(REG_WORK1, REG_WORK1, 7); 	// clear explicit 1
+	REV_xx(REG_WORK1, REG_WORK1);
+	FMOV_dx(d, REG_WORK1);
+
+  LDRH_wXi(REG_WORK1, REG_WORK3, 0);
+  REV16_xx(REG_WORK1, REG_WORK1);				// exponent now in lower half
+
+	MOV_xi(REG_WORK2, 0x7fff);
+	ANDS_xxx(REG_WORK2, REG_WORK2, REG_WORK1);
+	uae_u32* branchadd_notzero = (uae_u32*)get_target();
+	BNE_i(0);				// not_zero
+
+	FCMP_d0(d);			// not zero
+	uae_u32* branchadd_notzero2 = (uae_u32*)get_target();
+  BNE_i(0);             // not zero
+
+  // zero
+	FMOV_di(d, 0);
+	uae_u32* branchadd_end = (uae_u32*)get_target();
+	TBZ_xii(REG_WORK1, 15, 0); // end_of_op
+	MOV_xish(REG_WORK1, 0x8000, 48);
+	FMOV_dx(d, REG_WORK1);
+	uae_u32* branchadd_end2 = (uae_u32*)get_target();
+	B_i(0);					// end_of_op
+
+  // not_zero
+  write_jmp_target(branchadd_notzero, (uintptr)get_target());
+  write_jmp_target(branchadd_notzero2, (uintptr)get_target());
+	MOV_xi(REG_WORK3, 15360);                 // diff of bias between double and long double
+	SUB_xxx(REG_WORK2, REG_WORK2, REG_WORK3);	// exponent done, ToDo: check for carry -> result gets Inf in double
+	UBFX_xxii(REG_WORK1, REG_WORK1, 15, 1);		// extract sign
+	BFI_xxii(REG_WORK2, REG_WORK1, 11, 1);		// insert sign
+  FMOV_xd(REG_WORK1, d);
+	LSR_xxi(REG_WORK1, REG_WORK1, 11);				// shift mantissa to correct position
+	LSL_xxi(REG_WORK2, REG_WORK2, 52);
+	ORR_xxx(REG_WORK1, REG_WORK1, REG_WORK2);
+	FMOV_dx(d, REG_WORK1);
+
+  // end_of_op
+  write_jmp_target(branchadd_end, (uintptr)get_target());
+  write_jmp_target(branchadd_end2, (uintptr)get_target());
+
+}
+LENDFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
+
+LOWFUNC(NONE,WRITE,2,raw_fp_from_double_mr,(RR4 adr, FR s))
+{
+	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
+	
+  REV64_dd(SCRATCH_F64_1, s);
+  STR_dXi(SCRATCH_F64_1, REG_WORK3, 0);
+}
+LENDFUNC(NONE,WRITE,2,raw_fp_from_double_mr,(RR4 adr, FR s))
+
+LOWFUNC(NONE,READ,2,raw_fp_to_double_rm,(FW d, RR4 adr))
+{
+	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
+	
+  LDR_dXi(d, REG_WORK3, 0);
+  REV64_dd(d, d);
+}
+LENDFUNC(NONE,READ,2,raw_fp_to_double_rm,(FW d, RR4 adr))
+
+STATIC_INLINE void raw_fflags_into_flags(int r)
+{
+	FCMP_d0(r);
+}
+
+LOWFUNC(NONE,NONE,2,raw_fp_fscc_ri,(RW4 d, int cc))
+{
+	switch (cc) {
+		case NATIVE_CC_F_NEVER:
+			CLEAR_LOW8_xx(d, d);
+			break;
+			
+		case NATIVE_CC_NE: // Set if not equal
+		  CSETM_wc(REG_WORK1, NATIVE_CC_NE);
+		  BFXIL_xxii(d, REG_WORK1, 0, 8);
+			break;
+
+		case NATIVE_CC_EQ: // Set if equal
+		  CSETM_wc(REG_WORK1, NATIVE_CC_EQ);
+		  BFXIL_xxii(d, REG_WORK1, 0, 8);
+			break;
+
+		case NATIVE_CC_F_OGT: // Set if valid and greater than
+  		BVS_i(4);		// do not set if NaN
+			BLE_i(3);		// do not set if less or equal
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_OGE: // Set if valid and greater or equal
+			BVS_i(4);		// do not set if NaN
+			BCC_i(3);		// do not set if carry cleared
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+			
+		case NATIVE_CC_F_OLT: // Set if vaild and less than
+			BVS_i(4);		// do not set if NaN
+			BCS_i(3);		// do not set if carry set
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+			
+		case NATIVE_CC_F_OLE: // Set if valid and less or equal
+			BVS_i(4);		// do not set if NaN
+			BGT_i(3);		// do not set if greater than
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+			
+		case NATIVE_CC_F_OGL: // Set if valid and greator or less
+			BVS_i(4);		// do not set if NaN
+			BEQ_i(3);		// do not set if equal
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_OR: // Set if valid
+		  CSETM_wc(REG_WORK1, NATIVE_CC_VC);    // do not set if NaN
+		  BFXIL_xxii(d, REG_WORK1, 0, 8);
+			break;
+			
+		case NATIVE_CC_F_UN: // Set if NAN
+		  CSETM_wc(REG_WORK1, NATIVE_CC_VS);    // do not set if valid
+		  BFXIL_xxii(d, REG_WORK1, 0, 8);
+			break;
+
+		case NATIVE_CC_F_UEQ: // Set if NAN or equal
+			BVS_i(2); 	// set if NaN
+			BNE_i(3);		// do not set if greater or less
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_UGT: // Set if NAN or greater than
+			BVS_i(2); 	// set if NaN
+			BLS_i(3);		// do not set if lower or same
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_UGE: // Set if NAN or greater or equal
+			BVS_i(2); 	// set if NaN
+			BMI_i(3);		// do not set if lower
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_ULT: // Set if NAN or less than
+			BVS_i(2); 	// set if NaN
+			BGE_i(3);		// do not set if greater or equal
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+
+		case NATIVE_CC_F_ULE: // Set if NAN or less or equal
+			BVS_i(2); 	// set if NaN
+			BGT_i(3);		// do not set if greater
+			SET_LOW8_xx(d, d);
+			B_i(2);
+			CLEAR_LOW8_xx(d, d);
+			break;
+	}
+}
+LENDFUNC(NONE,NONE,2,raw_fp_fscc_ri,(RW4 d, int cc))
+
+LOWFUNC(NONE,NONE,1,raw_roundingmode,(IM32 mode))
+{
+  LOAD_U32(REG_WORK2, (mode >> 22));
+  MRS_FPCR_x(REG_WORK1);
+  BFI_xxii(REG_WORK1, REG_WORK2, 22, 2);
+  MSR_FPCR_x(REG_WORK1);
+}
+LENDFUNC(NONE,NONE,1,raw_roundingmode,(IM32 mode))
+
+#endif // USE_JIT_FPU
+

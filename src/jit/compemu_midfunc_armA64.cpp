@@ -261,7 +261,7 @@ MIDFUNC(3,lea_l_brr,(W4 d, RR4 s, IM32 offset))
 		d = writereg(d);
 	}
 	
-  if((offset & ~0xfff) == 0) {
+  if(offset >= 0 && offset <= 0xfff) {
     ADD_wwi(d, s, offset);
   } else {
     LOAD_U32(REG_WORK1, offset);
@@ -377,7 +377,7 @@ MIDFUNC(2,mov_l_rm,(W4 d, IMPTR s))
   /* s points always to memory in regs struct */
 	d = writereg(d);
 
-  uintptr idx = s - (uintptr) & regs;
+  uintptr idx = s - (uintptr) &regs;
   LDR_wXi(d, R_REGSTRUCT, idx);
 
 	unlock2(d);
@@ -420,7 +420,7 @@ MIDFUNC(2,sub_l_ri,(RW4 d, IM8 i))
 
 	d = rmw(d);
 
-  SUB_wwi(d, d, i);
+  SUB_xxi(d, d, i);
 
 	unlock2(d);
 }
@@ -484,11 +484,12 @@ MIDFUNC(2,arm_ADD_l_ri,(RW4 d, IM32 i))
 
 	d = rmw(d);
 
-  if((i & ~0xfff) == 0) {
-		ADD_wwi(d, d, i);
+  if(i >= 0 && i <= 0xfff) {
+		ADD_xxi(d, d, i);
 	} else {
 	  LOAD_U32(REG_WORK1, i);
-		ADD_www(d, d, REG_WORK1);
+    SXTW_xw(REG_WORK1, REG_WORK1);
+		ADD_xxx(d, d, REG_WORK1);
   }
 	
 	unlock2(d);
@@ -505,7 +506,7 @@ MIDFUNC(2,arm_ADD_l_ri8,(RW4 d, IM8 i))
 	}
 
 	d = rmw(d);
-	ADD_wwi(d, d, i);
+	ADD_xxi(d, d, i);
 	unlock2(d);
 }
 MENDFUNC(2,arm_ADD_l_ri8,(RW4 d, IM8 i))
@@ -520,19 +521,19 @@ MIDFUNC(2,arm_SUB_l_ri8,(RW4 d, IM8 i))
 	}
 
 	d = rmw(d);
-	SUB_wwi(d, d, i);
+	SUB_xxi(d, d, i);
 	unlock2(d);
 }
 MENDFUNC(2,arm_SUB_l_ri8,(RW4 d, IM8 i))
 
 
-#ifdef DEBUG
+#ifdef JIT_DEBUG
 #include "aarch64.h"
 #endif
 
 STATIC_INLINE void flush_cpu_icache(void *start, void *stop)
 {
-#ifdef DEBUG
+#ifdef JIT_DEBUG
   if((uae_u64)stop - (uae_u64)start > 4) {
     char disbuf[256];
     uint64_t disptr = (uint64_t)start;
@@ -566,3 +567,496 @@ STATIC_INLINE void write_jmp_target(uae_u32* jmpaddr, uintptr a)
 
   flush_cpu_icache((void *)jmpaddr, (void *)&jmpaddr[1]);
 }
+
+
+/*************************************************************************
+* FPU stuff                                                             *
+*************************************************************************/
+
+#ifdef USE_JIT_FPU
+
+MIDFUNC(1,f_forget_about,(FW r))
+{
+	if (f_isinreg(r))
+		f_disassociate(r);
+	live.fate[r].status = UNDEF;
+}
+MENDFUNC(1,f_forget_about,(FW r))
+
+MIDFUNC(0,dont_care_fflags,(void))
+{
+	f_disassociate(FP_RESULT);
+}
+MENDFUNC(0,dont_care_fflags,(void))
+
+MIDFUNC(2,fmov_rr,(FW d, FR s))
+{
+	if (d == s) { /* How pointless! */
+		return;
+	}
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_fmov_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fmov_rr,(FW d, FR s))
+
+MIDFUNC(2,fmov_l_rr,(FW d, RR4 s))
+{
+	s = readreg(s);
+  d = f_writereg(d);
+  raw_fmov_l_rr(d, s);
+	f_unlock(d);
+  unlock2(s);
+}
+MENDFUNC(2,fmov_l_rr,(FW d, RR4 s))
+
+MIDFUNC(2,fmov_s_rr,(FW d, RR4 s))
+{
+	s = readreg(s);
+  d = f_writereg(d);
+  raw_fmov_s_rr(d, s);
+	f_unlock(d);
+  unlock2(s);
+}
+MENDFUNC(2,fmov_s_rr,(FW d, RR4 s))
+
+MIDFUNC(2,fmov_w_rr,(FW d, RR2 s))
+{
+	s = readreg(s);
+  d = f_writereg(d);
+  raw_fmov_w_rr(d, s);
+	f_unlock(d);
+  unlock2(s);
+}
+MENDFUNC(2,fmov_w_rr,(FW d, RR2 s))
+
+MIDFUNC(2,fmov_b_rr,(FW d, RR1 s))
+{
+	s = readreg(s);
+  d = f_writereg(d);
+  raw_fmov_b_rr(d, s);
+	f_unlock(d);
+  unlock2(s);
+}
+MENDFUNC(2,fmov_b_rr,(FW d, RR1 s))
+
+MIDFUNC(3,fmov_d_rrr,(FW d, RR4 s1, RR4 s2))
+{
+	s1 = readreg(s1);
+	s2 = readreg(s2);
+  d = f_writereg(d);
+  raw_fmov_d_rrr(d, s1, s2);
+	f_unlock(d);
+  unlock2(s2);
+  unlock2(s1);
+}
+MENDFUNC(3,fmov_d_rrr,(FW d, RR4 s1, RR4 s2))
+
+MIDFUNC(2,fmov_l_ri,(FW d, IM32 i))
+{
+	switch(i) {
+		case 0:
+			fmov_d_ri_0(d);
+			break;
+		case 1:
+			fmov_d_ri_1(d);
+			break;
+		case 10:
+			fmov_d_ri_10(d);
+			break;
+		case 100:
+			fmov_d_ri_100(d);
+			break;
+		default:
+		  d = f_writereg(d);
+		  compemu_raw_mov_l_ri(REG_WORK1, i);
+		  raw_fmov_l_rr(d, REG_WORK1);
+			f_unlock(d);
+	} 
+}
+MENDFUNC(2,fmov_l_ri,(FW d, IM32 i))
+
+MIDFUNC(2,fmov_s_ri,(FW d, IM32 i))
+{
+  d = f_writereg(d);
+  compemu_raw_mov_l_ri(REG_WORK1, i);
+  raw_fmov_s_rr(d, REG_WORK1);
+	f_unlock(d);
+}
+MENDFUNC(2,fmov_s_ri,(FW d, IM32 i))
+
+MIDFUNC(2,fmov_to_l_rr,(W4 d, FR s))
+{
+	s = f_readreg(s);
+  d = writereg(d);
+  raw_fmov_to_l_rr(d, s);
+	unlock2(d);
+  f_unlock(s);
+}
+MENDFUNC(2,fmov_to_l_rr,(W4 d, FR s))
+
+MIDFUNC(2,fmov_to_s_rr,(W4 d, FR s))
+{
+	s = f_readreg(s);
+  d = writereg(d);
+  raw_fmov_to_s_rr(d, s);
+	unlock2(d);
+  f_unlock(s);
+}
+MENDFUNC(2,fmov_to_s_rr,(W4 d, FR s))
+
+MIDFUNC(2,fmov_to_w_rr,(W4 d, FR s))
+{
+	s = f_readreg(s);
+	INIT_WREG_w(d);
+
+  raw_fmov_to_w_rr(d, s, targetIsReg);
+	unlock2(d);
+  f_unlock(s);
+}
+MENDFUNC(2,fmov_to_w_rr,(W4 d, FR s))
+
+MIDFUNC(2,fmov_to_b_rr,(W4 d, FR s))
+{
+	s = f_readreg(s);
+	INIT_WREG_b(d);
+
+  raw_fmov_to_b_rr(d, s, targetIsReg);
+	unlock2(d);
+  f_unlock(s);
+}
+MENDFUNC(2,fmov_to_b_rr,(W4 d, FR s))
+
+MIDFUNC(1,fmov_d_ri_0,(FW r))
+{
+	r = f_writereg(r);
+	raw_fmov_d_ri_0(r);
+	f_unlock(r);
+}
+MENDFUNC(1,fmov_d_ri_0,(FW r))
+
+MIDFUNC(1,fmov_d_ri_1,(FW r))
+{
+	r = f_writereg(r);
+	raw_fmov_d_ri_1(r);
+	f_unlock(r);
+}
+MENDFUNC(1,fmov_d_ri_1,(FW r))
+
+MIDFUNC(1,fmov_d_ri_10,(FW r))
+{
+	r = f_writereg(r);
+	raw_fmov_d_ri_10(r);
+	f_unlock(r);
+}
+MENDFUNC(1,fmov_d_ri_10,(FW r))
+
+MIDFUNC(1,fmov_d_ri_100,(FW r))
+{
+	r = f_writereg(r);
+	raw_fmov_d_ri_100(r);
+	f_unlock(r);
+}
+MENDFUNC(1,fmov_d_ri_100,(FW r))
+
+MIDFUNC(2,fmov_d_rm,(FW r, MEMR m))
+{
+	r = f_writereg(r);
+	raw_fmov_d_rm(r, m);
+	f_unlock(r);
+}
+MENDFUNC(2,fmov_d_rm,(FW r, MEMR m))
+
+MIDFUNC(2,fmovs_rm,(FW r, MEMR m))
+{
+	r = f_writereg(r);
+	raw_fmovs_rm(r, m);
+	f_unlock(r);
+}
+MENDFUNC(2,fmovs_rm,(FW r, MEMR m))
+
+MIDFUNC(2,fmov_rm,(FW r, MEMR m))
+{
+	r = f_writereg(r);
+	raw_fmov_d_rm(r, m);
+	f_unlock(r);
+}
+MENDFUNC(2,fmov_rm,(FW r, MEMR m))
+
+MIDFUNC(3,fmov_to_d_rrr,(W4 d1, W4 d2, FR s))
+{
+	s = f_readreg(s);
+  d1 = writereg(d1);
+  d2 = writereg(d2);
+  raw_fmov_to_d_rrr(d1, d2, s);
+	unlock2(d2);
+	unlock2(d1);
+  f_unlock(s);
+}
+MENDFUNC(3,fmov_to_d_rrr,(W4 d1, W4 d2, FR s))
+
+MIDFUNC(2,fsqrt_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_fsqrt_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fsqrt_rr,(FW d, FR s))
+
+MIDFUNC(2,fabs_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_fabs_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fabs_rr,(FW d, FR s))
+
+MIDFUNC(2,fneg_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_fneg_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fneg_rr,(FW d, FR s))
+
+MIDFUNC(2,fdiv_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fdiv_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fdiv_rr,(FRW d, FR s))
+
+MIDFUNC(2,fadd_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fadd_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fadd_rr,(FRW d, FR s))
+
+MIDFUNC(2,fmul_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fmul_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fmul_rr,(FRW d, FR s))
+
+MIDFUNC(2,fsub_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fsub_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fsub_rr,(FRW d, FR s))
+
+MIDFUNC(2,frndint_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_frndint_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,frndint_rr,(FW d, FR s))
+
+MIDFUNC(2,frndintz_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_frndintz_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,frndintz_rr,(FW d, FR s))
+
+MIDFUNC(2,fmod_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fmod_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fmod_rr,(FRW d, FR s))
+
+MIDFUNC(2,fsgldiv_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fsgldiv_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fsgldiv_rr,(FRW d, FR s))
+
+MIDFUNC(1,fcuts_r,(FRW r))
+{
+	r = f_rmw(r);
+	raw_fcuts_r(r);
+	f_unlock(r);
+}
+MENDFUNC(1,fcuts_r,(FRW r))
+
+MIDFUNC(2,frem1_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_frem1_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,frem1_rr,(FRW d, FR s))
+
+MIDFUNC(2,fsglmul_rr,(FRW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_rmw(d);
+	raw_fsglmul_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fsglmul_rr,(FRW d, FR s))
+
+MIDFUNC(2,fmovs_rr,(FW d, FR s))
+{
+	s = f_readreg(s);
+	d = f_writereg(d);
+	raw_fmovs_rr(d, s);
+	f_unlock(s);
+	f_unlock(d);
+}
+MENDFUNC(2,fmovs_rr,(FW d, FR s))
+
+MIDFUNC(3,ffunc_rr,(double (*func)(double), FW d, FR s))
+{
+  clobber_flags();
+
+	s = f_readreg(s);
+	int reald = f_writereg(d);
+
+  prepare_for_call_1();
+
+	f_unlock(s);
+	f_unlock(reald);
+
+  prepare_for_call_2();
+
+	raw_ffunc_rr(func, reald, s);
+
+  live.fat[reald].holds = d;
+  live.fat[reald].nholds = 1;
+
+  live.fate[d].realreg = reald;
+  live.fate[d].status = DIRTY;
+}
+MENDFUNC(3,ffunc_rr,(double (*func)(double), FW d, FR s))
+
+MIDFUNC(3,fpowx_rr,(uae_u32 x, FW d, FR s))
+{
+  clobber_flags();
+
+	s = f_readreg(s);
+	int reald = f_writereg(d);
+
+  prepare_for_call_1();
+
+	f_unlock(s);
+	f_unlock(reald);
+
+  prepare_for_call_2();
+
+	raw_fpowx_rr(x, reald, s);
+
+  live.fat[reald].holds = d;
+  live.fat[reald].nholds = 1;
+
+  live.fate[d].realreg = reald;
+  live.fate[d].status = DIRTY;
+}
+MENDFUNC(3,fpowx_rr,(uae_u32 x, FW d, FR s))
+
+MIDFUNC(1,fflags_into_flags,())
+{
+	clobber_flags();
+	fflags_into_flags_internal();
+}
+MENDFUNC(1,fflags_into_flags,())
+
+MIDFUNC(2,fp_from_exten_mr,(RR4 adr, FR s))
+{
+  clobber_flags();
+
+	adr = readreg(adr);
+	s = f_readreg(s);
+  raw_fp_from_exten_mr(adr, s);
+	f_unlock(s);
+	unlock2(adr);
+}
+MENDFUNC(2,fp_from_exten_mr,(RR4 adr, FR s))
+
+MIDFUNC(2,fp_to_exten_rm,(FW d, RR4 adr))
+{
+  clobber_flags();
+
+	adr = readreg(adr);
+	d = f_writereg(d);
+  raw_fp_to_exten_rm(d, adr);
+	unlock2(adr);
+	f_unlock(d);
+}
+MENDFUNC(2,fp_to_exten_rm,(FW d, RR4 adr))
+
+MIDFUNC(2,fp_from_double_mr,(RR4 adr, FR s))
+{
+	adr = readreg(adr);
+	s = f_readreg(s);
+  raw_fp_from_double_mr(adr, s);
+	f_unlock(s);
+	unlock2(adr);
+}
+MENDFUNC(2,fp_from_double_mr,(RR4 adr, FR s))
+
+MIDFUNC(2,fp_to_double_rm,(FW d, RR4 adr))
+{
+	adr = readreg(adr);
+	d = f_writereg(d);
+  raw_fp_to_double_rm(d, adr);
+	unlock2(adr);
+	f_unlock(d);
+}
+MENDFUNC(2,fp_to_double_rm,(FW d, RR4 adr))
+
+MIDFUNC(2,fp_fscc_ri,(RW4 d, int cc))
+{
+	d = rmw(d);
+	raw_fp_fscc_ri(d, cc);
+	unlock2(d);
+}
+MENDFUNC(2,fp_fscc_ri,(RW4 d, int cc))
+
+MIDFUNC(1,roundingmode,(IM32 mode))
+{
+	raw_roundingmode(mode);
+}
+MENDFUNC(1,roundingmode,(IM32 mode))
+
+
+#endif // USE_JIT_FPU
