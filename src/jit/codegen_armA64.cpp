@@ -531,7 +531,7 @@ LOWFUNC(NONE,NONE,2,compemu_raw_endblock_pc_inreg,(RR4 rr_pc, IM32 cycles))
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if(cycles >= 0 && cycles <=0xfff) {
+  if(cycles >= 0 && cycles <= 0xfff) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -563,7 +563,7 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if(cycles >= 0 && cycles <=0xfff) {
+  if(cycles >= 0 && cycles <= 0xfff) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -989,12 +989,13 @@ LOWFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
 	uae_u32* branchadd_notzero = (uae_u32*)get_target();
 	BNE_i(0);				// not_zero
 
-	FCMP_d0(d);			// not zero
+  FMOV_xd(REG_WORK2, d);
+	TST_xx(REG_WORK2, REG_WORK2);
 	uae_u32* branchadd_notzero2 = (uae_u32*)get_target();
   BNE_i(0);             // not zero
 
   // zero
-	FMOV_di(d, 0);
+	MOVI_di(d, 0);
 	uae_u32* branchadd_end = (uae_u32*)get_target();
 	TBZ_xii(REG_WORK1, 15, 0); // end_of_op
 	MOV_xish(REG_WORK1, 0x8000, 48);
@@ -1018,7 +1019,6 @@ LOWFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
   // end_of_op
   write_jmp_target(branchadd_end, (uintptr)get_target());
   write_jmp_target(branchadd_end2, (uintptr)get_target());
-
 }
 LENDFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
 

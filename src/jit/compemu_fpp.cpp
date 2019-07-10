@@ -605,10 +605,6 @@ void comp_fpp_opp (uae_u32 opcode, uae_u16 extra)
 					mov_l_rr ((opcode & 7) + 8, ad);
 			} else {
 				/* FMOVEM memory->FPP */
-#if defined(CPU_AARCH64)
-			  FAIL (1); 
-        return;
-#endif
 				int ad;
 				switch ((extra >> 11) & 3) { /* Get out early if failure */
 					case 0:

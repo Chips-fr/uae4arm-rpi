@@ -111,35 +111,20 @@
 #define LDP_wwXi(Wt1,Wt2,Xn,i)    _W((0b0010100101 << 22) | ((((i)/4) & 0x7f) << 15) | ((Wt2) << 10) | ((Xn) << 5) | (Wt1))
 #define LDP_xxXi(Xt1,Xt2,Xn,i)    _W((0b1010100101 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
 #define LDP_xxXpost(Xt1,Xt2,Xn,i) _W((0b1010100011 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
-#define LDPSW_xxXi(Xt1,Xt2,Xn,i)  _W((0b0110100101 << 22) | ((((i)/4) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
 #define LDR_wXi(Wt,Xn,i)          _W((0b1011100101 << 22) | ((((i)/4) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define LDR_xXi(Xt,Xn,i)          _W((0b1111100101 << 22) | ((((i)/8) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
 #define LDR_xXpost(Xt,Xn,i)       _W((0b11111000010 << 21) | (((i) & 0x1ff) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xt))
 #define LDR_wPCi(Wt,i)            _W((0b00011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Wt))
 #define LDR_xPCi(Xt,i)            _W((0b01011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Xt))
-#define LDRSW_xPCi(Xt,i)          _W((0b10011000 << 24) | ((((i)/4) & 0x7ffff) << 5) | (Xt))
 #define LDR_wXx(Wt,Xn,Xm)         _W((0b10111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define LDR_xXx(Xt,Xn,Xm)         _W((0b11111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
 // i=0 no shift, i=1 LSL 2 (W) or LSL 3 (X)
 #define LDR_wXxLSLi(Wt,Xn,Xm,i)   _W((0b10111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (((i)&1) << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define LDR_xXxLSLi(Xt,Xn,Xm,i)   _W((0b11111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (((i)&1) << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-#define LDR_xXwUXTW(Xt,Xn,Wm)     _W((0b11111000011 << 21) | ((Wm) << 16) | (0b010 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
 #define LDRB_wXi(Wt,Xn,i)         _W((0b0011100101 << 22) | (((i) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define LDRB_wXx(Wt,Xn,Xm)        _W((0b00111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define LDRH_wXi(Wt,Xn,i)         _W((0b0111100101 << 22) | ((((i)/2) &0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define LDRH_wXx(Wt,Xn,Xm)        _W((0b01111000011 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
-#define LDRSB_wXi(Wt,Xn,i)        _W((0b0011100111 << 22) | (((i) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
-#define LDRSB_xXi(Xt,Xn,i)        _W((0b0011100110 << 22) | (((i) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
-#define LDRSB_wXx(Wt,Xn,Xm)       _W((0b00111000111 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
-#define LDRSB_xXx(Xt,Xn,Xm)       _W((0b00111000101 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-#define LDRSH_wXi(Wt,Xn,i)        _W((0b0111100111 << 22) | ((((i)/2) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
-#define LDRSH_xXi(Xt,Xn,i)        _W((0b0111100110 << 22) | ((((i)/2) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
-#define LDRSH_wXx(Wt,Xn,Xm)       _W((0b01111000111 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
-#define LDRSH_xXx(Xt,Xn,Xm)       _W((0b01111000101 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-#define LDRSW_xXi(Xt,Xn,i)        _W((0b1011100110 << 22) | ((((i)/4) & 0xfff) << 10) | ((Xn) << 5) | (Xt))
-#define LDRSW_xXx(Xt,Xn,Xm)       _W((0b10111000101 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-
-#define ADR_xPCi(Xd,i21)          _W((0b0 << 31) | ((i21 & 3) << 29) | (0b10000 << 24) | ((((i21) >> 2) & 0x7ffff) << 5) | (Xd))
 
 #define STP_wwXi(Wt1,Wt2,Xn,i)    _W((0b0010100100 << 22) | ((((i)/4) & 0x7f) << 15) | ((Wt2) << 10) | ((Xn) << 5) | (Wt1))
 #define STP_xxXi(Xt1,Xt2,Xn,i)    _W((0b1010100100 << 22) | ((((i)/8) & 0x7f) << 15) | ((Xt2) << 10) | ((Xn) << 5) | (Xt1))
@@ -149,10 +134,6 @@
 #define STR_xXpre(Xt,Xn,i)        _W((0b11111000000 << 21) | (((i) & 0x1ff) << 12) | (0b11 << 10) | ((Xn) << 5) | (Xt))
 #define STR_wXx(Wt,Xn,Xm)         _W((0b10111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STR_xXx(Xt,Xn,Xm)         _W((0b11111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-// i=0 no shift, i=1 LSL 2 (W) or LSL 3 (X)
-#define STR_wXxLSLi(Wt,Xn,Xm,i)   _W((0b10111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (((i)&1) << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
-#define STR_xXxLSLi(Xt,Xn,Xm,i)   _W((0b11111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (((i)&1) << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
-#define STR_xXwUXTW(Xt,Xn,Wm)     _W((0b11111000001 << 21) | ((Wm) << 16) | (0b010 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
 #define STRB_wXi(Wt,Xn,i)         _W((0b0011100100 << 22) | (((i) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define STRB_wXx(Wt,Xn,Xm)        _W((0b00111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STRH_wXi(Wt,Xn,i)         _W((0b0111100100 << 22) | ((((i)/2) &0xfff) << 10) | ((Xn) << 5) | (Wt))
@@ -179,14 +160,6 @@
 #define MOVN_xish(Xd,i16,sh)      _W((0b100100101 << 23) | (((sh)/16) << 21) | (((i16) & 0xffff) << 5) | (Xd))
 #define MVN_ww(Wd,Wm)             _W((0b00101010001 << 21) | ((Wm) << 16) | (0 << 10) | (0b11111 << 5) | (Wd))
 #define MVN_xx(Xd,Xm)             _W((0b10101010001 << 21) | ((Xm) << 16) | (0 << 10) | (0b11111 << 5) | (Xd))
-#define MVN_wwLSLi(Wd,Wm,i)       _W((0b00101010001 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define MVN_xxLSLi(Xd,Xm,i)       _W((0b10101010001 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define MVN_wwLSRi(Wd,Wm,i)       _W((0b00101010011 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define MVN_xxLSRi(Xd,Xm,i)       _W((0b10101010011 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define MVN_wwASRi(Wd,Wm,i)       _W((0b00101010101 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define MVN_xxASRi(Xd,Xm,i)       _W((0b10101010101 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define MVN_wwRORi(Wd,Wm,i)       _W((0b00101010111 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define MVN_xxRORi(Xd,Xm,i)       _W((0b10101010111 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
 
 
 /*----------------------------------------
@@ -201,64 +174,24 @@
 #define ADD_xxwEX(Xd,Xn,Wm,ex)    _W((0b10001011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (Xd))
 #define ADD_wwi(Wd,Wn,i12)        _W((0b0001000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
 #define ADD_xxi(Xd,Xn,i12)        _W((0b1001000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
-// sh: 0 - no shift, 1 - LSL 12
-#define ADD_wwish(Wd,Wn,i12,sh)   _W((0b000100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
-#define ADD_xxish(Xd,Xn,i12,sh)   _W((0b100100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 #define ADD_www(Wd,Wn,Wm)         _W((0b00001011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define ADD_xxx(Xd,Xn,Xm)         _W((0b10001011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define ADD_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00001011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define ADD_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00001011000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define ADD_xxxLSLi(Xd,Xn,Xm,i)   _W((0b10001011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ADD_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00001011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ADD_xxxLSRi(Xd,Xn,Xm,i)   _W((0b10001011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ADD_wwwASRi(Wd,Wn,Wm,i)   _W((0b00001011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ADD_xxxASRi(Xd,Xn,Xm,i)   _W((0b10001011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ADDS_wwwEX(Wd,Wn,Wm,ex)   _W((0b00101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define ADDS_xxwEX(Xd,Xn,Wm,ex)   _W((0b10101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (Xd))
 #define ADDS_wwi(Wd,Wn,i12)       _W((0b0011000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
 #define ADDS_xxi(Xd,Xn,i12)       _W((0b1011000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
-// sh: 0 - no shift, 1 - LSL 12
-#define ADDS_wwish(Wd,Wn,i12,sh)  _W((0b001100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
-#define ADDS_xxish(Xd,Xn,i12,sh)  _W((0b101100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 #define ADDS_www(Wd,Wn,Wm)        _W((0b00101011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define ADDS_xxx(Xd,Xn,Xm)        _W((0b10101011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define ADDS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b00101011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define ADDS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b00101011000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define ADDS_xxxLSLi(Xd,Xn,Xm,i)  _W((0b10101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ADDS_wwwLSRi(Wd,Wn,Wm,i)  _W((0b00101011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ADDS_xxxLSRi(Xd,Xn,Xm,i)  _W((0b10101011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ADDS_wwwASRi(Wd,Wn,Wm,i)  _W((0b00101011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ADDS_xxxASRi(Xd,Xn,Xm,i)  _W((0b10101011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* compare */
-#define CMN_wwEX(Wn,Wm,ex)        _W((0b00101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xwEX(Xn,Wm,ex)        _W((0b10101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (0b11111))
-#define CMN_wi(Wn,i12)            _W((0b0011000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xi(Xn,i12)            _W((0b1011000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (0b11111))
-// sh: 0 - no shift, 1 - LSL 12
-#define CMN_wish(Wn,i12,sh)       _W((0b001100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xish(Xn,i12,sh)       _W((0b101100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (0b11111))
-#define CMN_ww(Wn,Wm)             _W((0b00101011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xx(Xn,Xm)             _W((0b10101011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (0b11111))
-#define CMN_wwLSLi(Wn,Wm,i)       _W((0b00101011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xxLSLi(Xn,Xm,i)       _W((0b10101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define CMN_wwLSRi(Wn,Wm,i)       _W((0b00101011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xxLSRi(Xn,Xm,i)       _W((0b10101011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define CMN_wwASRi(Wn,Wm,i)       _W((0b00101011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define CMN_xxASRi(Xn,Xm,i)       _W((0b10101011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define CMP_wwEX(Wn,Wm,ex)        _W((0b01101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (0b11111))
-#define CMP_xwEX(Xn,Wm,ex)        _W((0b11101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (0b11111))
 #define CMP_wi(Wn,i12)            _W((0b0111000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (0b11111))
 #define CMP_xi(Xn,i12)            _W((0b1111000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (0b11111))
-// sh: 0 - no shift, 1 - LSL 12
-#define CMP_wish(Wn,i12,sh)       _W((0b011100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (0b11111))
-#define CMP_xish(Xn,i12,sh)       _W((0b111100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (0b11111))
 #define CMP_ww(Wn,Wm)             _W((0b01101011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (0b11111))
 #define CMP_xx(Xn,Xm)             _W((0b11101011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (0b11111))
-#define CMP_wwLSLi(Wn,Wm,i)       _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
+#define CMP_wwLSLi(Wn,Wm,i)       _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (0b11111))
 #define CMP_xxLSLi(Xn,Xm,i)       _W((0b11101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define CMP_wwLSRi(Wn,Wm,i)       _W((0b01101011010 << 21) | ((Wm) << 16) | (((i) & 0x3d) << 10) | ((Wn) << 5) | (0b11111))
-#define CMP_xxLSRi(Xn,Xm,i)       _W((0b11101011010 << 21) | ((Xm) << 16) | (((i) & 0x3d) << 10) | ((Xn) << 5) | (0b11111))
-#define CMP_wwASRi(Wn,Wm,i)       _W((0b01101011100 << 21) | ((Wm) << 16) | (((i) & 0x3d) << 10) | ((Wn) << 5) | (0b11111))
-#define CMP_xxASRi(Xn,Xm,i)       _W((0b11101011100 << 21) | ((Xm) << 16) | (((i) & 0x3d) << 10) | ((Xn) << 5) | (0b11111))
 
 /* MUL */
 #define MUL_www(Wd,Wn,Wm)         _W((0b00011011000 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Wd))
@@ -270,19 +203,10 @@
 #define SMULL_xww(Xd,Wn,Wm)       _W((0b10011011001 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Xd))
 #define UMULL_xww(Xd,Wn,Wm)       _W((0b10011011101 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Xd))
 
-/* multiply add */
-// Wd = Wa + (Wn * Wm)
-#define MADD_wwww(Wd,Wn,Wm,Wa)    _W((0b00011011000 << 21) | ((Wm) << 16) | (0 << 15) | ((Wa) << 10) | ((Wn) << 5) | (Wd))
-#define MADD_xxxx(Xd,Xn,Xm,Xa)    _W((0b10011011000 << 21) | ((Xm) << 16) | (0 << 15) | ((Xa) << 10) | ((Xn) << 5) | (Xd))
-#define SMADDL_xwwx(Xd,Wn,Wm,Xa)  _W((0b10011011001 << 21) | ((Wm) << 16) | (0 << 15) | ((Xa) << 10) | ((Wn) << 5) | (Xd))
-#define UMADDL_xwwx(Xd,Wn,Wm,Xa)  _W((0b10011011101 << 21) | ((Wm) << 16) | (0 << 15) | ((Xa) << 10) | ((Wn) << 5) | (Xd))
-
 /* multiply sub */
 // Wd = Wa - (Wn * Wm)
 #define MSUB_wwww(Wd,Wn,Wm,Wa)    _W((0b00011011000 << 21) | ((Wm) << 16) | (1 << 15) | ((Wa) << 10) | ((Wn) << 5) | (Wd))
 #define MSUB_xxxx(Xd,Xn,Xm,Xa)    _W((0b10011011000 << 21) | ((Xm) << 16) | (1 << 15) | ((Xa) << 10) | ((Xn) << 5) | (Xd))
-#define SMSUBL_xwwx(Xd,Wn,Wm,Xa)  _W((0b10011011001 << 21) | ((Wm) << 16) | (1 << 15) | ((Xa) << 10) | ((Wn) << 5) | (Xd))
-#define UMSUBL_xwwx(Xd,Wn,Wm,Xa)  _W((0b10011011101 << 21) | ((Wm) << 16) | (1 << 15) | ((Xa) << 10) | ((Wn) << 5) | (Xd))
 
 /* DIV */
 // Wd = Wn / Wm
@@ -294,20 +218,8 @@
 /* NEG */
 #define NEG_ww(Wd,Wm)             _W((0b01001011000 << 21) | ((Wm) << 16) | (0 << 10) | (0b11111 << 5) | (Wd))
 #define NEG_xx(Xd,Xm)             _W((0b11001011000 << 21) | ((Xm) << 16) | (0 << 10) | (0b11111 << 5) | (Xd))
-#define NEG_wwLSLi(Wd,Wm,i)       _W((0b01001011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEG_xxLSLi(Xd,Xm,i)       _W((0b11001011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define NEG_wwLSRi(Wd,Wm,i)       _W((0b01001011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEG_xxLSRi(Xd,Xm,i)       _W((0b11001011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define NEG_wwASRi(Wd,Wm,i)       _W((0b01001011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEG_xxASRi(Xd,Xm,i)       _W((0b11001011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
 #define NEGS_ww(Wd,Wm)            _W((0b01101011000 << 21) | ((Wm) << 16) | (0 << 10) | (0b11111 << 5) | (Wd))
 #define NEGS_xx(Xd,Xm)            _W((0b11101011000 << 21) | ((Xm) << 16) | (0 << 10) | (0b11111 << 5) | (Xd))
-#define NEGS_wwLSLi(Wd,Wm,i)      _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEGS_xxLSLi(Xd,Xm,i)      _W((0b11101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define NEGS_wwLSRi(Wd,Wm,i)      _W((0b01101011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEGS_xxLSRi(Xd,Xm,i)      _W((0b11101011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
-#define NEGS_wwASRi(Wd,Wm,i)      _W((0b01101011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Wd))
-#define NEGS_xxASRi(Xd,Xm,i)      _W((0b11101011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | (0b11111 << 5) | (Xd))
 #define NGC_ww(Wd,Wm)             _W((0b01011010000 << 21) | ((Wm) << 16) | (0 << 10) | (0b11111 << 5) | (Wd))
 #define NGC_xx(Xd,Xm)             _W((0b11011010000 << 21) | ((Xm) << 16) | (0 << 10) | (0b11111 << 5) | (Xd))
 #define NGCS_ww(Wd,Wm)            _W((0b01111010000 << 21) | ((Wm) << 16) | (0 << 10) | (0b11111 << 5) | (Wd))
@@ -319,23 +231,10 @@
 #define SBC_xxx(Xd,Xn,Xm)         _W((0b11011010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
 #define SBCS_www(Wd,Wn,Wm)        _W((0b01111010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define SBCS_xxx(Xd,Xn,Xm)        _W((0b11111010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define SUB_wwwEX(Wd,Wn,Wm,ex)    _W((0b01001011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define SUB_xxwEX(Xd,Xn,Wm,ex)    _W((0b11001011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (Xd))
 #define SUB_wwi(Wd,Wn,i12)        _W((0b0101000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
 #define SUB_xxi(Xd,Xn,i12)        _W((0b1101000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
-// sh: 0 - no shift, 1 - LSL 12
-#define SUB_wwish(Wd,Wn,i12,sh)   _W((0b010100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
-#define SUB_xxish(Xd,Xn,i12,sh)   _W((0b110100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 #define SUB_www(Wd,Wn,Wm)         _W((0b01001011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define SUB_xxx(Xd,Xn,Xm)         _W((0b11001011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define SUB_wwwLSLi(Wd,Wn,Wm,i)   _W((0b01001011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define SUB_xxxLSLi(Xd,Xn,Xm,i)   _W((0b11001011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define SUB_wwwLSRi(Wd,Wn,Wm,i)   _W((0b01001011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define SUB_xxxLSRi(Xd,Xn,Xm,i)   _W((0b11001011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define SUB_wwwASRi(Wd,Wn,Wm,i)   _W((0b01001011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define SUB_xxxASRi(Xd,Xn,Xm,i)   _W((0b11001011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define SUBS_wwwEX(Wd,Wn,Wm,ex)   _W((0b01101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define SUBS_xxwEX(Xd,Xn,Wm,ex)   _W((0b11101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Xn) << 5) | (Xd))
 #define SUBS_wwi(Wd,Wn,i12)       _W((0b0111000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
 #define SUBS_xxi(Xd,Xn,i12)       _W((0b1111000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 // sh: 0 - no shift, 1 - LSL 12
@@ -343,12 +242,8 @@
 #define SUBS_xxish(Xd,Xn,i12,sh)  _W((0b111100010 << 23) | (((sh) & 1) << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 #define SUBS_www(Wd,Wn,Wm)        _W((0b01101011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define SUBS_xxx(Xd,Xn,Xm)        _W((0b11101011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define SUBS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define SUBS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define SUBS_xxxLSLi(Xd,Xn,Xm,i)  _W((0b11101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define SUBS_wwwLSRi(Wd,Wn,Wm,i)  _W((0b01101011010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define SUBS_xxxLSRi(Xd,Xn,Xm,i)  _W((0b11101011010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define SUBS_wwwASRi(Wd,Wn,Wm,i)  _W((0b01101011100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define SUBS_xxxASRi(Xd,Xn,Xm,i)  _W((0b11101011100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* signed extend */
 #define SBFM_wwii(Wd,Wn,immr,imms)  _W((0b0001001100 << 22) | ((immr) << 16) | ((imms) << 10) | ((Wn) << 5) | (Wd))
@@ -374,80 +269,26 @@
 /* AND */
 #define AND_www(Wd,Wn,Wm)         _W((0b00001010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define AND_xxx(Xd,Xn,Xm)         _W((0b10001010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define AND_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00001010000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define AND_xxxLSLi(Xd,Xn,Xm,i)   _W((0b10001010000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define AND_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00001010010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define AND_xxxLSRi(Xd,Xn,Xm,i)   _W((0b10001010010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define AND_wwwASRi(Wd,Wn,Wm,i)   _W((0b00001010100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define AND_xxxASRi(Xd,Xn,Xm,i)   _W((0b10001010100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define AND_wwwRORi(Wd,Wn,Wm,i)   _W((0b00001010110 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define AND_xxxRORi(Xd,Xn,Xm,i)   _W((0b10001010110 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 #define ANDS_www(Wd,Wn,Wm)        _W((0b01101010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define ANDS_xxx(Xd,Xn,Xm)        _W((0b11101010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define ANDS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b01101010000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ANDS_xxxLSLi(Xd,Xn,Xm,i)  _W((0b11101010000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ANDS_wwwLSRi(Wd,Wn,Wm,i)  _W((0b01101010010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ANDS_xxxLSRi(Xd,Xn,Xm,i)  _W((0b11101010010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ANDS_wwwASRi(Wd,Wn,Wm,i)  _W((0b01101010100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ANDS_xxxASRi(Xd,Xn,Xm,i)  _W((0b11101010100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ANDS_wwwRORi(Wd,Wn,Wm,i)  _W((0b01101010110 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ANDS_xxxRORi(Xd,Xn,Xm,i)  _W((0b11101010110 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* EOR */
-#define EON_www(Wd,Wn,Wm)         _W((0b01001010001 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define EON_xxx(Xd,Xn,Xm)         _W((0b11001010001 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define EON_wwwLSLi(Wd,Wn,Wm,i)   _W((0b01001010001 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EON_xxxLSLi(Xd,Xn,Xm,i)   _W((0b11001010001 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EON_wwwLSRi(Wd,Wn,Wm,i)   _W((0b01001010011 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EON_xxxLSRi(Xd,Xn,Xm,i)   _W((0b11001010011 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EON_wwwASRi(Wd,Wn,Wm,i)   _W((0b01001010101 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EON_xxxASRi(Xd,Xn,Xm,i)   _W((0b11001010101 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EON_wwwRORi(Wd,Wn,Wm,i)   _W((0b01001010111 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EON_xxxRORi(Xd,Xn,Xm,i)   _W((0b11001010111 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 #define EOR_www(Wd,Wn,Wm)         _W((0b01001010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define EOR_xxx(Xd,Xn,Xm)         _W((0b11001010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define EOR_wwwLSLi(Wd,Wn,Wm,i)   _W((0b01001010000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define EOR_wwwLSLi(Wd,Wn,Wm,i)   _W((0b01001010000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define EOR_xxxLSLi(Xd,Xn,Xm,i)   _W((0b11001010000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EOR_wwwLSRi(Wd,Wn,Wm,i)   _W((0b01001010010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EOR_xxxLSRi(Xd,Xn,Xm,i)   _W((0b11001010010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EOR_wwwASRi(Wd,Wn,Wm,i)   _W((0b01001010100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EOR_xxxASRi(Xd,Xn,Xm,i)   _W((0b11001010100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define EOR_wwwRORi(Wd,Wn,Wm,i)   _W((0b01001010110 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define EOR_xxxRORi(Xd,Xn,Xm,i)   _W((0b11001010110 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* ORR */
-#define ORN_www(Wd,Wn,Wm)         _W((0b00101010001 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define ORN_xxx(Xd,Xn,Xm)         _W((0b10101010001 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define ORN_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00101010001 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORN_xxxLSLi(Xd,Xn,Xm,i)   _W((0b10101010001 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORN_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00101010011 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORN_xxxLSRi(Xd,Xn,Xm,i)   _W((0b10101010011 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORN_wwwASRi(Wd,Wn,Wm,i)   _W((0b00101010101 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORN_xxxASRi(Xd,Xn,Xm,i)   _W((0b10101010101 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORN_wwwRORi(Wd,Wn,Wm,i)   _W((0b00101010111 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORN_xxxRORi(Xd,Xn,Xm,i)   _W((0b10101010111 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 #define ORR_www(Wd,Wn,Wm)         _W((0b00101010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define ORR_xxx(Xd,Xn,Xm)         _W((0b10101010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define ORR_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00101010000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define ORR_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00101010000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define ORR_xxxLSLi(Xd,Xn,Xm,i)   _W((0b10101010000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORR_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00101010010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
+#define ORR_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00101010010 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define ORR_xxxLSRi(Xd,Xn,Xm,i)   _W((0b10101010010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORR_wwwASRi(Wd,Wn,Wm,i)   _W((0b00101010100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORR_xxxASRi(Xd,Xn,Xm,i)   _W((0b10101010100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define ORR_wwwRORi(Wd,Wn,Wm,i)   _W((0b00101010110 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define ORR_xxxRORi(Xd,Xn,Xm,i)   _W((0b10101010110 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* TST */
 #define TST_ww(Wn,Wm)             _W((0b01101010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (0b11111))
 #define TST_xx(Xn,Xm)             _W((0b11101010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (0b11111))
-#define TST_wwLSLi(Wn,Wm,i)       _W((0b01101010000 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define TST_xxLSLi(Xn,Xm,i)       _W((0b11101010000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define TST_wwLSRi(Wn,Wm,i)       _W((0b01101010010 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define TST_xxLSRi(Xn,Xm,i)       _W((0b11101010010 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define TST_wwASRi(Wn,Wm,i)       _W((0b01101010100 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define TST_xxASRi(Xn,Xm,i)       _W((0b11101010100 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
-#define TST_wwRORi(Wn,Wm,i)       _W((0b01101010110 << 21) | ((Wm) << 16) | (((i) & 0x3f) << 10) | ((Wn) << 5) | (0b11111))
-#define TST_xxRORi(Xn,Xm,i)       _W((0b11101010110 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
 
 
 /*----------------------------------------
@@ -481,10 +322,6 @@
 #define EXTR_xxxi(Xd,Xn,Xm,lsb)   _W((0b10010011110 << 21) | ((Xm) << 16) | (((lsb) & 0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* bitfield */
-// BFC requires ARMv8.2
-//#define BFC_wii(Wd,lsb,width)     _W((0b0011001100 << 22) | (((32-lsb)&0x1f) << 16) | (((width-1)&0x1f) << 10) | (0b11111 << 5) | (Wd))
-//#define BFC_xii(Xd,lsb,width)     _W((0b1011001101 << 22) | (((64-lsb)&0x3f) << 16) | (((width-1)&0x3f) << 10) | (0b11111 << 5) | (Xd))
-
 // dst[lsb+width-1...lsb] = src[width-1...0]
 #define BFI_wwii(Wd,Wn,lsb,width)     _W((0b0011001100 << 22) | (((32-(lsb))&0x1f) << 16) | ((((width)-1)&0x1f) << 10) | ((Wn) << 5) | (Wd))
 #define BFI_xxii(Xd,Xn,lsb,width)     _W((0b1011001101 << 22) | (((64-(lsb))&0x3f) << 16) | ((((width)-1)&0x3f) << 10) | ((Xn) << 5) | (Xd))
@@ -503,62 +340,24 @@
 
 #define BIC_www(Wd,Wn,Wm)         _W((0b00001010001 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define BIC_xxx(Xd,Xn,Xm)         _W((0b10001010001 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define BIC_wwwLSLi(Wd,Wn,Wm,i)   _W((0b00001010001 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BIC_xxxLSLi(Xd,Xn,Xm,i)   _W((0b10001010001 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BIC_wwwLSRi(Wd,Wn,Wm,i)   _W((0b00001010011 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BIC_xxxLSRi(Xd,Xn,Xm,i)   _W((0b10001010011 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BIC_wwwASRi(Wd,Wn,Wm,i)   _W((0b00001010101 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BIC_xxxASRi(Xd,Xn,Xm,i)   _W((0b10001010101 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BIC_wwwRORi(Wd,Wn,Wm,i)   _W((0b00001010111 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BIC_xxxRORi(Xd,Xn,Xm,i)   _W((0b10001010111 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BICS_www(Wd,Wn,Wm)        _W((0b01101010001 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
-#define BICS_xxx(Xd,Xn,Xm)        _W((0b11101010001 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
-#define BICS_wwwLSLi(Wd,Wn,Wm,i)  _W((0b01101010001 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BICS_xxxLSLi(Xd,Xn,Xm,i)  _W((0b11101010001 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BICS_wwwLSRi(Wd,Wn,Wm,i)  _W((0b01101010011 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BICS_xxxLSRi(Xd,Xn,Xm,i)  _W((0b11101010011 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BICS_wwwASRi(Wd,Wn,Wm,i)  _W((0b01101010101 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BICS_xxxASRi(Xd,Xn,Xm,i)  _W((0b11101010101 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
-#define BICS_wwwRORi(Wd,Wn,Wm,i)  _W((0b01101010111 << 21) | ((Wm) << 16) | ((((i)&0x3f) << 10) | ((Wn) << 5) | (Wd))
-#define BICS_xxxRORi(Xd,Xn,Xm,i)  _W((0b11101010111 << 21) | ((Xm) << 16) | ((((i)&0x3f) << 10) | ((Xn) << 5) | (Xd))
 
 /* reverse */
-#define RBIT_ww(Wd,Wn)            _W((0b01011010110 << 21) | (0b00000 << 16) | (0b000000 << 10) | ((Wn) << 5) | (Wd))
-#define RBIT_xx(Xd,Xn)            _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000000 << 10) | ((Xn) << 5) | (Xd))
 #define REV_ww(Wd,Wn)             _W((0b01011010110 << 21) | (0b00000 << 16) | (0b000010 << 10) | ((Wn) << 5) | (Wd))
 #define REV_xx(Xd,Xn)             _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000011 << 10) | ((Xn) << 5) | (Xd))
 #define REV16_ww(Wd,Wn)           _W((0b01011010110 << 21) | (0b00000 << 16) | (0b000001 << 10) | ((Wn) << 5) | (Wd))
 #define REV16_xx(Xd,Xn)           _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000001 << 10) | ((Xn) << 5) | (Xd))
 #define REV32_xx(Xd,Xn)           _W((0b11011010110 << 21) | (0b00000 << 16) | (0b000010 << 10) | ((Xn) << 5) | (Xd))
 
-#define CLS_ww(Wd,Wn)         _W((0b01011010110 << 21) | (0b00000000101 << 10) | ((Wn) << 5) | (Wd))
-#define CLZ_ww(Wd,Wn)         _W((0b01011010110 << 21) | (0b00000000100 << 10) | ((Wn) << 5) | (Wd))
+#define CLS_ww(Wd,Wn)             _W((0b01011010110 << 21) | (0b00000000101 << 10) | ((Wn) << 5) | (Wd))
+#define CLZ_ww(Wd,Wn)             _W((0b01011010110 << 21) | (0b00000000100 << 10) | ((Wn) << 5) | (Wd))
 
 
 /*----------------------------------------
  * conditional ops
  *----------------------------------------*/
 /* conditional compare */
-#define CCMN_wifc(Wn,i5,nzcv,cond)  _W((0b00111010010 << 21) | (((i5) & 0x1f) << 16) | ((cond) << 12) | (0b10 << 10) | ((Wn) << 5) | (nzcv))
-#define CCMN_xifc(Xn,i5,nzcv,cond)  _W((0b10111010010 << 21) | (((i5) & 0x1f) << 16) | ((cond) << 12) | (0b10 << 10) | ((Xn) << 5) | (nzcv))
-#define CCMN_wwfc(Wn,Wm,nzcv,cond)  _W((0b00111010010 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (nzcv))
-#define CCMN_xxfc(Xn,Xm,nzcv,cond)  _W((0b10111010010 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (nzcv))
-#define CCMP_wifc(Wn,i5,nzcv,cond)  _W((0b01111010010 << 21) | (((i5) & 0x1f) << 16) | ((cond) << 12) | (0b10 << 10) | ((Wn) << 5) | (nzcv))
-#define CCMP_xifc(Xn,i5,nzcv,cond)  _W((0b11111010010 << 21) | (((i5) & 0x1f) << 16) | ((cond) << 12) | (0b10 << 10) | ((Xn) << 5) | (nzcv))
 #define CCMP_wwfc(Wn,Wm,nzcv,cond)  _W((0b01111010010 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (nzcv))
 #define CCMP_xxfc(Xn,Xm,nzcv,cond)  _W((0b11111010010 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (nzcv))
-
-/* conditionl increment */
-#define CINC_wwc(Wd,Wn,cond)      _W((0b00011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CINC_xxc(Xd,Xn,cond)      _W((0b10011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
-
-/* conditional invert */
-#define CINV_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
-#define CINV_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b00 << 10) | ((Xn) << 5) | (Xd))
-
-/* conditional negate */
-#define CNEG_wwc(Wd,Wn,cond)      _W((0b01011010100 << 21) | ((Wn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CNEG_xxc(Xd,Xn,cond)      _W((0b11011010100 << 21) | ((Xn) << 16) | ((cond^1) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
 
 /* conditional select */
 #define CSEL_wwwc(Wd,Wn,Wm,cond)  _W((0b00011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
@@ -571,18 +370,6 @@
 /* conditional set mask */
 #define CSETM_wc(Wd,cond)         _W((0b01011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b00 << 10) | (0b11111 << 5) | (Wd))
 #define CSETM_xc(Xd,cond)         _W((0b11011010100 << 21) | (0b11111 << 16) | ((cond^1) << 12) | (0b00 << 10) | (0b11111 << 5) | (Xd))
-
-/* conditional select inc */
-#define CSINC_wwwc(Wd,Wn,Wm,cond) _W((0b00011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CSINC_xxxc(Xd,Xn,Xm,cond) _W((0b10011010100 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
-
-/* coditional select invert */
-#define CSINV_wwwc(Wd,Wn,Wm,cond) _W((0b01011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Wn) << 5) | (Wd))
-#define CSINV_xxxc(Xd,Xn,Xm,cond) _W((0b11011010100 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b00 << 10) | ((Xn) << 5) | (Xd))
-
-/* conditional select neg */
-#define CSNEG_wwwc(Wd,Wn,Wm,cond) _W((0b01011010100 << 21) | ((Wm) << 16) | ((cond) << 12) | (0b01 << 10) | ((Wn) << 5) | (Wd))
-#define CSNEG_xxxc(Xd,Xn,Xm,cond) _W((0b11011010100 << 21) | ((Xm) << 16) | ((cond) << 12) | (0b01 << 10) | ((Xn) << 5) | (Xd))
 
 
 /*----------------------------------------
@@ -653,11 +440,7 @@
 #define FRINTI_dd(Dd,Dn)      _W((0b00011110011 << 21) | (0b00111110000 << 10) | ((Dn) << 5) | (Dd))
 #define FCVTAS_wd(Wd,Dn)      _W((0b00011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Wd))
 #define FCVTAS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Xd))
-#define FCVTAS_ws(Wd,Sn)      _W((0b00011110001 << 21) | (0b00100000000 << 10) | ((Sn) << 5) | (Wd))
-#define FCVTZS_wd(Wd,Dn)      _W((0b00011110011 << 21) | (0b11000000000 << 10) | ((Dn) << 5) | (Wd))
-#define FCVTZS_ws(Wd,Sn)      _W((0b00011110001 << 21) | (0b11000000000 << 10) | ((Sn) << 5) | (Wd))
 #define FCVTZS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b11000000000 << 10) | ((Dn) << 5) | (Xd))
-#define FCVTMS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b10000000000 << 10) | ((Dn) << 5) | (Xd))
 #define SCVTF_dw(Dd,Wn)       _W((0b00011110011 << 21) | (0b00010000000 << 10) | ((Wn) << 5) | (Dd))
 #define SCVTF_sw(Sd,Wn)       _W((0b00011110001 << 21) | (0b00010000000 << 10) | ((Wn) << 5) | (Sd))
 #define SCVTF_dx(Dd,Xn)       _W((0b10011110011 << 21) | (0b00010000000 << 10) | ((Xn) << 5) | (Dd))

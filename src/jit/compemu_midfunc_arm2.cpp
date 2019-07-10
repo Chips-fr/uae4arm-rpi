@@ -3263,7 +3263,11 @@ MIDFUNC(2,jff_LSL_b_imm,(RW1 d, IM8 i))
 	MSR_CPSRf_i(0);
 
 	if (i) {
-		LSLS_rri(REG_WORK3, d, i + 24);
+	  if(i == 8) {
+	    LSL_rri(REG_WORK3, d, i);
+	    LSLS_rri(REG_WORK3, REG_WORK3, 24);
+    } else
+  		LSLS_rri(REG_WORK3, d, i + 24);
 		DUPLICACTE_CARRY
 	  BIC_rri(d, d, 0xff);
 	  ORR_rrrLSRi(d, d, REG_WORK3, 24);

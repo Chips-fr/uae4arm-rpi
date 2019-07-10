@@ -293,7 +293,7 @@ MIDFUNC(2,jff_ADD_l_imm,(RW4 d, IM32 v))
 {
 	d = rmw(d);
 
-  if(v >= 0 && v <=0xfff) {
+  if(v >= 0 && v <= 0xfff) {
     ADDS_wwi(d, d, v);
   } else {
     LOAD_U32(REG_WORK2, v);
@@ -3105,7 +3105,10 @@ MIDFUNC(2,jff_LSL_b_imm,(RW1 d, IM8 i))
 		d = readreg(d);
 
 	if (i) {
-		LSL_wwi(REG_WORK3, d, i + 24);
+    if(i == 8)
+      MOV_wi(REG_WORK3, 0);
+    else
+  		LSL_wwi(REG_WORK3, d, i + 24);
 		TST_ww(REG_WORK3, REG_WORK3);
 		
     TBZ_wii(d, (8 - i), 4);

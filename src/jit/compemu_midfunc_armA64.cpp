@@ -486,7 +486,7 @@ MIDFUNC(2,arm_ADD_l_ri,(RW4 d, IM32 i))
 
   if(i >= 0 && i <= 0xfff) {
 		ADD_xxi(d, d, i);
-	} else {
+  } else {
 	  LOAD_U32(REG_WORK1, i);
     SXTW_xw(REG_WORK1, REG_WORK1);
 		ADD_xxx(d, d, REG_WORK1);
@@ -557,8 +557,14 @@ STATIC_INLINE void write_jmp_target(uae_u32* jmpaddr, uintptr a)
     /* branch always */
     off = off & 0x3ffffff;
     *(jmpaddr) = (*(jmpaddr) & 0xfc000000) | off;
+  } else if((*(jmpaddr) & 0x7e000000) == 0x36000000) {
+    /* TBZ/TBNZ */
+    if((a > (uintptr)jmpaddr && off > 0x1fff) || (a < (uintptr)jmpaddr && (~off) > 0x1fff))
+      write_log("JIT: TBZ/TBNZ branch to target too long.\n");
+    off = off & 0x3fff;
+    *(jmpaddr) = (*(jmpaddr) & 0xfffc001f) | (off << 5);
   } else {
-      /* conditional branch */
+    /* conditional branch */
     if((a > (uintptr)jmpaddr && off > 0x3ffff) || (a < (uintptr)jmpaddr && (~off) > 0x3ffff))
       write_log("JIT: Branch to target too long.\n");
     off = off & 0x7ffff;
