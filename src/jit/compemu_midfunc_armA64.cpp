@@ -263,6 +263,8 @@ MIDFUNC(3,lea_l_brr,(W4 d, RR4 s, IM32 offset))
 	
   if(offset >= 0 && offset <= 0xfff) {
     ADD_wwi(d, s, offset);
+  } else if(offset >= -0xfff && offset < 0) {
+    SUB_wwi(d, s, -offset);
   } else {
     LOAD_U32(REG_WORK1, offset);
   	ADD_www(d, s, REG_WORK1);
@@ -292,10 +294,12 @@ MIDFUNC(5,lea_l_brr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor, IM8 offset))
   	default: abort();
 	}
 
-  SIGNED8_IMM_2_REG(REG_WORK1, offset);
-  ADD_www(REG_WORK1, s, REG_WORK1);
-  LSL_wwi(REG_WORK2, index, shft);
-	ADD_www(d, REG_WORK1, REG_WORK2);
+  if(offset >= 0 && offset <= 127) {
+    ADD_wwi(REG_WORK1, s, offset);
+  } else {
+    SUB_wwi(REG_WORK1, s, -offset);
+  }
+  ADD_wwwLSLi(d, REG_WORK1, index, shft);
 
 	unlock2(d);
 	unlock2(index);
@@ -557,8 +561,8 @@ STATIC_INLINE void write_jmp_target(uae_u32* jmpaddr, uintptr a)
     /* branch always */
     off = off & 0x3ffffff;
     *(jmpaddr) = (*(jmpaddr) & 0xfc000000) | off;
-  } else if((*(jmpaddr) & 0x7e000000) == 0x36000000) {
-    /* TBZ/TBNZ */
+  } else if((*(jmpaddr) & 0x7c000000) == 0x34000000) {
+    /* TBZ/TBNZ/CBZ/CBNZ */
     if((a > (uintptr)jmpaddr && off > 0x1fff) || (a < (uintptr)jmpaddr && (~off) > 0x1fff))
       write_log("JIT: TBZ/TBNZ branch to target too long.\n");
     off = off & 0x3fff;

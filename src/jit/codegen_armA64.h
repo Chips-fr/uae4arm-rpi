@@ -52,6 +52,8 @@
 #define EX_SXTW   0b110
 #define EX_SXTX   0b111
 
+#define immEncode(N,immr,imms)    (N << 22) | (immr << 16) | (imms << 10)
+
 
 /* read/write flags */
 // move from sysreg
@@ -134,6 +136,8 @@
 #define STR_xXpre(Xt,Xn,i)        _W((0b11111000000 << 21) | (((i) & 0x1ff) << 12) | (0b11 << 10) | ((Xn) << 5) | (Xt))
 #define STR_wXx(Wt,Xn,Xm)         _W((0b10111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STR_xXx(Xt,Xn,Xm)         _W((0b11111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Xt))
+// i=0 no shift, i=1 LSL 2 (W) or LSL 3 (X)
+#define STR_wXxLSLi(Wt,Xn,Xm,i)   _W((0b10111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (((i)&1) << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STRB_wXi(Wt,Xn,i)         _W((0b0011100100 << 22) | (((i) & 0xfff) << 10) | ((Xn) << 5) | (Wt))
 #define STRB_wXx(Wt,Xn,Xm)        _W((0b00111000001 << 21) | ((Xm) << 16) | (0b011 << 13) | (0 << 12) | (0b10 << 10) | ((Xn) << 5) | (Wt))
 #define STRH_wXi(Wt,Xn,i)         _W((0b0111100100 << 22) | ((((i)/2) &0xfff) << 10) | ((Xn) << 5) | (Wt))
@@ -192,6 +196,7 @@
 #define CMP_xx(Xn,Xm)             _W((0b11101011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (0b11111))
 #define CMP_wwLSLi(Wn,Wm,i)       _W((0b01101011000 << 21) | ((Wm) << 16) | (((i) & 0x1f) << 10) | ((Wn) << 5) | (0b11111))
 #define CMP_xxLSLi(Xn,Xm,i)       _W((0b11101011000 << 21) | ((Xm) << 16) | (((i) & 0x3f) << 10) | ((Xn) << 5) | (0b11111))
+#define CMP_wwEX(Wn,Wm,ex)        _W((0b01101011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (0b11111))
 
 /* MUL */
 #define MUL_www(Wd,Wn,Wm)         _W((0b00011011000 << 21) | ((Wm) << 16) | (0b011111 << 10) | ((Wn) << 5) | (Wd))
@@ -235,6 +240,7 @@
 #define SUB_xxi(Xd,Xn,i12)        _W((0b1101000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 #define SUB_www(Wd,Wn,Wm)         _W((0b01001011000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define SUB_xxx(Xd,Xn,Xm)         _W((0b11001011000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
+#define SUB_wwwEX(Wd,Wn,Wm,ex)    _W((0b11001011001 << 21) | ((Wm) << 16) | ((ex) << 13) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define SUBS_wwi(Wd,Wn,i12)       _W((0b0111000100 << 22) | (((i12) & 0xfff) << 10) | ((Wn) << 5) | (Wd))
 #define SUBS_xxi(Xd,Xn,i12)       _W((0b1111000100 << 22) | (((i12) & 0xfff) << 10) | ((Xn) << 5) | (Xd))
 // sh: 0 - no shift, 1 - LSL 12
@@ -269,8 +275,12 @@
 /* AND */
 #define AND_www(Wd,Wn,Wm)         _W((0b00001010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define AND_xxx(Xd,Xn,Xm)         _W((0b10001010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
+#define AND_ww3f(Wd,Wn)           _W((0b000100100 << 23) | immEncode(0,0b000000,0b000101) | ((Wn) << 5) | (Wd))
 #define ANDS_www(Wd,Wn,Wm)        _W((0b01101010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
 #define ANDS_xxx(Xd,Xn,Xm)        _W((0b11101010000 << 21) | ((Xm) << 16) | (0 << 10) | ((Xn) << 5) | (Xd))
+#define ANDS_xx7fff(Xd,Xn)        _W((0b111100100 << 23) | immEncode(1,0b000000,0b001110) | ((Xn) << 5) | (Xd))
+#define ANDS_ww7f(Wd,Wn)          _W((0b011100100 << 23) | immEncode(0,0b000000,0b000110) | ((Wn) << 5) | (Wd))
+#define ANDS_ww3f(Wd,Wn)          _W((0b011100100 << 23) | immEncode(0,0b000000,0b000101) | ((Wn) << 5) | (Wd))
 
 /* EOR */
 #define EOR_www(Wd,Wn,Wm)         _W((0b01001010000 << 21) | ((Wm) << 16) | (0 << 10) | ((Wn) << 5) | (Wd))
@@ -384,7 +394,6 @@
 //  ~Z  N=1 immr=100001 imms=111110
 //  ~C  N=1 immr=100010 imms=111110
 //  ~V  N=1 immr=100011 imms=111110
-#define immEncode(N,immr,imms)    (N << 22) | (immr << 16) | (imms << 10)
 #define immNflag                  immEncode(1, 0b100001, 0b000000)
 #define immZflag                  immEncode(1, 0b100010, 0b000000)
 #define immCflag                  immEncode(1, 0b100011, 0b000000)
@@ -422,10 +431,11 @@
 
 #define LDR_dXi(Dt,Xn,i)      _W((0b1111110101 << 22) | (((i)/8) << 10) | ((Xn) << 5) | (Dt))
 #define LDR_sXi(St,Xn,i)      _W((0b1011110101 << 22) | (((i)/4) << 10) | ((Xn) << 5) | (St))
+#define LDR_dXx(Dt,Xn,Xm)     _W((0b11111100011 << 21) | ((Xm) << 16) | (0b011010 << 10) | ((Xn) << 5) | (Dt))
 
 #define STR_dXi(Dt,Xn,i)      _W((0b1111110100 << 22) | (((i)/8) << 10) | ((Xn) << 5) | (Dt))
 #define STR_sXi(St,Xn,i)      _W((0b1011110100 << 22) | (((i)/4) << 10) | ((Xn) << 5) | (St))
-
+#define STR_dXx(Dt,Xn,Xm)     _W((0b11111100001 << 21) | ((Xm) << 16) | (0b011010 << 10) | ((Xn) << 5) | (Dt))
 #define FMOV_dd(Dd,Dn)        _W((0b00011110011 << 21) | (0b00000010000 << 10) | ((Dn) << 5) | (Dd))
 #define FMOV_ss(Sd,Sn)        _W((0b00011110001 << 21) | (0b00000010000 << 10) | ((Sn) << 5) | (Sd))
 #define FMOV_dx(Dd,Xn)        _W((0b10011110011 << 21) | (0b00111000000 << 10) | ((Xn) << 5) | (Dd))
@@ -437,7 +447,9 @@
 #define MOVI_di(Dd,i)         _W((0b0010111100000 << 19) | ((((i) >> 5) & 0x7) << 16) | (0b111001 << 10) | (((i) & 0x1f) << 5) | (Dd))
 #define FCVT_ds(Dd,Sn)        _W((0b00011110001 << 21) | (0b00010110000 << 10) | ((Sn) << 5) | (Dd))
 #define FCVT_sd(Sd,Dn)        _W((0b00011110011 << 21) | (0b00010010000 << 10) | ((Dn) << 5) | (Sd))
+#define FRINTA_dd(Dd,Dn)      _W((0b00011110011 << 21) | (0b00110010000 << 10) | ((Dn) << 5) | (Dd))
 #define FRINTI_dd(Dd,Dn)      _W((0b00011110011 << 21) | (0b00111110000 << 10) | ((Dn) << 5) | (Dd))
+#define FRINTZ_dd(Dd,Dn)      _W((0b00011110011 << 21) | (0b00101110000 << 10) | ((Dn) << 5) | (Dd))
 #define FCVTAS_wd(Wd,Dn)      _W((0b00011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Wd))
 #define FCVTAS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b00100000000 << 10) | ((Dn) << 5) | (Xd))
 #define FCVTZS_xd(Xd,Dn)      _W((0b10011110011 << 21) | (0b11000000000 << 10) | ((Dn) << 5) | (Xd))
@@ -456,6 +468,7 @@
 #define FDIV_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b000110 << 10) | ((Sn) << 5) | (Sd))
 #define FMUL_ddd(Dd,Dn,Dm)    _W((0b00011110011 << 21) | ((Dm) << 16) | (0b000010 << 10) | ((Dn) << 5) | (Dd))
 #define FMUL_sss(Sd,Sn,Sm)    _W((0b00011110001 << 21) | ((Sm) << 16) | (0b000010 << 10) | ((Sn) << 5) | (Sd))
+#define FMSUB_dddd(Dd,Dn,Dm,Da) _W((0b00011111010 << 21) | ((Dm) << 16) | (1 << 15) | ((Da) << 10) | ((Dn) << 5) | (Dd))
 #define FNEG_dd(Dd,Dn)        _W((0b00011110011 << 21) | (0b00001010000 << 10) | ((Dn) << 5) | (Dd))
 #define FNEG_ss(Sd,Sn)        _W((0b00011110001 << 21) | (0b00001010000 << 10) | ((Sn) << 5) | (Sd))
 #define FSQRT_dd(Dd,Dn)       _W((0b00011110011 << 21) | (0b00001110000 << 10) | ((Dn) << 5) | (Dd))

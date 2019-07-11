@@ -195,13 +195,10 @@ LOWFUNC(WRITE,RMW,2,compemu_raw_inc_opcount,(IM16 op))
 {
   uintptr idx = (uintptr) &(regs.raw_cputbl_count) - (uintptr) &regs;
   LDR_xXi(REG_WORK2, R_REGSTRUCT, idx);
-  MOV_xi(REG_WORK1, op);
-  ADD_xxxLSLi(REG_WORK2, REG_WORK2, REG_WORK1, 2);
-  LDR_wXi(REG_WORK1, REG_WORK2, 0);
-
+  MOV_xi(REG_WORK3, op);
+  LDR_wXxLSLi(REG_WORK1, REG_WORK2, REG_WORK3, 1);
   ADD_wwi(REG_WORK1, REG_WORK1, 1);
-
-  STR_wXi(REG_WORK1, REG_WORK2, 0);
+  STR_wXxLSLi(REG_WORK1, REG_WORK2, REG_WORK3, 1);
 }
 LENDFUNC(WRITE,RMW,1,compemu_raw_inc_opcount,(IM16 op))
 
@@ -526,20 +523,18 @@ LENDFUNC(NONE,NONE,1,compemu_raw_init_r_regstruct,(IMPTR s))
 // Handle end of compiled block
 LOWFUNC(NONE,NONE,2,compemu_raw_endblock_pc_inreg,(RR4 rr_pc, IM32 cycles))
 {
-  clobber_flags();
-
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
   if(cycles >= 0 && cycles <= 0xfff) {
-	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
+	  SUB_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
-  	SUBS_www(REG_WORK1, REG_WORK1, REG_WORK2);
+  	SUB_www(REG_WORK1, REG_WORK1, REG_WORK2);
   }
 	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
 
-	BMI_i(7);
+	TBNZ_xii(REG_WORK1, 31, 7); // test sign and branch if set (negative)
   UBFIZ_xxii(rr_pc, rr_pc, 0, 16);  // apply TAGMASK
   LDR_xPCi(REG_WORK1, 12); // <cache_tags>
 	LDR_xXxLSLi(REG_WORK1, REG_WORK1, rr_pc, 3); // cacheline holds pointer -> multiply with 8
@@ -558,20 +553,18 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
 {
   /* v is always >= NATMEM_OFFSETX and < NATMEM_OFFSETX + max. Amiga mem */
 	uae_u32* tba;
-  clobber_flags();
-
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
   if(cycles >= 0 && cycles <= 0xfff) {
-	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
+	  SUB_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
-  	SUBS_www(REG_WORK1, REG_WORK1, REG_WORK2);
+  	SUB_www(REG_WORK1, REG_WORK1, REG_WORK2);
   }
 	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
 
-  CC_B_i(NATIVE_CC_MI, 2);   // skip branch
+  TBNZ_xii(REG_WORK1, 31, 2); // test sign and branch if set (negative)
 	tba = (uae_u32*)get_target();
   B_i(0); // <target set by caller>
   
@@ -672,23 +665,21 @@ LENDFUNC(NONE,NONE,2,raw_fmov_to_s_rr,(W4 d, FR s))
 
 LOWFUNC(NONE,NONE,2,raw_fmov_to_w_rr,(W4 d, FR s, int targetIsReg))
 {
-  clobber_flags();
-  
   FRINTI_dd(SCRATCH_F64_1, s);
   FCVTAS_wd(REG_WORK1, SCRATCH_F64_1);
 
   // maybe saturate...
   TBZ_xii(REG_WORK1, 31, 6); // positive
   CLS_ww(REG_WORK2, REG_WORK1); // negative: if 17 bits are 1 -> no saturate
-  CMP_wi(REG_WORK2, 15);
-  BHI_i(7); // done
-  MOV_wi(REG_WORK1, 0x8000); // max. negative value in 16 bit
-  B_i(5);
+  SUB_wwi(REG_WORK2, REG_WORK2, 16);
+  TBZ_xii(REG_WORK2, 31, 7); // done
+  MOVK_wi(d, 0x8000); // max. negative value in 16 bit
+  B_i(6);
 
   // positive
   CLZ_ww(REG_WORK2, REG_WORK1); // positive: if 17 bits are 0 -> no saturate
-  CMP_wi(REG_WORK2, 16);
-  BHI_i(2);
+  SUB_wwi(REG_WORK2, REG_WORK2, 17);
+  TBZ_xii(REG_WORK2, 31, 2);
   MOV_wi(REG_WORK1, 0x7fff); // max. positive value in 16 bit
   
   // done
@@ -698,23 +689,21 @@ LENDFUNC(NONE,NONE,2,raw_fmov_to_w_rr,(W4 d, FR s, int targetIsReg))
 
 LOWFUNC(NONE,NONE,3,raw_fmov_to_b_rr,(W4 d, FR s, int targetIsReg))
 {
-  clobber_flags();
-
   FRINTI_dd(SCRATCH_F64_1, s);
   FCVTAS_wd(REG_WORK1, SCRATCH_F64_1);
 
   // maybe saturate...
   TBZ_xii(REG_WORK1, 31, 6); // positive
   CLS_ww(REG_WORK2, REG_WORK1); // negative: if 25 bits are 1 -> no saturate
-  CMP_wi(REG_WORK2, 23);
-  BHI_i(7); // done
+  SUB_wwi(REG_WORK2, REG_WORK2, 24);
+  TBZ_xii(REG_WORK2, 31, 7); // done
   MOV_wi(REG_WORK1, 0x80); // max. negative value in 8 bit
   B_i(5);
 
   // positive
   CLZ_ww(REG_WORK2, REG_WORK1); // positive: if 25 bits are 0 -> no saturate
-  CMP_wi(REG_WORK2, 24);
-  BHI_i(2);
+  SUB_wwi(REG_WORK2, REG_WORK2, 25);
+  TBZ_xii(REG_WORK2, 31, 2);
   MOV_wi(REG_WORK1, 0x7f); // max. positive value in 8 bit
 
   // done
@@ -819,18 +808,15 @@ LENDFUNC(NONE,NONE,2,raw_frndint_rr,(FW d, FR s))
 
 LOWFUNC(NONE,NONE,2,raw_frndintz_rr,(FW d, FR s))
 {
-	FCVTZS_xd(REG_WORK1, s);
-	SCVTF_dx(d, REG_WORK1);
+  FRINTZ_dd(d, s);
 }
 LENDFUNC(NONE,NONE,2,raw_frndintz_rr,(FW d, FR s))
 
 LOWFUNC(NONE,NONE,2,raw_fmod_rr,(FRW d, FR s))
 {
 	FDIV_ddd(SCRATCH_F64_1, d, s);
-	FCVTZS_xd(REG_WORK1, SCRATCH_F64_1);
-	SCVTF_dx(SCRATCH_F64_1, REG_WORK1);
-	FMUL_ddd(SCRATCH_F64_1, SCRATCH_F64_1, s);
-	FSUB_ddd(d, d, SCRATCH_F64_1);
+  FRINTZ_dd(SCRATCH_F64_1, SCRATCH_F64_1);
+  FMSUB_dddd(d, SCRATCH_F64_1, s, d);
 }
 LENDFUNC(NONE,NONE,2,raw_fmod_rr,(FRW d, FR s))
 
@@ -853,10 +839,8 @@ LENDFUNC(NONE,NONE,1,raw_fcuts_r,(FRW r))
 LOWFUNC(NONE,NONE,2,raw_frem1_rr,(FRW d, FR s))
 {
   FDIV_ddd(SCRATCH_F64_2, d, s);
-  FCVTAS_xd(REG_WORK1, SCRATCH_F64_2);
-  SCVTF_dx(SCRATCH_F64_2, REG_WORK1);
-  FMUL_ddd(SCRATCH_F64_1, SCRATCH_F64_2, s);
-  FSUB_ddd(d, d, SCRATCH_F64_1);
+  FRINTA_dd(SCRATCH_F64_2, SCRATCH_F64_2);
+  FMSUB_dddd(d, SCRATCH_F64_2, s, d);
 }
 LENDFUNC(NONE,NONE,2,raw_frem1_rr,(FRW d, FR s))
 
@@ -916,13 +900,13 @@ LOWFUNC(NONE,WRITE,2,raw_fp_from_exten_mr,(RR4 adr, FR s))
 {
   FMOV_xd(REG_WORK1, s);
   FCMP_d0(s);
+	ADD_xxx(REG_WORK4, adr, R_MEMSTART);
 
   uae_u32* branchadd_iszero = (uae_u32*)get_target();
   BEQ_i(0); // iszero
 
   UBFX_xxii(REG_WORK2, REG_WORK1, 52, 11); // get exponent 
-	MOV_xi(REG_WORK3, 2047);
-	CMP_xx(REG_WORK2, REG_WORK3);
+	CMP_xi(REG_WORK2, 2047);
   
   uae_u32* branchadd_isnan = (uae_u32*)get_target();
 	BEQ_i(0); 				// isnan
@@ -933,23 +917,20 @@ LOWFUNC(NONE,WRITE,2,raw_fp_from_exten_mr,(RR4 adr, FR s))
   LSL_xxi(REG_WORK3, REG_WORK3, 31);
   ORR_xxxLSLi(REG_WORK2, REG_WORK3, REG_WORK2, 16); // merge sign and exponent
 
-	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
-
   REV32_xx(REG_WORK2, REG_WORK2);
-  STRH_wXi(REG_WORK2, REG_WORK3, 0);         	// write exponent
-  ADD_xxi(REG_WORK3, REG_WORK3, 4);
+  STRH_wXi(REG_WORK2, REG_WORK4, 0);         	// write exponent
+  ADD_xxi(REG_WORK4, REG_WORK4, 4);
 
   LSL_xxi(REG_WORK1, REG_WORK1, 11);          // shift mantissa to correct position
   REV_xx(REG_WORK1, REG_WORK1);
   SET_xxbit(REG_WORK1, REG_WORK1, 7);        // insert explicit 1
-  STR_xXi(REG_WORK1, REG_WORK3, 0);
+  STR_xXi(REG_WORK1, REG_WORK4, 0);
   uae_u32* branchadd_end = (uae_u32*)get_target();
   B_i(0);            // end_of_op
 
   // isnan
   write_jmp_target(branchadd_isnan, (uintptr)get_target());
-  LOAD_U32(REG_WORK1, 0x7fff);
-  LSL_xxi(REG_WORK1, REG_WORK1, 16);
+  MOV_xish(REG_WORK1, 0x7fff, 16);
   MOVN_xi(REG_WORK2, 0);
   B_i(4);
   
@@ -959,12 +940,9 @@ LOWFUNC(NONE,WRITE,2,raw_fp_from_exten_mr,(RR4 adr, FR s))
   LSL_xxi(REG_WORK1, REG_WORK1, 31);
   MOV_xi(REG_WORK2, 0);
 
-	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
-
   REV32_xx(REG_WORK1, REG_WORK1);
-  STR_wXi(REG_WORK1, REG_WORK3, 0);
-  ADD_xxi(REG_WORK3, REG_WORK3, 4);
-  STR_xXi(REG_WORK2, REG_WORK3, 0);
+  STR_wXi(REG_WORK1, REG_WORK4, 0);
+  STP_wwXi(REG_WORK2, REG_WORK2, REG_WORK4, 4);
 
   // end_of_op
   write_jmp_target(branchadd_end, (uintptr)get_target());
@@ -979,25 +957,21 @@ LOWFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
 	LDR_xXi(REG_WORK1, REG_WORK1, 0);
 	CLEAR_xxbit(REG_WORK1, REG_WORK1, 7); 	// clear explicit 1
 	REV_xx(REG_WORK1, REG_WORK1);
-	FMOV_dx(d, REG_WORK1);
 
-  LDRH_wXi(REG_WORK1, REG_WORK3, 0);
-  REV16_xx(REG_WORK1, REG_WORK1);				// exponent now in lower half
+  LDRH_wXi(REG_WORK4, REG_WORK3, 0);
+  REV16_xx(REG_WORK4, REG_WORK4);				// exponent now in lower half
 
-	MOV_xi(REG_WORK2, 0x7fff);
-	ANDS_xxx(REG_WORK2, REG_WORK2, REG_WORK1);
+  ANDS_xx7fff(REG_WORK2, REG_WORK4);
 	uae_u32* branchadd_notzero = (uae_u32*)get_target();
 	BNE_i(0);				// not_zero
 
-  FMOV_xd(REG_WORK2, d);
-	TST_xx(REG_WORK2, REG_WORK2);
 	uae_u32* branchadd_notzero2 = (uae_u32*)get_target();
-  BNE_i(0);             // not zero
+  CBNZ_xi(REG_WORK1, 0);          // not zero
 
   // zero
 	MOVI_di(d, 0);
 	uae_u32* branchadd_end = (uae_u32*)get_target();
-	TBZ_xii(REG_WORK1, 15, 0); // end_of_op
+	TBZ_xii(REG_WORK4, 15, 0); // end_of_op
 	MOV_xish(REG_WORK1, 0x8000, 48);
 	FMOV_dx(d, REG_WORK1);
 	uae_u32* branchadd_end2 = (uae_u32*)get_target();
@@ -1008,9 +982,8 @@ LOWFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
   write_jmp_target(branchadd_notzero2, (uintptr)get_target());
 	MOV_xi(REG_WORK3, 15360);                 // diff of bias between double and long double
 	SUB_xxx(REG_WORK2, REG_WORK2, REG_WORK3);	// exponent done, ToDo: check for carry -> result gets Inf in double
-	UBFX_xxii(REG_WORK1, REG_WORK1, 15, 1);		// extract sign
-	BFI_xxii(REG_WORK2, REG_WORK1, 11, 1);		// insert sign
-  FMOV_xd(REG_WORK1, d);
+	UBFX_xxii(REG_WORK4, REG_WORK4, 15, 1);		// extract sign
+	BFI_xxii(REG_WORK2, REG_WORK4, 11, 1);		// insert sign
 	LSR_xxi(REG_WORK1, REG_WORK1, 11);				// shift mantissa to correct position
 	LSL_xxi(REG_WORK2, REG_WORK2, 52);
 	ORR_xxx(REG_WORK1, REG_WORK1, REG_WORK2);
@@ -1024,18 +997,14 @@ LENDFUNC(NONE,READ,2,raw_fp_to_exten_rm,(FW d, RR4 adr))
 
 LOWFUNC(NONE,WRITE,2,raw_fp_from_double_mr,(RR4 adr, FR s))
 {
-	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
-	
   REV64_dd(SCRATCH_F64_1, s);
-  STR_dXi(SCRATCH_F64_1, REG_WORK3, 0);
+  STR_dXx(SCRATCH_F64_1, adr, R_MEMSTART);
 }
 LENDFUNC(NONE,WRITE,2,raw_fp_from_double_mr,(RR4 adr, FR s))
 
 LOWFUNC(NONE,READ,2,raw_fp_to_double_rm,(FW d, RR4 adr))
 {
-	ADD_xxx(REG_WORK3, adr, R_MEMSTART);
-	
-  LDR_dXi(d, REG_WORK3, 0);
+	LDR_dXx(d, adr, R_MEMSTART);
   REV64_dd(d, d);
 }
 LENDFUNC(NONE,READ,2,raw_fp_to_double_rm,(FW d, RR4 adr))
@@ -1157,7 +1126,7 @@ LENDFUNC(NONE,NONE,2,raw_fp_fscc_ri,(RW4 d, int cc))
 
 LOWFUNC(NONE,NONE,1,raw_roundingmode,(IM32 mode))
 {
-  LOAD_U32(REG_WORK2, (mode >> 22));
+  MOV_xi(REG_WORK2, (mode >> 22));
   MRS_FPCR_x(REG_WORK1);
   BFI_xxii(REG_WORK1, REG_WORK2, 22, 2);
   MSR_FPCR_x(REG_WORK1);

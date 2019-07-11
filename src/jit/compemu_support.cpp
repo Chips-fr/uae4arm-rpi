@@ -2069,6 +2069,7 @@ void build_comp(void)
 #ifdef PROFILE_UNTRANSLATED_INSNS
   regs.raw_cputbl_count = raw_cputbl_count;
 #endif
+  regs.mem_banks = (uintptr)mem_banks;
 
   for (opcode = 0; opcode < 65536; opcode++) {
 		reset_compop(opcode);

@@ -1,3 +1,4 @@
+2019-07-11 - Optimize aarch64 JIT
 2019-07-10 - Bugfixes for aarch64 JIT
 2019-07-09 - Added FPU JIT for aarch64 (needs more testing)
 2019-06-07 - JIT for aarch64: minor improvements and fixes
