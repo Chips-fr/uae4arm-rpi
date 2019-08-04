@@ -477,7 +477,6 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 	branchadd = (uae_u32*)get_target();
 	BEQ_i(0);		// no exception, jump to next instruction
 	
-  free_nreg(REG_PAR1);
   raw_pop_preserved_regs();
 #ifdef ARMV6T2
   MOVW_ri16(REG_PAR1, cycles);

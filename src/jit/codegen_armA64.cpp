@@ -421,7 +421,6 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 	branchadd = (uae_u32*)get_target();
   CBZ_wi(REG_WORK1, 0);  // no exception, jump to next instruction
 	
-  free_nreg(REG_PAR1);
   raw_pop_preserved_regs();
   LOAD_U32(REG_PAR1, cycles);
   LDR_xPCi(REG_WORK1, 8); // <execute_exception>

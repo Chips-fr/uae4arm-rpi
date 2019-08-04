@@ -631,7 +631,6 @@ STATIC_INLINE void reset_data_buffer(void)
  * Getting the information about the target CPU                     *
  ********************************************************************/
 STATIC_INLINE void clobber_flags(void);
-STATIC_INLINE void free_nreg(int r);
 
 #if defined(CPU_AARCH64) 
 #include "codegen_armA64.cpp"
