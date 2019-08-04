@@ -5,7 +5,7 @@
  * 
  * This file is part of the UAE4ARM project.
  *
- * JIT compiler m68k -> ARMv8.1
+ * JIT compiler m68k -> ARMv8.0
  *
  * Original 68040 JIT compiler for UAE, copyright 2000-2002 Bernd Meyer
  * This file is derived from CCG, copyright 1999-2003 Ian Piumarta
@@ -143,12 +143,12 @@ STATIC_INLINE void LOAD_U32(int r, uae_u32 val)
 STATIC_INLINE void LOAD_U64(int r, uae_u64 val)
 {
   MOV_xi(r, val);
-  MOVK_xish(r, val >> 16, 16);
-  if(val >> 32) {
+  if((val >> 16) & 0xffff)
+    MOVK_xish(r, val >> 16, 16);
+  if((val >> 32) & 0xffff)
     MOVK_xish(r, val >> 32, 32);
-    if(val >> 48)
-      MOVK_xish(r, val >> 48, 48);
-  }
+  if(val >> 48)
+    MOVK_xish(r, val >> 48, 48);
 }
 
 
@@ -214,13 +214,6 @@ LOWFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
 	CMP_xx(REG_WORK1, REG_WORK2);
 }
 LENDFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
-
-LOWFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
-{
-  LOAD_U32(REG_WORK1, offset);
-	ADD_xxx(d, s, REG_WORK1);
-}
-LENDFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 
 LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_m,(MEMR s))
 {
@@ -420,7 +413,6 @@ STATIC_INLINE void compemu_raw_jcc_l_oponly(int cc)
 STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 {
 	uae_u32* branchadd;	
-	uintptr offs;
 
   clobber_flags();
 
@@ -429,18 +421,9 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 	branchadd = (uae_u32*)get_target();
   CBZ_wi(REG_WORK1, 0);  // no exception, jump to next instruction
 	
-  // countdown -= scaled_cycles(totcycles);
-  offs = (uintptr)&countdown - (uintptr)&regs;
-	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if(cycles >= 0 && cycles <= 0xfff) {
-	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
-	} else {
-    LOAD_U32(REG_WORK2, cycles);
-  	SUBS_www(REG_WORK1, REG_WORK1, REG_WORK2);
-  }
-	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-
+  free_nreg(REG_PAR1);
   raw_pop_preserved_regs();
+  LOAD_U32(REG_PAR1, cycles);
   LDR_xPCi(REG_WORK1, 8); // <execute_exception>
   BR_x(REG_WORK1);
 	emit_longlong((uintptr)execute_exception);

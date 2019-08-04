@@ -230,24 +230,6 @@ LOWFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
 }
 LENDFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
 
-LOWFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
-{
-  if(CHECK32(offset)) {
-    ADD_rri(d, s, offset);
-  } else {
-#ifdef ARMV6T2
-    MOVW_ri16(REG_WORK1, offset);
-    if(offset >> 16)
-      MOVT_ri16(REG_WORK1, offset >> 16);
-#else
-    uae_s32 offs = data_long_offs(offset);
-  	LDR_rRI(REG_WORK1, RPC_INDEX, offs);
-#endif
-  	ADD_rrr(d, s, REG_WORK1);
-  }
-}
-LENDFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
-
 LOWFUNC(NONE,WRITE,1,compemu_raw_set_pc_m,(MEMR s))
 {
   uae_s32 idx;
@@ -485,7 +467,6 @@ STATIC_INLINE void compemu_raw_jcc_l_oponly(int cc)
 STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 {
 	uae_u32* branchadd;	
-	int offs;
 
   clobber_flags();
 
@@ -496,25 +477,16 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 	branchadd = (uae_u32*)get_target();
 	BEQ_i(0);		// no exception, jump to next instruction
 	
-  // countdown -= scaled_cycles(totcycles);
-  offs = (uae_u32)&countdown - (uae_u32)&regs;
-	LDR_rRI(REG_WORK1, R_REGSTRUCT, offs);
-  if(CHECK32(cycles)) {
-	  SUBS_rri(REG_WORK1, REG_WORK1, cycles);
-	} else {
-#ifdef ARMV6T2
-    MOVW_ri16(REG_WORK2, cycles);
-    if(cycles >> 16)
-      MOVT_ri16(REG_WORK2, cycles >> 16);
-#else
-  	int offs2 = data_long_offs(cycles);
-  	LDR_rRI(REG_WORK2, RPC_INDEX, offs2);
-#endif
-  	SUBS_rrr(REG_WORK1, REG_WORK1, REG_WORK2);
-  }
-	STR_rRI(REG_WORK1, R_REGSTRUCT, offs);
-
+  free_nreg(REG_PAR1);
   raw_pop_preserved_regs();
+#ifdef ARMV6T2
+  MOVW_ri16(REG_PAR1, cycles);
+  if(cycles >> 16)
+    MOVT_ri16(REG_PAR1, cycles >> 16);
+#else
+	int offs2 = data_long_offs(cycles);
+	LDR_rRI(REG_PAR1, RPC_INDEX, offs2);
+#endif
   LDR_rRI(RPC_INDEX, RPC_INDEX, -4); // <execute_exception>
 	emit_long((uintptr)execute_exception);
 	

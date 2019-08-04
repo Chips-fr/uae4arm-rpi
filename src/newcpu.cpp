@@ -1595,8 +1595,9 @@ static void m68k_run_1 (void)
 
 #ifdef JIT  /* Completely different run_2 replacement */
 
-void execute_exception(void)
+void execute_exception(uae_u32 cycles)
 {
+  countdown -= cycles;
   Exception_cpu(regs.jit_exception);
   regs.jit_exception = 0;
   cpu_cycles = adjust_cycles(4 * CYCLE_UNIT / 2);

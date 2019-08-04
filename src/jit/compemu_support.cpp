@@ -62,7 +62,6 @@
 #undef abort
 #define abort() do { \
 	fprintf(stderr, "Abort in file %s at line %d\n", __FILE__, __LINE__); \
-	compiler_dumpstate(); \
   SDL_Quit();  \
 	exit(EXIT_FAILURE); \
 } while (0)
@@ -175,7 +174,7 @@ static bigstate live;
 static int writereg(int r);
 static void unlock2(int r);
 static void setlock(int r);
-static int readreg_specific(int r, int spec);
+static int readreg(int r);
 static void prepare_for_call_1(void);
 static void prepare_for_call_2(void);
 
@@ -473,28 +472,9 @@ void LazyBlockAllocator<T>::release(T * const chunk)
 	mChunks = chunk;
 }
 
-template< class T >
-class HardBlockAllocator
-{
-public:
-	T * acquire() {
-		T * data = (T *)current_compile_p;
-		current_compile_p += sizeof(T);
-		return data;
-	}
 
-	void release(T * const chunk) {
-		// Deallocated on invalidation
-	}
-};
-
-#if USE_SEPARATE_BIA
 static LazyBlockAllocator<blockinfo> BlockInfoAllocator;
 static LazyBlockAllocator<checksum_info> ChecksumInfoAllocator;
-#else
-static HardBlockAllocator<blockinfo> BlockInfoAllocator;
-static HardBlockAllocator<checksum_info> ChecksumInfoAllocator;
-#endif
 
 STATIC_INLINE checksum_info *alloc_checksum_info(void)
 {
@@ -651,6 +631,7 @@ STATIC_INLINE void reset_data_buffer(void)
  * Getting the information about the target CPU                     *
  ********************************************************************/
 STATIC_INLINE void clobber_flags(void);
+STATIC_INLINE void free_nreg(int r);
 
 #if defined(CPU_AARCH64) 
 #include "codegen_armA64.cpp"
@@ -672,7 +653,7 @@ static void make_flags_live_internal(void)
   	return;
   if (live.flags_on_stack == VALID) {
 	  int tmp;
-	  tmp = readreg_specific(FLAGTMP, -1);
+	  tmp = readreg(FLAGTMP);
 	  raw_reg_to_flags(tmp);
 	  unlock2(tmp);
 
@@ -740,12 +721,10 @@ STATIC_INLINE int isinreg(int r)
 
 static void tomem(int r)
 {
-  int rr = live.state[r].realreg;
-
   if (live.state[r].status == DIRTY) {
-	  compemu_raw_mov_l_mr((uintptr)live.state[r].mem, rr);
+	  compemu_raw_mov_l_mr((uintptr)live.state[r].mem, live.state[r].realreg);
 	  set_status(r, CLEAN);
- }
+  }
 }
 
 STATIC_INLINE int isconst(int r)
@@ -765,12 +744,10 @@ STATIC_INLINE void writeback_const(int r)
 
 static void evict(int r)
 {
-  int rr;
-
   if (!isinreg(r))
   	return;
   tomem(r);
-  rr = live.state[r].realreg;
+  int rr = live.state[r].realreg;
 
   live.nat[rr].nholds--;
   if (live.nat[rr].nholds != live.state[r].realind) { /* Was not last */
@@ -802,7 +779,6 @@ STATIC_INLINE void isclean(int r)
 {
   if (!isinreg(r))
   	return;
-  live.state[r].validsize = 4;
   live.state[r].val = 0;
   set_status(r, CLEAN);
 }
@@ -822,37 +798,30 @@ STATIC_INLINE void set_const(int r, uae_u32 val)
 
 static int alloc_reg_hinted(int r, int willclobber, int hint)
 {
-  int bestreg;
-  uae_s32 when;
+  int bestreg = -1;
+  uae_s32 when = 2000000000;
   int i;
-  uae_s32 badness = 0; /* to shut up gcc */
-  bestreg = -1;
-  when = 2000000000;
 
   for (i = N_REGS - 1; i >= 0; i--) {
-  	badness = live.nat[i].touched;
-  	if (live.nat[i].nholds == 0)
-	    badness = 0;
-  	if (i == hint)
-	    badness -= 200000000;
-  	if (!live.nat[i].locked && badness < when) {
-  		bestreg = i;
-  		when = badness;
-  		if (live.nat[i].nholds == 0 && hint < 0)
-		    break;
-  		if (i == hint)
-		    break;
-	  }
+  	if(!live.nat[i].locked) {
+    	uae_s32 badness = live.nat[i].touched;
+    	if (live.nat[i].nholds == 0)
+  	    badness = 0;
+    	if (i == hint)
+  	    badness -= 200000000;
+    	if (badness < when) {
+    		bestreg = i;
+    		when = badness;
+    		if (live.nat[i].nholds == 0 && hint < 0)
+  		    break;
+    		if (i == hint)
+  		    break;
+  	  }
+  	}
   }
 
   if (live.nat[bestreg].nholds > 0) {
   	free_nreg(bestreg);
-  }
-  if (isinreg(r)) {
-  	int rr = live.state[r].realreg;
-  	/* This will happen if we read a partially dirty register at a
-	   bigger size */
-	  evict(r);
   }
 
   if (!willclobber) {
@@ -861,28 +830,24 @@ static int alloc_reg_hinted(int r, int willclobber, int hint)
 		    compemu_raw_mov_l_ri(bestreg, live.state[r].val);
 		    live.state[r].val = 0;
 		    set_status(r, DIRTY);
-	    }
-	    else {
+	    } else {
 		    do_load_reg(bestreg, r);
 		    set_status(r, CLEAN);
 	    }
-  	}
-  	else {
+  	}	else {
 	    live.state[r].val = 0;
 	    set_status(r, CLEAN);
 	  }
-	  live.state[r].validsize = 4;
   }
   else { /* this is the easiest way, but not optimal. */
-    live.state[r].validsize = 4;
     live.state[r].val = 0;
     set_status(r, DIRTY);
   }
   live.state[r].realreg = bestreg;
-  live.state[r].realind = live.nat[bestreg].nholds;
+  live.state[r].realind = 0;
   live.nat[bestreg].touched = touchcnt++;
-  live.nat[bestreg].holds[live.nat[bestreg].nholds] = r;
-  live.nat[bestreg].nholds++;
+  live.nat[bestreg].holds[0] = r;
+  live.nat[bestreg].nholds = 1;
 
   return bestreg;
 }
@@ -901,18 +866,15 @@ static void setlock(int r)
 
 static void mov_nregs(int d, int s)
 {
-  int nd = live.nat[d].nholds;
-  int i;
-
   if (s == d)
   	return;
 
-  if (nd > 0)
+  if (live.nat[d].nholds > 0)
   	free_nreg(d);
 
   compemu_raw_mov_l_rr(d, s);
 
-  for (i=0; i<live.nat[s].nholds; i++) {
+  for (int i=0; i<live.nat[s].nholds; i++) {
   	int vs = live.nat[s].holds[i];
 
 	  live.state[vs].realreg = d;
@@ -925,36 +887,18 @@ static void mov_nregs(int d, int s)
 }
 
 
-STATIC_INLINE void make_exclusive(int r, int size)
+STATIC_INLINE void make_exclusive(int r, int needcopy)
 {
   reg_status oldstate;
   int rr = live.state[r].realreg;
   int nr;
   int nind;
-  int ndirt = 0;
-  int i;
 
   if (!isinreg(r))
   	return;
   if (live.nat[rr].nholds == 1)
   	return;
-  for (i=0; i<live.nat[rr].nholds; i++) {
-	  int vr = live.nat[rr].holds[i];
-	  if (vr != r && (live.state[vr].status == DIRTY || live.state[vr].val))
-      ndirt++;
-  }
-  if (!ndirt && size < live.state[r].validsize && !live.nat[rr].locked) {
-  	/* Everything else is clean, so let's keep this register */
-  	for (i=0; i<live.nat[rr].nholds; i++) {
-      int vr = live.nat[rr].holds[i];
-      if (vr != r) {
-	      evict(vr);
-	      i--; /* Try that index again! */
-	    }
-  	}
-  	return;
-  }
-
+  	
   /* We have to split the register */
   oldstate = live.state[r];
 
@@ -968,39 +912,24 @@ STATIC_INLINE void make_exclusive(int r, int size)
   live.state[r].realreg = nr;
   live.state[r].realind = nind;
 
-  if (size < live.state[r].validsize) {
-  	if (live.state[r].val) {
-      /* Might as well compensate for the offset now */
-      compemu_raw_lea_l_brr(nr, rr, oldstate.val);
-      live.state[r].val = 0;
-      set_status(r, DIRTY);
-  	}
-  	else
-	    compemu_raw_mov_l_rr(nr, rr);  /* Make another copy */
+  if (needcopy) {
+    compemu_raw_mov_l_rr(nr, rr);  /* Make another copy */
   }
   unlock2(rr);
 }
 
 STATIC_INLINE int readreg_general(int r, int spec)
 {
-  int n;
   int answer = -1;
 
 	if (live.state[r].status == UNDEF) {
 		jit_log("WARNING: Unexpected read of undefined register %d", r);
 	}
 
-  if (isinreg(r) && live.state[r].validsize >= 4) {
-	  n = live.state[r].realreg;
-
-    answer = n;
-
-	  if (answer < 0)
-	    evict(r);
-  }
-  /* either the value was in memory to start with, or it was evicted and
-     is in memory now */
-  if (answer < 0) {
+  if (isinreg(r)) {
+    answer = live.state[r].realreg;
+  } else {
+    /* the value is in memory to start with */
   	answer = alloc_reg_hinted(r, 0, spec);
   }
 
@@ -1035,25 +964,15 @@ static int readreg_specific(int r, int spec)
  */
 static int writereg(int r)
 {
-  int n;
   int answer = -1;
 
-  make_exclusive(r, 4);
+  make_exclusive(r, 0);
   if (isinreg(r)) {
-	  n = live.state[r].realreg;
-
-    live.state[r].validsize = 4;
-    answer = n;
-
-	  if (answer < 0)
-	    evict(r);
-  }
-  /* either the value was in memory to start with, or it was evicted and
-     is in memory now */
-  if (answer < 0) {
+    answer = live.state[r].realreg;
+  } else {
+    /* the value is in memory to start with */
   	answer = alloc_reg_hinted(r, 1, -1);
   }
-  live.state[r].validsize = 4;
 
   live.nat[answer].locked++;
   live.nat[answer].touched = touchcnt++;
@@ -1064,28 +983,20 @@ static int writereg(int r)
 
 static int rmw(int r)
 {
-  int n;
   int answer = -1;
 
   if (live.state[r].status == UNDEF) {
 		jit_log("WARNING: Unexpected read of undefined register %d", r);
 	}
-  make_exclusive(r, 0);
+  make_exclusive(r, 1);
 
-  if (isinreg(r) && live.state[r].validsize >= 4) {
-	  n = live.state[r].realreg;
-
-    answer = n;
-	  if (answer < 0)
-	    evict(r);
-  }
-  /* either the value was in memory to start with, or it was evicted and
-     is in memory now */
-  if (answer < 0) {
+  if (isinreg(r)) {
+    answer = live.state[r].realreg;
+  } else {
+    /* the value is in memory to start with */
   	answer = alloc_reg_hinted(r, 0, -1);
   }
 
- 	live.state[r].validsize = 4;
   set_status(r, DIRTY);
 
   live.nat[answer].locked++;
@@ -1156,9 +1067,9 @@ static int f_alloc_reg(int r, int willclobber)
 	if(r < 8)
 	  bestreg = r + 8;   // map real Amiga reg to ARM VFP reg 8-15 (call save)
 	else if(r == FP_RESULT)
-		bestreg = 6;	 // map FP_RESULT to ARM VFP reg 6
+		bestreg = 6;	     // map FP_RESULT to ARM VFP reg 6
 	else // FS1
-	  bestreg = 7; 	 	 // map FS1 to ARM VFP reg 7
+	  bestreg = 7; 	 	   // map FS1 to ARM VFP reg 7
 
 	if (!willclobber) {
 		if (live.fate[r].status == INMEM) {
@@ -1186,11 +1097,10 @@ STATIC_INLINE int f_readreg(int r)
 
 	if (f_isinreg(r)) {
 		answer = live.fate[r].realreg;
-	}
-	/* either the value was in memory to start with, or it was evicted and
-	is in memory now */
-	if (answer < 0)
+	} else {
+  	/* the value is in memory to start with */
 		answer = f_alloc_reg(r,0);
+  }
 
 	return answer;
 }
@@ -1201,8 +1111,7 @@ STATIC_INLINE int f_writereg(int r)
 
 	if (f_isinreg(r)) {
 		answer = live.fate[r].realreg;
-	}
-	if (answer < 0) {
+	} else {
 		answer = f_alloc_reg(r, 1);
 	}
 	live.fate[r].status = DIRTY;
@@ -1215,9 +1124,9 @@ STATIC_INLINE int f_rmw(int r)
 
 	if (f_isinreg(r)) {
 		n = live.fate[r].realreg;
-	}
-	else
+	} else {
 		n = f_alloc_reg(r, 0);
+	}
 	live.fate[r].status = DIRTY;
 	return n;
 }
@@ -1447,7 +1356,7 @@ static void freescratch(void)
   int i;
   for (i = 0; i < N_REGS; i++)
 #if defined(CPU_AARCH64) 
-  	if (live.nat[i].locked && i > 5 && i < 16) {
+  	if (live.nat[i].locked && i > 5 && i < 18) {
 #elif defined(CPU_arm)
   	if (live.nat[i].locked && i != 2 && i != 3 && i != 10 && i != 11 && i != 12) {
 #else
@@ -1507,7 +1416,11 @@ static void prepare_for_call_2(void)
   int i;
   for (i = 0; i < N_REGS; i++)
   {
+#if defined(CPU_AARCH64)
+  	if (live.nat[i].nholds > 0) // in aarch64: first 18 regs not call saved
+#else
   	if (!call_saved[i] && live.nat[i].nholds > 0)
+#endif
 	    free_nreg(i);
   }
 #ifdef USE_JIT_FPU
@@ -2070,7 +1983,7 @@ void build_comp(void)
   regs.raw_cputbl_count = raw_cputbl_count;
 #endif
   regs.mem_banks = (uintptr)mem_banks;
-
+  
   for (opcode = 0; opcode < 65536; opcode++) {
 		reset_compop(opcode);
 	  prop[opcode].use_flags = 0x1f;

@@ -7146,7 +7146,6 @@ MIDFUNC(3,jnf_MEM_READMEMBANK,(W4 dest, RR4 adr, IM8 offset))
   live.state[dest].realreg = REG_RESULT;
   live.state[dest].realind = 0;
   live.state[dest].val = 0;
-  live.state[dest].validsize = 4;
   set_status(dest, DIRTY);
 }
 MENDFUNC(3,jnf_MEM_READMEMBANK,(W4 dest, RR4 adr, IM8 offset))

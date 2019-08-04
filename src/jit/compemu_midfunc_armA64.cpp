@@ -282,8 +282,12 @@ MIDFUNC(5,lea_l_brr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor, IM8 offset))
 	}
 	
 	s = readreg(s);
-	index = readreg(index);
-	d = writereg(d);
+	if(d == index) {
+	  d = index = rmw(d);
+	} else {
+  	index = readreg(index);
+  	d = writereg(d);
+  }
 
 	int shft;
 	switch(factor) {
@@ -302,7 +306,8 @@ MIDFUNC(5,lea_l_brr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor, IM8 offset))
   ADD_wwwLSLi(d, REG_WORK1, index, shft);
 
 	unlock2(d);
-	unlock2(index);
+  if(d != index)
+  	unlock2(index);
 	unlock2(s);
 }
 MENDFUNC(5,lea_l_brr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor, IM8 offset))
@@ -310,8 +315,12 @@ MENDFUNC(5,lea_l_brr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor, IM8 offset))
 MIDFUNC(4,lea_l_rr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor))
 {
 	s = readreg(s);
-	index = readreg(index);
-	d = writereg(d);
+	if(d == index) {
+	  d = index = rmw(d);
+	} else {
+  	index = readreg(index);
+  	d = writereg(d);
+  }
 
 	int shft;
 	switch(factor) {
@@ -325,7 +334,8 @@ MIDFUNC(4,lea_l_rr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor))
 	ADD_wwwLSLi(d, s, index, shft);
 
 	unlock2(d);
-	unlock2(index);
+  if(d != index)
+  	unlock2(index);
 	unlock2(s);
 }
 MENDFUNC(4,lea_l_rr_indexed,(W4 d, RR4 s, RR4 index, IM8 factor))
@@ -346,8 +356,7 @@ MIDFUNC(2,mov_l_rr,(W4 d, RR4 s))
 	s = readreg(s);
 	live.state[d].realreg = s;
 	live.state[d].realind = live.nat[s].nholds;
-	live.state[d].val = live.state[olds].val;
-	live.state[d].validsize = 4;
+	live.state[d].val = 0;
 	set_status(d, DIRTY);
 
 	live.nat[s].holds[live.nat[s].nholds] = d;
@@ -491,8 +500,12 @@ MIDFUNC(2,arm_ADD_l_ri,(RW4 d, IM32 i))
   if(i >= 0 && i <= 0xfff) {
 		ADD_xxi(d, d, i);
   } else {
-	  LOAD_U32(REG_WORK1, i);
-    SXTW_xw(REG_WORK1, REG_WORK1);
+    if(i > -0x7fff && i < 0x7fff) {
+      SIGNED16_IMM_2_REG(REG_WORK1, i);
+    } else {
+  	  LOAD_U32(REG_WORK1, i);
+      SXTW_xw(REG_WORK1, REG_WORK1);
+    }
 		ADD_xxx(d, d, REG_WORK1);
   }
 	
