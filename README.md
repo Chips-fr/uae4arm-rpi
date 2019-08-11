@@ -24,7 +24,7 @@ How to compile for raspberry:
 
       make
 
-   Of for Raspberry Pi 4 in 64 Bits (with OpenGLES by default otherwise see Makefile):
+   Or for Raspberry Pi 4 in 64 Bits (with OpenGLES by default otherwise see Makefile):
 
       make PLATFORM=rpi64bits
 
