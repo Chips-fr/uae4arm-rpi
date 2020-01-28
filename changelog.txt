@@ -1,3 +1,5 @@
+2020-01-28 - Bugfix JIT: FPU (32 bit), ORSR/EORSR/ANDSR, LINK/UNLK
+2019-08-15 - Bugfix JIT (armv7 and aarch64)
 2019-08-11 - Performance enhancement for JIT (armv7 and aarch64)
            - Cleanup after profiling
            - LDR/STR handling for aarch64 in sigsev_handler

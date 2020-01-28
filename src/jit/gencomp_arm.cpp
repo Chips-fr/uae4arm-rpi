@@ -1114,7 +1114,7 @@ static void genmovemle(uae_u16 opcode)
 
 
 	comprintf("\t\t}\n"
-			"\t}");
+			"\t}\n");
 	if (table68k[opcode].dmode == Apdi) {
 		comprintf("\t\t\tlea_l_brr(8+dstreg,srca,(uae_s32)offset);\n");
 	}
@@ -1241,7 +1241,7 @@ static void gen_and(uae_u32 opcode, struct instr *curi, char* ssize) {
 static void gen_andsr(uae_u32 opcode, struct instr *curi, char* ssize) {
 	(void) opcode;
 	(void) ssize;
-	genamode_new(curi->smode, "srcreg", curi->size, "src", 1, 0);
+	comprintf("\tint src = (uae_s32)(uae_s16)%s;\n", gen_nextiword());
 	if (!noflags) {
 		comprintf("\t make_flags_live();\n");
 		comprintf("\t jff_ANDSR(ARM_CCR_MAP[src & 0xF], (src & 0x10));\n");
@@ -1619,7 +1619,7 @@ static void gen_eor(uae_u32 opcode, struct instr *curi, char* ssize) {
 static void gen_eorsr(uae_u32 opcode, struct instr *curi, char* ssize) {
 	(void) opcode;
 	(void) ssize;
-	genamode_new(curi->smode, "srcreg", curi->size, "src", 1, 0);
+	comprintf("\tint src = (uae_s32)(uae_s16)%s;\n", gen_nextiword());
 	if (!noflags) {
 		comprintf("\t make_flags_live();\n");
 		comprintf("\t jff_EORSR(ARM_CCR_MAP[src & 0xF], ((src & 0x10) >> 4));\n");
@@ -1933,7 +1933,7 @@ static void gen_or(uae_u32 opcode, struct instr *curi, char* ssize) {
 static void gen_orsr(uae_u32 opcode, struct instr *curi, char* ssize) {
 	(void) opcode;
 	(void) ssize;
-	genamode_new(curi->smode, "srcreg", curi->size, "src", 1, 0);
+	comprintf("\tint src = (uae_s32)(uae_s16)%s;\n", gen_nextiword());
 	if (!noflags) {
 		comprintf("\t make_flags_live();\n");
 		comprintf("\t jff_ORSR(ARM_CCR_MAP[src & 0xF], ((src & 0x10) >> 4));\n");
@@ -2551,13 +2551,16 @@ static int gen_opcode(unsigned int opcode)
 #ifdef DISABLE_I_LINK
     failure;
 #endif
-		genamode_new(curi->smode, "srcreg", sz_long, "src", 1, 0);
+    comprintf("\tint dodgy=0;\n");
+    comprintf("\tif (srcreg==7) dodgy=1;\n");
+    genamode(curi->smode, "srcreg", sz_long, "src", 1, 0);
 		genamode_new(curi->dmode, "dstreg", curi->size, "offs", 1, 0);
-		comprintf("\tsub_l_ri(15,4);\n"
-				"\twritelong_clobber(15,src);\n"
-				"\tmov_l_rr(src,15);\n");
-		comprintf("\tarm_ADD_l(15,offs);\n");
-		genastore("src", curi->smode, "srcreg", sz_long, "src");
+    comprintf("\tsub_l_ri(15,4);\n"
+				"\twritelong_clobber(15,src);\n");
+    comprintf("\tif(!dodgy)\n");
+    comprintf("\t\tmov_l_rr(src,15);\n");
+    comprintf("\tarm_ADD_l(15,offs);\n");
+    genastore("src", curi->smode, "srcreg", sz_long, "src");
 		break;
 
 	case i_UNLK:
@@ -2565,9 +2568,13 @@ static int gen_opcode(unsigned int opcode)
     failure;
 #endif
 		genamode_new(curi->smode, "srcreg", curi->size, "src", 1, 0);
-		comprintf("\tmov_l_rr(15,src);\n"
-				"\treadlong(15,src);\n"
-				"\tarm_ADD_l_ri8(15,4);\n");
+    comprintf("\tif(src==15){\n");
+    comprintf("\t\treadlong(15,src);\n");
+    comprintf("\t} else {\n");
+    comprintf("\t\tmov_l_rr(15,src);\n");
+    comprintf("\t\treadlong(15,src);\n");
+    comprintf("\t\tarm_ADD_l_ri8(15,4);\n");
+    comprintf("\t}\n");
 		genastore("src", curi->smode, "srcreg", curi->size, "src");
 		break;
 
