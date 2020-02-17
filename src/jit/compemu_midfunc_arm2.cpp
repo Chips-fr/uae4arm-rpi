@@ -2172,8 +2172,8 @@ MENDFUNC(2,jff_CMP_b,(RR1 d, RR1 s))
 MIDFUNC(2,jff_CMP_w,(RR2 d, RR2 s))
 {
 	if (isconst(d) && isconst(s)) {
-	  SIGNED16_IMM_2_REG(REG_WORK1, live.state[d].val & 0xff);
-	  SIGNED16_IMM_2_REG(REG_WORK2, live.state[s].val & 0xff);
+	  SIGNED16_IMM_2_REG(REG_WORK1, live.state[d].val & 0xffff);
+	  SIGNED16_IMM_2_REG(REG_WORK2, live.state[s].val & 0xffff);
 	  CMP_rr(REG_WORK1, REG_WORK2);
 	} else {
 	  INIT_RREGS_w(d, s);
