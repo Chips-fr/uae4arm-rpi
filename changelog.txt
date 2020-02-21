@@ -1,3 +1,4 @@
+2020-02-21 - JIT: implemented BFINS
 2020-02-17 - JIT: bugfix CMP.W (32 bit only)
 2020-02-14 - JIT: bugfix shift opcodes
 2020-01-30 - JIT: reduced size of emitted code (30% smaller), slightly better performance
