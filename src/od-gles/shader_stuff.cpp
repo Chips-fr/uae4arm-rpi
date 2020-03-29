@@ -302,7 +302,7 @@ int shader_stuff_init()
 {
 	STATE_T *p_state = &shader_stuff_state;
    p_state->user_data = (UserData *)malloc(sizeof(UserData));
-   memset (p_state->user_data , 0 , sizeof(UserData));
+   p_state->user_data->programObject=0;
    return GL_TRUE;
 }
 
