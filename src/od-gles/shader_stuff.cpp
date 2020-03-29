@@ -54,6 +54,16 @@ typedef struct STATE_T
 #include <sys/stat.h>
 
 
+static int gl_have_error(const char *name)
+{
+	GLenum e = glGetError();
+	if (e != GL_NO_ERROR) {
+		printf("GL error: %s %x\n", name, e);
+		return 1;
+	}
+	return 0;
+}
+
 time_t get_file_date(const char *path)
 {
     struct stat file_stat;
@@ -292,6 +302,7 @@ int shader_stuff_init()
 {
 	STATE_T *p_state = &shader_stuff_state;
    p_state->user_data = (UserData *)malloc(sizeof(UserData));
+   memset (p_state->user_data , 0 , sizeof(UserData));
    return GL_TRUE;
 }
 
@@ -368,6 +379,7 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
    // Set the sampler texture unit to 0
    glUniform1i ( userData->samplerLoc, 0 );
 
+   gl_have_error("shader_stuff_set_data");
 
    return GL_TRUE;
 }
@@ -384,7 +396,7 @@ int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_wi
    glUniform1f ( userData->frameCountLoc, (GLfloat)(framecount) );
    glUniform2f( userData->emulatorFrameSizeLoc, (GLfloat)(emu_width), (GLfloat)(emu_height));
    glUniform2f ( userData->outputFrameSizeLoc, (GLfloat)(out_width), (GLfloat)(out_height));
-
+   return 0;
 }
 
 
