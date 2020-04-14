@@ -545,14 +545,16 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
    video_cb = cb;
 }
 
-void retro_audio_cb( short l, short r)
-{
-	audio_cb(l,r);
-}
+//void retro_audio_cb( short l, short r)
+//{
+//	audio_cb(l,r);
+//}
 
 void retro_audiocb(signed short int *sound_buffer,int sndbufsize){
- 	int x;
-    if(pauseg==0)for(x=0;x<sndbufsize;x+=2)audio_cb(sound_buffer[x],sound_buffer[x+1]);	
+    //int x;
+    //if(pauseg==0)for(x=0;x<sndbufsize;x+=2)audio_cb(sound_buffer[x],sound_buffer[x+1]);
+    if(pauseg==0)
+        audio_batch_cb(sound_buffer, sndbufsize);
 }
 
 
@@ -570,7 +572,6 @@ void retro_run_gui(void)
    video_cb(Retro_Screen,retrow,retroh,retrow<<PIXEL_BYTES);
 }
 #endif
-extern void testsnd(int len);
 
 void retro_run(void)
 {
@@ -583,9 +584,6 @@ void retro_run(void)
 
    if(pauseg==0)
    {
-
-//testsnd(882*2*2);
-for(x=0;x<882*2;x+=2)audio_cb(SNDBUF[x],SNDBUF[x+2]);
 
 
 		if(SHOWKEY )retro_virtualkb();

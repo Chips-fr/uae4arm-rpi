@@ -280,8 +280,11 @@ void finish_sound_buffer (void)
 	sem_wait(&callback_sem);
 #endif
 */
- //testsnd(882*4);
-memcpy((unsigned char*)SNDBUF, sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN*2);
+	//testsnd(882*4);
+	//memcpy((unsigned char*)SNDBUF, sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN*2);
+	extern void retro_audiocb(signed short int *sound_buffer,int sndbufsize);
+	retro_audiocb(sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
+
 
 	wrcnt++;
 	sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
