@@ -2,6 +2,10 @@
 
 #include "libretro-core.h"
 
+#include "sysconfig.h"
+#include "sysdeps.h"
+#include "options.h"
+
 #ifndef NO_LIBCO
 cothread_t mainThread;
 cothread_t emuThread;
@@ -21,8 +25,6 @@ unsigned short int bmp[400*300];
 
 unsigned amiga_devices[ 2 ];
 
-int autorun=0;
-
 int RETROJOY=0,RETROPT0=0,RETROSTATUS=0,RETRODRVTYPE=0;
 int retrojoy_init=0,retro_ui_finalized=0;
 
@@ -30,7 +32,6 @@ extern int SHIFTON,pauseg,SND ,snd_sampler;
 extern short signed int SNDBUF[1024*2];
 extern char RPATH[512];
 extern char RETRO_DIR[512];
-int cap32_statusbar=0;
 int arnold_model=2;
 
 extern int SHOWKEY;
@@ -80,14 +81,11 @@ void retro_set_environment(retro_environment_t cb)
 
    struct retro_variable variables[] = {
 
-	  { 
-		"arnold_autorun",
-		"Autorun; disabled|enabled" ,
-	  },
       {
          "uae4arm_resolution",
-         "Internal resolution; 320x240|640x256|640x400|640x480|768x270|800x600|1024x768|1280x960",
+         "Internal resolution; 320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270",
       },
+/*
       {
          "arnold_Model",
          "Model: (restart needed); 6128|464|664|6128s|6128+|kcc",
@@ -96,37 +94,12 @@ void retro_set_environment(retro_environment_t cb)
          "arnold_warp",
          "Wrap Factor:; 1|2|3|4|5",
       },
-/*
+*/
       {
-         "cap32_Ram",
-         "Ram size:; 64|128|192|512|576",
-      },
-      {
-         "cap32_Statusbar",
-         "Status Bar; disabled|enabled",
-      },
-      {
-         "cap32_Drive",
-         "Drive:; 0|1",
-      },
-      {
-         "cap32_scr_tube",
-         "scr_tube; disabled|enabled",
-      },
-      {
-         "cap32_scr_intensity",
-         "scr_intensity; 5|6|7|8|9|10|11|12|13|14|15",
-      },
-      {
-         "cap32_scr_remanency",
-         "scr_remanency; disabled|enabled",
+         "leds_on_screen",
+         "Led:; on|off",
       },
 
-      {
-         "cap32_RetroJoy",
-         "Retro joy0; disabled|enabled",
-      },
-*/
       { NULL, NULL },
    };
 
@@ -137,15 +110,6 @@ static void update_variables(void)
 {
 
    struct retro_variable var;
-
-   var.key = "arnold_autorun";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-     if (strcmp(var.value, "enabled") == 0)
-			 autorun = 1;
-   }
 
    var.key = "uae4arm_resolution";
    var.value = NULL;
@@ -170,6 +134,10 @@ static void update_variables(void)
 	//retrow=320;
 	//retroh=240;
 
+      changed_prefs.gfx_size.width  = retrow;
+      changed_prefs.gfx_size.height = retroh;
+      changed_prefs.gfx_resolution = changed_prefs.gfx_size.width > 600 ? 1 : 0;
+
       LOGI("[libretro-vice]: Got size: %u x %u.\n", retrow, retroh);
 
       CROP_WIDTH =retrow;
@@ -179,13 +147,23 @@ static void update_variables(void)
       //reset_screen();
    }
 
+   var.key = "leds_on_screen";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "on") == 0)  changed_prefs.leds_on_screen = 1;
+      if (strcmp(var.value, "off") == 0) changed_prefs.leds_on_screen = 0;
+   }
+
+#if 0
    var.key = "arnold_Model";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       char str[100];
-	  int val;
+      int val;
       snprintf(str, sizeof(str), var.value);
       val = strtoul(str, NULL, 0);
 	  if (strcmp(var.value, "464") == 0)arnold_model=0;
@@ -209,115 +187,6 @@ static void update_variables(void)
       val = strtoul(str, NULL, 0);
       
 	 // CPC_SetWarpFactor(val);
-
-   }
-
-#if 0
-   var.key = "cap32_Ram";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char str[100];
-	  int val;
-      snprintf(str, sizeof(str), var.value);
-      val = strtoul(str, NULL, 0);
-      
-	  if(retro_ui_finalized)
-		  change_ram(val);
-
-   }
-
-   var.key = "cap32_Statusbar";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if(retro_ui_finalized){
-    		  if (strcmp(var.value, "enabled") == 0)
-    		     cap32_statusbar=1;
-    		  if (strcmp(var.value, "disabled") == 0)
-    		     cap32_statusbar=0;
-		}
-		else {
-				if (strcmp(var.value, "enabled") == 0)RETROSTATUS=1;
-				if (strcmp(var.value, "disabled") == 0)RETROSTATUS=0;
-		}
-   }
-
-
-   var.key = "cap32_Drive";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char str[100];
-	  int val;
-      snprintf(str, sizeof(str), var.value);
-      val = strtoul(str, NULL, 0);
-
-	  if(retro_ui_finalized)
-		  ;//set_drive_type(8, val);
-	  else RETRODRVTYPE=val;
-   }
-
-   var.key = "cap32_scr_tube";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if(retro_ui_finalized){
-      		if (strcmp(var.value, "enabled") == 0){
-         		  CPC.scr_tube=1;video_set_palette();}
-      		if (strcmp(var.value, "disabled") == 0){
-         		 CPC.scr_tube=0;video_set_palette();}
-		}
-   }
-
-   var.key = "cap32_scr_intensity";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      char str[100];
-	  int val;
-      snprintf(str, sizeof(str), var.value);
-      val = strtoul(str, NULL, 0);
-
-	  if(retro_ui_finalized){
-		  CPC.scr_intensity = val;
-		  video_set_palette();
-	  }	
-   }
-/*
-   var.key = "cap32_scr_remanency";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if(retro_ui_finalized){
-      		if (strcmp(var.value, "enabled") == 0){
-         		  CPC.scr_remanency=1;video_set_palette();}//set_truedrive_emultion(1);
-      		if (strcmp(var.value, "disabled") == 0){
-         		 CPC.scr_remanency=0;video_set_palette();}//set_truedrive_emultion(0);
-		}
-   }
-*/
-   var.key = "cap32_RetroJoy";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if(retrojoy_init){
-		      if (strcmp(var.value, "enabled") == 0)
-		         ;//resources_set_int( "RetroJoy", 1);
-		      if (strcmp(var.value, "disabled") == 0)
-		         ;//resources_set_int( "RetroJoy", 0);
-		}
-		else {
-			if (strcmp(var.value, "enabled") == 0)RETROJOY=1;
-			if (strcmp(var.value, "disabled") == 0)RETROJOY=0;
-		}
 
    }
 #endif
