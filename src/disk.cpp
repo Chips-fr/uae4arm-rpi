@@ -822,7 +822,7 @@ static int drive_insert (drive *drv, struct uae_prefs *p, int dnum, const char *
 	return 0;
     }
 
-    strncpy (currprefs.df[dnum], fname, 255);
+    memmove (currprefs.df[dnum], fname, 255);
     currprefs.df[dnum][255] = 0;
     strncpy (changed_prefs.df[dnum], fname, 255);
     changed_prefs.df[dnum][255] = 0;

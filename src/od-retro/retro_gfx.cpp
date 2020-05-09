@@ -102,7 +102,7 @@ int graphics_setup (void)
 
 void InitAmigaVidMode(struct uae_prefs *p)
 {
-LOGI("retro:(%d,%d) gfx(%d,%d)\n",retrow,retroh,p->gfx_size.width,p->gfx_size.height);
+  LOGI("retro:(%d,%d) gfx(%d,%d) res %i\n",retrow,retroh,p->gfx_size.width,p->gfx_size.height,p->gfx_resolution);
 
   /* Initialize structure for Amiga video modes */
   gfxvidinfo.pixbytes = 2;
@@ -145,7 +145,6 @@ static void open_screen(struct uae_prefs *p)
   uint32_t                    vc_image_ptr;
   int width;
   int height;
-
 #ifdef PICASSO96
   if (screen_is_picasso)
   {
@@ -159,14 +158,8 @@ p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
     height = p->gfx_size.height;
   }
 
-
-
-
-static int iniscr=0;
-  if(iniscr==0)
- // if(prSDLScreen != NULL)
+  // if(prSDLScreen != NULL)
   {
-	iniscr++;
     InitAmigaVidMode(p);
     init_row_map();
   }    
@@ -177,7 +170,6 @@ static int iniscr=0;
 void update_display(struct uae_prefs *p)
 {
   open_screen(p);
-  printf("update_display\n");
   framecnt = 1; // Don't draw frame before reset done
 }
 
@@ -185,7 +177,6 @@ void update_display(struct uae_prefs *p)
 int check_prefs_changed_gfx (void)
 {
   int changed = 0;
-  
   if(currprefs.gfx_size.height != changed_prefs.gfx_size.height ||
      currprefs.gfx_size.width != changed_prefs.gfx_size.width ||
      currprefs.gfx_size_fs.width != changed_prefs.gfx_size_fs.width ||
@@ -212,7 +203,7 @@ int check_prefs_changed_gfx (void)
 	  init_hz ();
 	  changed = 1;
   }
-  
+
   return changed;
 }
 
@@ -391,6 +382,10 @@ int graphics_init (void)
 	int i,j;
 
 	//uae_sem_init (&vsync_wait_sem, 0, 1);
+
+	// In case we have load a .uae file, we need to realign retro & gfx resolution...
+	retrow = currprefs.gfx_size.width;
+	retroh = currprefs.gfx_size.height;
 
 	graphics_subinit ();
 

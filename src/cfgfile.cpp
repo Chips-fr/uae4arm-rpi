@@ -27,6 +27,7 @@
 #include "fsdb.h"
 #include "disk.h"
 #if defined(__LIBRETRO__)
+extern int retroh,retrow;  // Todo: need a proper include
 #include "sd-retro/sound.h"
 #else
 #include "sd-pandora/sound.h"
@@ -1642,9 +1643,16 @@ void default_prefs (struct uae_prefs *p, int type)
   p->optcount[5] = 0;
 
   p->gfx_framerate = 0;
+
+
 #ifdef RASPBERRY
+#ifdef __LIBRETRO__
+  p->gfx_size.width = retrow;
+  p->gfx_size.height = retroh;
+#else
   p->gfx_size.width = 640;
   p->gfx_size.height = 256;
+#endif
 #else
   p->gfx_size.width = 320;
   p->gfx_size.height = 240;
@@ -1653,7 +1661,7 @@ void default_prefs (struct uae_prefs *p, int type)
   p->gfx_size_win.height = 240;
   p->gfx_size_fs.width = 640;
   p->gfx_size_fs.height = 480;
-  p->gfx_resolution = 0;
+  p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
 #ifdef RASPBERRY
   p->gfx_correct_aspect = 1;
 #endif
