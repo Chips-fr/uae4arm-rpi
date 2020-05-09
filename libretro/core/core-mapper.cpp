@@ -815,21 +815,25 @@ else{
 
       mmbL=1;		
       pushi=1;
-	  touch=1;
+      touch=1;
 
    }
    else if(mmbL==1 && !mouse_l) {
 
       mmbL=0;
       pushi=0;
-	  touch=-1;
+      touch=-1;
    }
 
    if(mmbR==0 && mouse_r){
-      mmbR=1;		
+      mmbR=1;	
+      pushi=1;
+      touch=1;	
    }
    else if(mmbR==1 && !mouse_r) {
       mmbR=0;
+      pushi=0;
+      touch=-1;
    }
 
 if(pauseg==0 && c64mouse_enable){
@@ -849,9 +853,9 @@ if(pauseg==0 && c64mouse_enable){
 
    lastmx +=rmouse_x;
    lastmy +=rmouse_y;
-newmousecounters=1;
-if(pauseg==0) buttonstate[0] = mmbL;
-if(pauseg==0) buttonstate[1] = mmbR;
+   newmousecounters=1;
+   if(pauseg==0) buttonstate[0] = mmbL;
+   if(pauseg==0) buttonstate[2] = mmbR;
 
  // if(SHOWKEY && pauseg==0)retro_virtualkb();
 
