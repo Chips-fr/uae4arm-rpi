@@ -616,12 +616,11 @@ extern int buttonstate[3];
 
 int Retro_PollEvent()
 {
-    //   RETRO        B    Y    SLT  STA  UP   DWN  LEFT RGT  A    X    L    R    L2   R2   L3   R3
-    //   INDEX        0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
+    //   RETRO         B    Y    SLT  STA  UP   DWN  LEFT RGT  A    X    L    R    L2   R2   L3   R3
+    //   INDEX         0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
 
-   int SAVPAS=PAS;	
    int i;
-   static int vbt[16]={0x0,0x0,0x0,0x0,0x01,0x02,0x04,0x08,0x10,0x20,0x0,0x0,0x0,0x0,0x0,0x0};
+   static int vbt[16]={0x10,0x00,0x00,0x00,0x01,0x02,0x04,0x08,0x20,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
    MXjoy[0]=0;
    MXjoy[1]=0;
    input_poll_cb();
@@ -647,17 +646,17 @@ int Retro_PollEvent()
    }
 
  
-if(pauseg==0){ // if emulation running
+      if(pauseg==0)
+      { // if emulation running
 
-	  //Joy mode
+      //Joy mode
 
-      for(i=RETRO_DEVICE_ID_JOYPAD_UP;i<RETRO_DEVICE_ID_JOYPAD_L;i++)
+      for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
       {
          if( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i))
 	 {
             MXjoy[0] |= vbt[i]; // Joy press
             MXjoy[1] |= vbt[i]; // Joy press
-	
 	 }
       }
 
@@ -668,7 +667,7 @@ if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK)
 {
    //shortcut for joy mode only
 
-   i=RETRO_DEVICE_ID_JOYPAD_L2;//show/hide statut
+   i=RETRO_DEVICE_ID_JOYPAD_L;//show/hide statut
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
@@ -705,7 +704,7 @@ else{
 
 }
 
-   i=RETRO_DEVICE_ID_JOYPAD_Y;       //show vkbd toggle
+   i=RETRO_DEVICE_ID_JOYPAD_SELECT;     //show vkbd toggle
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
    {
       mbt[i]=1;
@@ -716,7 +715,7 @@ else{
       SHOWKEY=-SHOWKEY;
    }
 
-   i=RETRO_DEVICE_ID_JOYPAD_SELECT;  //mouse/joy toggle
+   i=RETRO_DEVICE_ID_JOYPAD_START;     //mouse/joy toggle
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
@@ -735,9 +734,7 @@ else{
       mouse_l=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);
       mouse_r=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
 
-      PAS=SAVPAS;
-
-	  slowdown=1;
+      slowdown=1;
    }
    else {
 //printf("-----------------%d \n",pauseg);
@@ -748,7 +745,27 @@ else{
       rmouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
       mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
       mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+
    }
+
+   // Emulate mouse as PUAE default configuration...
+   int analog_deadzone=0;
+   unsigned int opt_analogmouse_deadzone = 20; // hardcoded deadzone...
+   analog_deadzone = (opt_analogmouse_deadzone * 32768 / 100);
+   int analog_right[2]={0};
+   analog_right[0] = (input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X));
+   analog_right[1] = (input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y));
+
+   if (abs(analog_right[0]) > analog_deadzone)
+      rmouse_x += analog_right[0] * 10 *  0.7 / (32768 );
+
+   if (abs(analog_right[1]) > analog_deadzone)
+      rmouse_y += analog_right[1] * 10 *  0.7 / (32768 );
+
+   // L2 & R2 as mouse button...
+   mouse_l    |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
+   mouse_r    |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
+
 
    static int mmbL=0,mmbR=0;
 
