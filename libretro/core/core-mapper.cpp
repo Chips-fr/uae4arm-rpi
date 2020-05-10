@@ -86,7 +86,6 @@ int NUMDRV=1;
 //MOUSE
 extern int pushi;  // gui mouse btn
 int gmx,gmy; //gui mouse
-int c64mouse_enable=0;
 int mouse_wu=0,mouse_wd=0;
 //KEYBOARD
 char Key_Sate[512];
@@ -394,7 +393,7 @@ void retro_virtualkb(void)
 
       virtual_kdb(( char *)Retro_Screen,vkx,vky);
  
-      i=8;
+      i=RETRO_DEVICE_ID_JOYPAD_A;
       if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i)  && vkflag[4]==0) 	
          vkflag[4]=1;
       else if( !input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i)  && vkflag[4]==1)
@@ -652,7 +651,7 @@ if(pauseg==0){ // if emulation running
 
 	  //Joy mode
 
-      for(i=4;i<10;i++)
+      for(i=RETRO_DEVICE_ID_JOYPAD_UP;i<RETRO_DEVICE_ID_JOYPAD_L;i++)
       {
          if( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i))
 	 {
@@ -665,56 +664,11 @@ if(pauseg==0){ // if emulation running
       //if(SHOWKEY==-1)retro_joy0_test(MXjoy[0]);
 
 
-if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
+if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK)
+{
    //shortcut for joy mode only
 
-   i=1;//show vkbd toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
-   {
-      mbt[i]=0;
-      SHOWKEY=-SHOWKEY;
-   }
-
-   i=3;//type ENTER
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
-   {
-      mbt[i]=0;
-	  //kbd_buf_feed("\n");
-   }
-
-/*
-   i=10;//type DEL / ZOOM
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      ZOOM++;if(ZOOM>4)ZOOM=-1;
-
-   }
-*/
-
-   i=0;//type RUN"
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-	  //kbd_buf_feed("RUN\"");
-   }
-
-   i=10;//Type CAT\n 
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-	  //kbd_buf_feed("CAT\n");
-      //Screen_SetFullUpdate();
-   }
-
-   i=12;//show/hide statut
+   i=RETRO_DEVICE_ID_JOYPAD_L2;//show/hide statut
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
@@ -723,37 +677,21 @@ if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
      // Screen_SetFullUpdate();
    }
 
-   i=13;//auto load tape
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      //kbd_buf_feed("|tape\nrun\"\n^");
-   }
-
-   i=11;//reset
+   i=RETRO_DEVICE_ID_JOYPAD_R;//reset
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
       mbt[i]=0;
      // emu_reset();		
    }
-/*
-   i=2;//mouse/joy toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      MOUSE_EMULATED=-MOUSE_EMULATED;
-   }
-*/
+
    // L3 -> gui load
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, 14)){ 
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3)){ 
 		GUISTATE=GUI_LOAD;
 		pauseg=1;
    }
    // R3 -> gui snapshot
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, 15)){ 
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3)){ 
 		GUISTATE=GUI_SNAP;
 		pauseg=1;
    }
@@ -764,18 +702,21 @@ if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
 }// if pauseg=0
 else{
    // if in gui
-/*
-   i=2;//mouse/joy toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      MOUSE_EMULATED=-MOUSE_EMULATED;
-   }
-*/
+
 }
 
-   i=2;//mouse/joy toggle
+   i=RETRO_DEVICE_ID_JOYPAD_Y;       //show vkbd toggle
+   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
+   {
+      mbt[i]=1;
+   }
+   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
+   {
+      mbt[i]=0;
+      SHOWKEY=-SHOWKEY;
+   }
+
+   i=RETRO_DEVICE_ID_JOYPAD_SELECT;  //mouse/joy toggle
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
@@ -835,14 +776,6 @@ else{
       pushi=0;
       touch=-1;
    }
-
-if(pauseg==0 && c64mouse_enable){
-/*
-	mouse_move((int)mouse_x, (int)mouse_y);
-	mouse_button(0,mmbL);
-	mouse_button(1,mmbR);
-*/
-}
 
    gmx+=rmouse_x;
    gmy+=rmouse_y;
