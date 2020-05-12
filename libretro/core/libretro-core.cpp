@@ -96,7 +96,7 @@ void retro_set_environment(retro_environment_t cb)
       },
 */
       {
-         "leds_on_screen",
+         "uae4arm_leds_on_screen",
          "Led:; on|off",
       },
 
@@ -138,7 +138,7 @@ static void update_variables(void)
       changed_prefs.gfx_size.height = retroh;
       changed_prefs.gfx_resolution = changed_prefs.gfx_size.width > 600 ? 1 : 0;
 
-      LOGI("[libretro-vice]: Got size: %u x %u.\n", retrow, retroh);
+      LOGI("[libretro-uae4arm]: Got size: %u x %u.\n", retrow, retroh);
 
       CROP_WIDTH =retrow;
       CROP_HEIGHT= (retroh-80);
@@ -147,7 +147,7 @@ static void update_variables(void)
       //reset_screen();
    }
 
-   var.key = "leds_on_screen";
+   var.key = "uae4arm_leds_on_screen";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -382,9 +382,9 @@ LOGI(" (%d)=%d \n",port,device);
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "uae4arm";
-   info->library_version  = "0.1";
-   info->valid_extensions = "adf|dms|zip|ipf|adz";
+   info->library_name     = "uae4arm chips/rtype version";
+   info->library_version  = "0.2";
+   info->valid_extensions = "adf|dms|zip|ipf|hdf|lha|uae";
    info->need_fullpath    = true;
    info->block_extract = false;
 }

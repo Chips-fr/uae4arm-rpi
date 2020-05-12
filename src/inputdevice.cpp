@@ -239,13 +239,19 @@ void do_mouse_hack (void)
 }
 
 
+extern int second_joystick_enable;
+
 uae_u16 JOY0DAT (void)
 {
     do_mouse_hack ();
 
 #if  defined(__LIBRETRO__)
+    if (second_joystick_enable)
+        return joy0dir;
+    else
         return ((uae_u8)mouse_x) | ((uae_u16)mouse_y << 8);
 #endif
+
 
 #ifdef RASPBERRY
     if (currprefs.pandora_custom_dpad == 0)
@@ -325,6 +331,7 @@ void inputdevice_vsync (void)
 
 	getjoystate (0, &joy1dir, &joy1button);
 	getjoystate (1, &joy0dir, &joy0button);
+
 	if (joy0button!=back_joy0button)
   {
 		back_joy0button= joy0button;

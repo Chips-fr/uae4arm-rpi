@@ -14,4 +14,7 @@ Basic port. Based on rtype version.
 |Start|Toggle mouse emulation|
 
 Right analog stick controls the mouse.
+
 In mouse emulation dpad and fire buttons controls the mouse.
+
+Two joysticks support. Switch automatically between mouse or second joystick when a mouse or joystick button is pressed.

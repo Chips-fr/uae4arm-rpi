@@ -18,7 +18,7 @@
 #include "custom.h"
 #include "joystick.h"
 
-extern int MXjoy[2];
+extern unsigned char MXjoy[2];
 #include "core-log.h"
 
 void read_joystick(int nr, unsigned int *dir, int *button)
@@ -53,7 +53,7 @@ int but2= b1| b2<< 1;
 *button =but2;
 
 //if(MXjoy[nr]!=0)LOGI("joy%d rt:%d db(%d,%d) %d %d\n",nr,MXjoy[nr],*dir,*button,dir2,but2);
-//if(MXjoy[nr]!=0)LOGI("AP joy%d u:%d d:%d r:%d l:%d b1:%d b2:%d \n",up,down,right,left,b1,b2);
+//if(MXjoy[nr]!=0)LOGI("AP joy%d u:%d d:%d r:%d l:%d b1:%d b2:%d \n",nr,up,down,right,left,b1,b2);
 /*
 if((nr == 0 && currprefs.pandora_joyPort == 1) || (nr == 1 && currprefs.pandora_joyPort == 0) )
     {
