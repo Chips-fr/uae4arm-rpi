@@ -16,13 +16,21 @@ extern int64_t g_uae_epoch;
 /* Returns elapsed time in microseconds since start of emulator. */
 static __inline__ frame_time_t read_processor_time (void)
 {
+#if !defined(VITA)
   int64_t time;
+
   struct timespec ts;
   
   clock_gettime (CLOCK_MONOTONIC, &ts);
 
   time = (((int64_t) ts.tv_sec) * 1000000) + (ts.tv_nsec / 1000);
   return time - g_uae_epoch;
+#else
+
+   struct timeval tv;
+   gettimeofday (&tv, NULL);
+   return (tv.tv_sec*1000000 + tv.tv_usec) - g_uae_epoch;
+#endif
 }
 
 #endif /* _RPT_H_ */

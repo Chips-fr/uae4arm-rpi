@@ -5,7 +5,7 @@
  */
 
 #if defined(__LIBRETRO__)
-#include "od-retro/inputmode.h"
+#include "osdep/inputmode.h"
 #else
 #include "od-pandora/inputmode.h"
 #endif

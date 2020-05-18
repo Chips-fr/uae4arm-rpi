@@ -263,7 +263,7 @@ void retro_virtualkb(void)
 
    if(oldi!=-1)
    {
-      kbd_key(oldi,0);
+      vkbd_key(oldi,0);
       oldi=-1;
    }
 

@@ -144,7 +144,7 @@ char *fsdb_create_unique_nname (a_inode *base, const char *suggestion)
 	/* tmpnam isn't reentrant and I don't really want to hack configure
 	 * right now to see whether tmpnam_r is available...  */
 	for (i = 0; i < 8; i++) {
-#ifdef WIN32
+#if defined(WIN32) || defined(VITA)
 	    tmp[i] = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[rand () % 63];
 #else
 	    tmp[i] = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[random () % 63];

@@ -17,7 +17,7 @@
 #include "memory.h"
 #include "custom.h"
 #include "newcpu.h"
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 #include "autoconf.h"
 #include "traps.h"
 

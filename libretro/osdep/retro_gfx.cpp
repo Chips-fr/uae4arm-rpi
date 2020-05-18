@@ -8,14 +8,14 @@
 #include "custom.h"
 #include "drawing.h"
 #include "events.h"
-#include "od-retro/inputmode.h"
+#include "osdep/inputmode.h"
 #include "savestate.h"
 #include "picasso96.h"
 
 #ifdef ANDROIDSDL
 #include <android/log.h>
 #endif
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 
 extern int retrow,retroh,stylusClickOverride;
 

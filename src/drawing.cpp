@@ -32,7 +32,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include "options.h"
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 #include "uae.h"
 #include "memory.h"
 #include "custom.h"

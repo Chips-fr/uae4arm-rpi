@@ -52,7 +52,7 @@ extern void wait_cpu_cycle (void);
 #undef DIRECT_MEMFUNCS_SUCCESSFUL
 
 #if defined(__LIBRETRO__)
-#include "md-retro/maccess.h"
+#include "osdep/maccess.h"
 #else
 #include "md-pandora/maccess.h"
 #endif

@@ -28,7 +28,7 @@
 #include "disk.h"
 #if defined(__LIBRETRO__)
 extern int retroh,retrow;  // Todo: need a proper include
-#include "sd-retro/sound.h"
+#include "osdep/sound.h"
 #else
 #include "sd-pandora/sound.h"
 #endif

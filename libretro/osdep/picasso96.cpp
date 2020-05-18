@@ -44,7 +44,7 @@
 
 #include "config.h"
 #include "options.h"
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 #include "memory.h"
 #include "custom.h"
 #include "events.h"

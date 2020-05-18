@@ -84,6 +84,26 @@ else ifeq ($(platform), rpi)
 		 LDFLAGS := -lz -lpthread
 		 PLATFLAGS +=  -DARM  -marm
 	   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
+# SOny Ps vita
+else ifeq ($(platform), vita)
+	TARGET := $(TARGET_NAME)_libretro_vita.a
+   	CC = arm-vita-eabi-gcc
+   	CXX = arm-vita-eabi-g++
+   	AR = arm-vita-eabi-ar
+   	PLATFLAGS +=  -marm -mfpu=neon -mtune=cortex-a9 -mfloat-abi=hard -ffast-math
+        PLATFLAGS +=  -fno-asynchronous-unwind-tables -funroll-loops
+        PLATFLAGS +=  -mword-relocations -fno-unwind-tables -fno-optimize-sibling-calls
+        PLATFLAGS +=   -mvectorize-with-neon-quad -funsafe-math-optimizations
+        PLATFLAGS +=   -mlittle-endian -munaligned-access
+	PLATFLAGS += -D__arm__ -DARM_ASM -D__NEON_OPT  -DVITA
+	PLATFLAGS +=   -DLSB_FIRST -DALIGN_DWORD 
+	HAVE_NEON = 1
+	USE_PICASSO96 = 1
+   	 PLATFLAGS +=  -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int -DLSB_FIRST
+   	 PLATFLAGS +=  -DHAVE_STRTOUL -DVITA -DWITH_LOGGING
+	CFLAGS += $(PLATFLAGS) 
+	CXXFLAGS += $(PLATFLAGS) 
+	STATIC_LINKING = 1
 else ifeq ($(platform), osx)
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC -mmacosx-version-min=10.6
@@ -143,7 +163,12 @@ endif
 DEFINES += 
 
 DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DGP2X -DPANDORA -DSIX_AXIS_WORKAROUND
+
+ifeq ($(platform), vita)
+DEFS += -DROM_PATH_PREFIX=\"ux0:/data/retroarch/system/uae4arm/\" -DDATA_PREFIX=\"ux0:/data/retroarch/system/uae4arm/data/\" -DSAVE_PREFIX=\"ux0:/data/retroarch/system/uae4arm/saves/\"
+else
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
+endif
 DEFS += -DRASPBERRY
 #-DANDROIDSDL 
 
@@ -176,7 +201,9 @@ $(TARGET): $(OBJECTS)
 else ifeq ($(platform), ps3)
 $(TARGET): $(OBJECTS) 
 	$(AR) rcs $@ $(OBJECTS) 
-
+else ifeq ($(platform), vita)
+$(TARGET): $(OBJECTS) 
+	$(AR) -cr $@ $(OBJECTS) 
 else ifeq ($(platform), win)
 $(TARGET): $(OBJECTS)
 	$(CC) $(fpic) $(SHARED) $(INCDIRS) -o $@ $(OBJECTS) $(LDFLAGS)
@@ -186,9 +213,14 @@ $(TARGET): $(OBJECTS)
 
 endif
 
-$(EMU)/od-retro/neon_helper.o: $(EMU)/od-retro/neon_helper.s
-	$(CXX) $(CPU_FLAGS) $(PLATFORM_DEFINES) -Wall -o $(EMU)/od-retro/neon_helper.o -c $(EMU)/od-retro/neon_helper.s
+ifeq ($(platform), vita)
+$(LIBRETRO)/osdep/neon_helper.o: $(LIBRETRO)/osdep/neon_helper.s
+	$(CXX) $(CFLAGS)  $(PLATFLAGS) -Wall -o $(LIBRETRO)/osdep/neon_helper.o -c $(LIBRETRO)/osdep/neon_helper.s
+else
+$(LIBRETRO)/osdep/neon_helper.o: $(LIBRETRO)/osdep/neon_helper.s
+	$(CXX) $(CPU_FLAGS) $(PLATFORM_DEFINES) -Wall -o $(LIBRETRO)/osdep/neon_helper.o -c $(LIBRETRO)/osdep/neon_helper.s
 	echo $(OBJS)
+endif
 
 %.o: %.cpp
 	$(CXX) $(fpic) $(CFLAGS) $(PLATFLAGS) $(INCDIRS) -c -o $@ $<

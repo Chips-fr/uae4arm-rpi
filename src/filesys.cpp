@@ -25,7 +25,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 #include "options.h"
 #include "uae.h"
 #include "memory.h"
@@ -42,6 +42,10 @@
 #include "gui.h"
 #include "savestate.h"
 #include "uaeresource.h"
+
+#if  defined(VITA)
+#define utime(file,time) 0
+#endif
 
 #define TRACING_ENABLED 0
 #if TRACING_ENABLED

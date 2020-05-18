@@ -7,10 +7,14 @@
 #include "gui.h"
 #include "custom.h"
 #include "memory.h"
+#if !defined(VITA)
 #include <sys/mman.h>
-
+#endif
 #if defined(ANDROID) || defined(__ANDROID__)
 #include <unistd.h>
+#endif
+#if defined(VITA)
+#include <malloc.h>
 #endif
 
 uae_u8* natmem_offset = 0;
@@ -66,10 +70,12 @@ void alloc_AmigaMem(void)
 	int max_allowed_mman;
 
   free_AmigaMem();
-
+#ifdef VITA
+	total =  MAXAMIGAMEM;
+#else
   // Get max. available size
 	total = (uae_u64)sysconf (_SC_PHYS_PAGES) * (uae_u64)getpagesize();
-  
+#endif
   // Limit to max. 64 MB
 	natmem_size = total;
 	if (natmem_size > MAXAMIGAMEM)
@@ -83,6 +89,9 @@ void alloc_AmigaMem(void)
 
 #if !defined(ANDROID) && !defined(__ANDROID__)
 	natmem_offset = (uae_u8*)valloc (natmem_size);
+#elif defined(VITA)
+	natmem_offset = (uae_u8*)memalign(MAXAMIGAMEM,  (natmem_size));
+
 #else
 	natmem_offset = (uae_u8*)memalign(getpagesize(),  (natmem_size));
 #endif
@@ -91,6 +100,8 @@ void alloc_AmigaMem(void)
 		for (;;) {
 #if !defined(ANDROID) && !defined(__ANDROID__)
 			natmem_offset = (uae_u8*)valloc (natmem_size);
+#elif defined(VITA)
+			natmem_offset = (uae_u8*)memalign(MAXAMIGAMEM,  (natmem_size));
 #else
 			natmem_offset = (uae_u8*)memalign(getpagesize(),  (natmem_size));
 #endif

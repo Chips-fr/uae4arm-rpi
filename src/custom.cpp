@@ -17,7 +17,7 @@
 #include "gensound.h"
 #include "audio.h"
 #if defined(__LIBRETRO__)
-#include "sd-retro/sound.h"
+#include "osdep/sound.h"
 #else
 #include "sd-pandora/sound.h"
 #endif

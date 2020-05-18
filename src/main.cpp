@@ -10,12 +10,12 @@
 #include "sysdeps.h"
 #include <assert.h>
 #include "options.h"
-#include "td-sdl/thread.h"
+#include "osdep/thread.h"
 #include "uae.h"
 #include "gensound.h"
 #include "audio.h"
 #if defined(__LIBRETRO__)
-#include "sd-retro/sound.h"
+#include "osdep/sound.h"
 #else
 #include "sd-pandora/sound.h"
 #endif
