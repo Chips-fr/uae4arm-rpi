@@ -1,19 +1,18 @@
 
 EMU      = $(CORE_DIR)/src
 LIBUTILS = $(CORE_DIR)/utils
-#GUI      = $(CORE_DIR)/src/gui-retro
 LIBRETRO = $(CORE_DIR)/libretro
-GUI	 := $(CORE_DIR)/libretro/gui
 
-INCFLAGS := -I$(EMU) -I$(EMU)/od-retro -I$(EMU)/include -I$(LIBRETRO) \
-	-I$(LIBRETRO)/libco -I$(LIBRETRO)/core -I$(LIBUTILS)  -I$(EMU)menu 
+
+INCFLAGS := -I$(EMU) -I$(LIBRETRO)/osdep -I$(EMU)/include -I$(LIBRETRO) \
+	-I$(LIBRETRO)/libco -I$(LIBRETRO)/core -I$(LIBUTILS) 
 
 INCFLAGS += -I$(CORE_DIR)/libretro/libco \
-			-I$(CORE_DIR)/libretro/core \
-			-I$(CORE_DIR)/libretro/include \
-			-I$(CORE_DIR)/libretro/emu \
-			-I$(CORE_DIR)/libretro \
-			-I$(CORE_DIR) 
+	-I$(CORE_DIR)/libretro/core \
+	-I$(CORE_DIR)/libretro/include \
+	-I$(CORE_DIR)/libretro \
+	-I$(CORE_DIR) 
+
 OBJS =	\
 	$(EMU)/audio.o \
 	$(EMU)/autoconf.o \
@@ -82,19 +81,16 @@ OBJS =	\
 	$(EMU)/archivers/lzx/unlzx.o \
 	$(EMU)/archivers/wrp/warp.o \
 	$(EMU)/archivers/zip/unzip.o \
-	$(EMU)/md-retro/support.o 
+	$(LIBRETRO)/osdep/support.o 
 
-ifdef PANDORA
-OBJS += $(EMU)/od-retro/gui/sdltruetypefont.o
-endif
 USE_PICASSO96 := 1
 
 ifeq ($(USE_PICASSO96), 1)
-	OBJS += $(EMU)/od-retro/picasso96.o
+	OBJS += $(LIBRETRO)/osdep/picasso96.o
 endif
 HAVE_NEON := 1
 ifeq ($(HAVE_NEON), 1)
-	OBJS += $(EMU)/od-retro/neon_helper.o
+	OBJS +=  $(LIBRETRO)/osdep/neon_helper.o
 endif
 
 ifdef USE_XFD
@@ -116,84 +112,25 @@ OBJS += $(EMU)/jit/compemu_fpp.o
 OBJS += $(EMU)/jit/compstbl.o
 
 OBJS += $(EMU)/jit/compemu_support.o \
-	$(EMU)/od-retro/fsdb_host.o \
-	$(EMU)/od-retro/joystick.o \
-	$(EMU)/od-retro/keyboard.o \
-	$(EMU)/od-retro/inputmode.o \
-	$(EMU)/od-retro/writelog.o \
-	$(EMU)/od-retro/pandora.o \
-	$(EMU)/od-retro/pandora_filesys.o \
-	$(EMU)/od-retro/retro_gfx.o \
-	$(EMU)/od-retro/pandora_mem.o \
-	$(EMU)/od-retro/sigsegv_handler.o \
-	$(EMU)/od-retro/menu/menu_config.o \
-	$(EMU)/td-sdl/thread.o \
-	$(EMU)/sd-retro/sound_retro_new.o 
+	$(LIBRETRO)/osdep/fsdb_host.o \
+	$(LIBRETRO)/osdep/joystick.o \
+	$(LIBRETRO)/osdep/keyboard.o \
+	$(LIBRETRO)/osdep/inputmode.o \
+	$(LIBRETRO)/osdep/writelog.o \
+	$(LIBRETRO)/osdep/pandora.o \
+	$(LIBRETRO)/osdep/pandora_filesys.o \
+	$(LIBRETRO)/osdep/retro_gfx.o \
+	$(LIBRETRO)/osdep/pandora_mem.o \
+	$(LIBRETRO)/osdep/sigsegv_handler.o \
+	$(LIBRETRO)/osdep/menu/menu_config.o \
+	$(LIBRETRO)/osdep/thread.o \
+	$(LIBRETRO)/osdep/sound_retro_new.o 
 
 OBJS += \
 	$(CORE_DIR)/libretro/core/libretro-core.o \
 	$(CORE_DIR)/libretro/core/core-mapper.o \
 	$(CORE_DIR)/libretro/core/graph.o \
 	$(CORE_DIR)/libretro/core/vkbd.o 
-
-#	$(EMU)/od-rasp/rasp_gfx.o \
-#	$(EMU)/od-retro/pandora_gui.o
-#	$(EMU)/od-retro/gui/UaeRadioButton.o \
-#	$(EMU)/od-retro/gui/UaeDropDown.o \
-#	$(EMU)/od-retro/gui/UaeCheckBox.o \
-#	$(EMU)/od-retro/gui/UaeListBox.o \
-#	$(EMU)/od-retro/gui/InGameMessage.o \
-#	$(EMU)/od-retro/gui/SelectorEntry.o \
-#	$(EMU)/od-retro/gui/ShowMessage.o \
-#	$(EMU)/od-retro/gui/SelectFolder.o \
-#	$(EMU)/od-retro/gui/SelectFile.o \
-#	$(EMU)/od-retro/gui/CreateFilesysHardfile.o \
-#	$(EMU)/od-retro/gui/EditFilesysVirtual.o \
-#	$(EMU)/od-retro/gui/EditFilesysHardfile.o \
-#	$(EMU)/od-retro/gui/PanelPaths.o \
-#	$(EMU)/od-retro/gui/PanelConfig.o \
-#	$(EMU)/od-retro/gui/PanelCPU.o \
-#	$(EMU)/od-retro/gui/PanelChipset.o \
-#	$(EMU)/od-retro/gui/PanelROM.o \
-#	$(EMU)/od-retro/gui/PanelRAM.o \
-#	$(EMU)/od-retro/gui/PanelFloppy.o \
-#	$(EMU)/od-retro/gui/PanelHD.o \
-#	$(EMU)/od-retro/gui/PanelDisplay.o \
-#	$(EMU)/od-retro/gui/PanelSound.o \
-#	$(EMU)/od-retro/gui/PanelInput.o \
-#	$(EMU)/od-retro/gui/PanelMisc.o \
-#	$(EMU)/od-retro/gui/PanelSavestate.o \
-#	$(EMU)/od-retro/gui/main_window.o \
-#	$(EMU)/od-retro/gui/Navigation.o
-
-#SOURCES_C += $(EMU)/machdep/support.c \
-#				 $(EMU)/osdep/gui.c \
-#				 $(EMU)/osdep/retroglue.c \
-#				 $(EMU)/sounddep/sound.c \
-#				 $(EMU)/osdep/retromenu.c \
-#				 $(EMU)/threaddep/thread.c
-
-#SOURCES_C += $(GUI)/dialog.c\
-#				 $(GUI)/paths.c \
-#				 $(GUI)/file.c \
-#				 $(GUI)/unzip.c \
-#				 $(GUI)/thumb.c \
-#				 $(GUI)/zip.c \
-#				 $(GUI)/str.c \
-#				 $(GUI)/dlgFloppy.c \
-#				 $(GUI)/dlgHardDisk.c \
-#				 $(GUI)/dlgFileSelect.c \
-#				 $(GUI)/dlgMemory.c \
-#				 $(GUI)/dlgJoystick.c \
-#				 $(GUI)/dlgAbout.c \
-#				 $(GUI)/dlgSound.c \
-#				 $(GUI)/dlgAlert.c \
-#				 $(GUI)/dlgMain.c \
-#				 $(GUI)/dlgMisc.c \
-#				 $(GUI)/dlgVideo.c \
-#				 $(GUI)/dlgRom.c \
-#				 $(GUI)/dlgSystem.c \
-#				 $(GUI)/sdlgui.c
 
 SOURCES_C += 	 $(LIBRETRO)/libco/libco.c 
 
