@@ -5,7 +5,7 @@
 */
 
 #define LIBCO_C
-#include "libco.h"
+#include <libco.h>
 #include <assert.h>
 #include <stdlib.h>
 
@@ -21,12 +21,10 @@ static thread_local long long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
 #ifndef CO_USE_INLINE_ASM
 static void (*co_swap)(cothread_t, cothread_t) = 0;
-#else
-void co_swap(cothread_t, cothread_t);
 #endif
 
 #ifdef _WIN32
-//ABI: Win64
+/* ABI: Win64 */
 static unsigned char co_swap_function[] = {
   0x48, 0x89, 0x22,                                 /* mov    [rdx],rsp        */
   0x48, 0x8b, 0x21,                                 /* mov    rsp,[rcx]        */
@@ -76,14 +74,14 @@ static unsigned char co_swap_function[] = {
 
 #include <windows.h>
 
-void co_init(void)
+static void co_init(void)
 {
    DWORD old_privileges;
    VirtualProtect(co_swap_function,
          sizeof(co_swap_function), PAGE_EXECUTE_READWRITE, &old_privileges);
 }
 #else
-//ABI: SystemV
+/* ABI: SystemV */
 #ifndef CO_USE_INLINE_ASM
 static unsigned char co_swap_function[] = {
   0x48, 0x89, 0x26,                                 /* mov    [rsi],rsp      */
@@ -107,7 +105,7 @@ static unsigned char co_swap_function[] = {
 #include <unistd.h>
 #include <sys/mman.h>
 
-void co_init(void)
+static void co_init(void)
 {
    unsigned long long addr = (unsigned long long)co_swap_function;
    unsigned long long base = addr - (addr % sysconf(_SC_PAGESIZE));
@@ -115,29 +113,7 @@ void co_init(void)
    mprotect((void*)base, size, PROT_READ | PROT_WRITE | PROT_EXEC);
 }
 #else
-__asm__(
-".intel_syntax noprefix\n"
-".globl co_swap        \n"
-"co_swap:              \n"
-".globl _co_swap       \n" /* OSX ABI is different from Linux. */
-"_co_swap:             \n"
-"mov [rsi],rsp         \n"
-"mov [rsi+0x08],rbp    \n"
-"mov [rsi+0x10],rbx    \n"
-"mov [rsi+0x18],r12    \n"
-"mov [rsi+0x20],r13    \n"
-"mov [rsi+0x28],r14    \n"
-"mov [rsi+0x30],r15    \n"
-"mov rsp,[rdi]         \n"
-"mov rbp,[rdi+0x08]    \n"
-"mov rbx,[rdi+0x10]    \n"
-"mov r12,[rdi+0x18]    \n"
-"mov r13,[rdi+0x20]    \n"
-"mov r14,[rdi+0x28]    \n"
-"mov r15,[rdi+0x30]    \n"
-"ret                   \n"
-".att_syntax           \n"
-);
+static void co_init(void) {}
 #endif
 #endif
 
@@ -186,11 +162,42 @@ void co_delete(cothread_t handle)
    free(handle);
 }
 
+#ifndef CO_USE_INLINE_ASM
 void co_switch(cothread_t handle)
 {
   register cothread_t co_previous_handle = co_active_handle;
   co_swap(co_active_handle = handle, co_previous_handle);
 }
+#else
+#ifdef __APPLE__
+#define ASM_PREFIX "_"
+#else
+#define ASM_PREFIX ""
+#endif
+__asm__(
+".intel_syntax noprefix         \n"
+".globl " ASM_PREFIX "co_switch              \n"
+ASM_PREFIX "co_switch:                     \n"
+"mov rsi, [rip+" ASM_PREFIX "co_active_handle]\n"
+"mov [rsi],rsp                  \n"
+"mov [rsi+0x08],rbp             \n"
+"mov [rsi+0x10],rbx             \n"
+"mov [rsi+0x18],r12             \n"
+"mov [rsi+0x20],r13             \n"
+"mov [rsi+0x28],r14             \n"
+"mov [rsi+0x30],r15             \n"
+"mov [rip+" ASM_PREFIX "co_active_handle], rdi\n"
+"mov rsp,[rdi]                  \n"
+"mov rbp,[rdi+0x08]             \n"
+"mov rbx,[rdi+0x10]             \n"
+"mov r12,[rdi+0x18]             \n"
+"mov r13,[rdi+0x20]             \n"
+"mov r14,[rdi+0x28]             \n"
+"mov r15,[rdi+0x30]             \n"
+"ret                            \n"
+".att_syntax                    \n"
+);
+#endif
 
 #ifdef __cplusplus
 }

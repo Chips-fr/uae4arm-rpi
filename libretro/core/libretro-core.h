@@ -32,12 +32,12 @@
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
 
-#ifndef NO_LIBCO
+
 #include "libco/libco.h"
 
 extern cothread_t mainThread;
 extern cothread_t emuThread;
-#endif
+
 
 extern char Key_Sate[512];
 extern char Key_Sate2[512];

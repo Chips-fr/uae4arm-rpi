@@ -1,28 +1,25 @@
 #ifndef GRAPH_H
 #define GRAPH_H 1
 
-extern void DrawFBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned   color);
+#include "retroscreen.h"
 
-extern void DrawBoxBmp(char  *buffer,int x,int y,int dx,int dy,unsigned    color);
+extern void DrawFBoxBmp(unsigned  short  *buffer,int x,int y,int dx,int dy,unsigned  short color);
 
-extern void DrawHlineBmp(char  *buffer,int x,int y,int dx,int dy,unsigned    color);
+extern void DrawBoxBmp(unsigned  short  *buffer,int x,int y,int dx,int dy,unsigned  short  color);
 
-extern void DrawVlineBmp(char *buffer,int x,int y,int dx,int dy,unsigned    color);
+extern void DrawHlineBmp(unsigned  short  *buffer,int x,int y,int dx,int dy,unsigned  short  color);
 
-extern void DrawlineBmp(char  *buffer,int x1,int y1,int x2,int y2,unsigned    color);
+extern void DrawVlineBmp(unsigned  short *buffer,int x,int y,int dx,int dy,unsigned  short  color);
 
-extern void DrawPointBmp(char  *buffer,int x,int y,unsigned   color);
+extern void DrawlineBmp(unsigned  short  *buffer,int x1,int y1,int x2,int y2,unsigned  short  color);
 
-/*
-extern void DrawBox(void *buf,box b,char t[],unsigned    color);
+extern void DrawPointBmp(unsigned  short  *buffer,int x,int y,unsigned  short color);
 
-extern void DrawBoxF(void  *buf,box b,char t[],unsigned  color,unsigned    border);
-*/
-extern void DrawCircle(char *buf,int x, int y, int radius,unsigned  rgba,int full);
+extern void DrawCircle(unsigned short *buf,int x, int y, int radius,unsigned short rgba,int full);
 
-extern void Retro_Draw_string(char *surf, signed short int x, signed short int y, const  char *string, unsigned  short int maxstrlen, unsigned  short int xscale, unsigned  short int yscale,unsigned   int fg, unsigned   int bg);
+extern void Draw_string(unsigned short *surf, signed short int x, signed short int y, const unsigned char *string, unsigned  short int maxstrlen, unsigned  short int xscale, unsigned  short int yscale,unsigned  short int fg, unsigned  short int bg);
 
-extern void Draw_text(char *buffer,int x,int y,unsigned    fgcol,unsigned   int bgcol ,int scalex,int scaley , int max,const char *string,...);
+extern void Draw_text(unsigned  short *buffer,int x,int y,unsigned  short  fgcol,unsigned  short int bgcol ,int scalex,int scaley , int max,char *string,...);
 
 
 #endif
