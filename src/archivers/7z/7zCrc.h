@@ -7,7 +7,7 @@
 
 #include "7zTypes.h"
 
-extern UInt32 g_CrcTable[256];
+extern UInt32 g7_CrcTable[256];
 void InitCrcTable();
 
 void CrcInit(UInt32 *crc);

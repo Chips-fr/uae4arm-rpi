@@ -455,4 +455,14 @@ static inline uae_u32 do_byteswap_16(uae_u32 v) {__asm__ (
 
 #define bswap_16(x) (((x) >> 8) | (((x) & 0xFF) << 8))
 
+#ifdef VITA
+#define getcwd(a,b) "ux0:/"
+#include <psp2/types.h>
+#include <psp2/io/dirent.h>
+#include <psp2/kernel/threadmgr.h>
+#define mkdir(name,mode) sceIoMkdir(name, 0777)
+#define rmdir(name) sceIoRmdir(name)
+#define chmod(a, b)
+#endif
+
 #endif

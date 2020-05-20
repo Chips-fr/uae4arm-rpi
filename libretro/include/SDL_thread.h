@@ -26,7 +26,20 @@ extern long GetTicks(void);
 
 #define Uint32 uint32_t
 #define SDL_GetTicks  GetTicks 
+
+#if defined(VITA)
+#include <psp2/kernel/processmgr.h>
+#define SDL_Delay(a)do { \
+	const unsigned int max_delay = 0xffffffffUL / 1000;\
+	unsigned int ms=a;\
+    if(ms > max_delay)\
+        ms = max_delay;\
+    sceKernelDelayThreadCB(ms * 1000);\
+} while (0)
+
+#else
 #define SDL_Delay(a) usleep((a)*1000)
+#endif
 
 #define SDL_KillThread(X)
 

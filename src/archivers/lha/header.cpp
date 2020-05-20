@@ -236,7 +236,7 @@ extern long     timezone;		/* not defined in time.h */
 #endif
 
 /* ------------------------------------------------------------------------ */
-#if defined(FTIME) || defined(GETTIMEOFDAY) || defined(TZSET)
+#if defined(FTIME) || defined(GETTIMEOFDAY) || defined(TZSET) && !defined(VITA)
 static long
 gettz()
 #ifdef TZSET
@@ -701,7 +701,9 @@ init_header(char *name, struct stat *v_stat, LzHeader *hdr)
 		bcopy(LZHDIRS_METHOD, hdr->method, METHOD_TYPE_STRAGE);
 		hdr->attribute = GENERIC_DIRECTORY_ATTRIBUTE;
 		hdr->original_size = 0;
+#if !defined(VITA)
 		len = readlink(name, lkname, 256);
+#endif
 		lkname[len] = (char)'\0';
 		sprintf(hdr->name, "%s|%s", hdr->name, lkname);
 	}
