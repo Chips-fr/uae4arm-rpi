@@ -1,6 +1,7 @@
 #include "libretro.h"
 #include "libretro-core.h"
 #include "retroscreen.h"
+
 //CORE VAR
 #ifdef _WIN32
 char slash = '\\';
@@ -86,7 +87,6 @@ int NUMDRV=1;
 //MOUSE
 extern int pushi;  // gui mouse btn
 int gmx,gmy; //gui mouse
-int c64mouse_enable=0;
 int mouse_wu=0,mouse_wd=0;
 //KEYBOARD
 char Key_Sate[512];
@@ -163,6 +163,7 @@ long GetTicks(void)
 extern void retro_run_gui(void);
 #endif
 int slowdown=0;
+int second_joystick_enable = 0;
 //NO SURE FIND BETTER WAY TO COME BACK IN MAIN THREAD IN HATARI GUI
 void gui_poll_events(void)
 {
@@ -394,7 +395,7 @@ void retro_virtualkb(void)
 
       virtual_kdb(( char *)Retro_Screen,vkx,vky);
  
-      i=8;
+      i=RETRO_DEVICE_ID_JOYPAD_A;
       if(input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i)  && vkflag[4]==0) 	
          vkflag[4]=1;
       else if( !input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i)  && vkflag[4]==1)
@@ -485,8 +486,8 @@ void retro_virtualkb(void)
             }
 			else if(i==-14) //JOY PORT TOGGLE
             {    
- 				//cur joy toggle
-				//cur_port++;if(cur_port>2)cur_port=1;
+               //cur joy toggle
+               //cur_port++;if(cur_port>2)cur_port=1;
                SHOWKEY=-SHOWKEY;
                oldi=-1;
             }
@@ -617,12 +618,12 @@ extern int buttonstate[3];
 
 int Retro_PollEvent()
 {
-    //   RETRO        B    Y    SLT  STA  UP   DWN  LEFT RGT  A    X    L    R    L2   R2   L3   R3
-    //   INDEX        0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
+   //    RETRO          B    Y    SLT  STA  UP   DWN  LEFT RGT  A    X    L    R    L2   R2   L3   R3
+   //    INDEX          0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
 
-   int SAVPAS=PAS;	
+   static char vbt[16]={0x10,0x00,0x00,0x00,0x01,0x02,0x04,0x08,0x20,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
    int i;
-   static int vbt[16]={0x0,0x0,0x0,0x0,0x01,0x02,0x04,0x08,0x10,0x20,0x0,0x0,0x0,0x0,0x0,0x0};
    MXjoy[0]=0;
    MXjoy[1]=0;
    input_poll_cb();
@@ -648,73 +649,39 @@ int Retro_PollEvent()
    }
 
  
-if(pauseg==0){ // if emulation running
+      if(pauseg==0)
+      { // if emulation running
 
-	  //Joy mode
-
-      for(i=4;i<10;i++)
+      // Joy mode for first/main joystick.
+      for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
       {
          if( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i))
 	 {
             MXjoy[0] |= vbt[i]; // Joy press
-            MXjoy[1] |= vbt[i]; // Joy press
-	
 	 }
       }
 
-      //if(SHOWKEY==-1)retro_joy0_test(MXjoy[0]);
+      // second joystick.
+      for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
+      {
+         if( input_state_cb(1, RETRO_DEVICE_JOYPAD, 0, i))
+	 {
+            MXjoy[1] |= vbt[i]; // Joy press
+	 }
+         if ((0 != MXjoy[1]) && (0 == second_joystick_enable))
+         {
+            LOGI("Switch to joystick mode for Port 0.\n");
+            MXjoy[1] = 0;
+            second_joystick_enable = 1;
+         }
+      }
 
-
-if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
+#if 0 // Non working at the moment...
+if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK)
+{
    //shortcut for joy mode only
 
-   i=1;//show vkbd toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
-   {
-      mbt[i]=0;
-      SHOWKEY=-SHOWKEY;
-   }
-
-   i=3;//type ENTER
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
-   {
-      mbt[i]=0;
-	  //kbd_buf_feed("\n");
-   }
-
-/*
-   i=10;//type DEL / ZOOM
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      ZOOM++;if(ZOOM>4)ZOOM=-1;
-
-   }
-*/
-
-   i=0;//type RUN"
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-	  //kbd_buf_feed("RUN\"");
-   }
-
-   i=10;//Type CAT\n 
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-	  //kbd_buf_feed("CAT\n");
-      //Screen_SetFullUpdate();
-   }
-
-   i=12;//show/hide statut
+   i=RETRO_DEVICE_ID_JOYPAD_L;//show/hide statut
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
@@ -723,64 +690,58 @@ if(amiga_devices[0]==RETRO_DEVICE_AMIGA_JOYSTICK){
      // Screen_SetFullUpdate();
    }
 
-   i=13;//auto load tape
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      //kbd_buf_feed("|tape\nrun\"\n^");
-   }
-
-   i=11;//reset
+   i=RETRO_DEVICE_ID_JOYPAD_R;//reset
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
       mbt[i]=0;
      // emu_reset();		
    }
-/*
-   i=2;//mouse/joy toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      MOUSE_EMULATED=-MOUSE_EMULATED;
-   }
-*/
+
    // L3 -> gui load
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, 14)){ 
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3)){ 
 		GUISTATE=GUI_LOAD;
 		pauseg=1;
    }
    // R3 -> gui snapshot
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, 15)){ 
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3)){ 
 		GUISTATE=GUI_SNAP;
 		pauseg=1;
    }
 
 }//if amiga_devices=joy
-
+#endif
 
 }// if pauseg=0
 else{
    // if in gui
-/*
-   i=2;//mouse/joy toggle
-   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
-      mbt[i]=1;
-   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
-      mbt[i]=0;
-      MOUSE_EMULATED=-MOUSE_EMULATED;
-   }
-*/
+
 }
 
-   i=2;//mouse/joy toggle
+
+   i=RETRO_DEVICE_ID_JOYPAD_SELECT;     //show vkbd toggle
+   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
+   {
+      mbt[i]=1;
+   }
+   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
+   {
+      mbt[i]=0;
+      SHOWKEY=-SHOWKEY;
+   }
+
+   i=RETRO_DEVICE_ID_JOYPAD_START;     //mouse/joy toggle
    if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
       mbt[i]=1;
    else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) ){
       mbt[i]=0;
       MOUSE_EMULATED=-MOUSE_EMULATED;
+      if (MOUSE_EMULATED==1)
+      {
+         LOGI("Switch to mouse mode for Port 0.\n");
+         second_joystick_enable = 0;   // disable 2nd joystick if mouse activated...
+      }
+
    }
 
    if(MOUSE_EMULATED==1){
@@ -794,9 +755,7 @@ else{
       mouse_l=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);
       mouse_r=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
 
-      PAS=SAVPAS;
-
-	  slowdown=1;
+      slowdown=1;
    }
    else {
 //printf("-----------------%d \n",pauseg);
@@ -807,6 +766,32 @@ else{
       rmouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
       mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
       mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+
+   }
+
+   // Emulate mouse as PUAE default configuration...
+   int analog_deadzone=0;
+   unsigned int opt_analogmouse_deadzone = 20; // hardcoded deadzone...
+   analog_deadzone = (opt_analogmouse_deadzone * 32768 / 100);
+   int analog_right[2]={0};
+   analog_right[0] = (input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X));
+   analog_right[1] = (input_state_cb(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y));
+
+   if (abs(analog_right[0]) > analog_deadzone)
+      rmouse_x += analog_right[0] * 10 *  0.7 / (32768 );
+
+   if (abs(analog_right[1]) > analog_deadzone)
+      rmouse_y += analog_right[1] * 10 *  0.7 / (32768 );
+
+   // L2 & R2 as mouse button...
+   mouse_l    |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
+   mouse_r    |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
+
+   if ((mouse_l || mouse_r) && (second_joystick_enable))
+   {
+      mouse_l = mouse_r = 0;
+      LOGI("Switch to mouse mode for Port 0.\n");
+      second_joystick_enable = 0;   // disble 2nd joystick if mouse activated...
    }
 
    static int mmbL=0,mmbR=0;
@@ -835,14 +820,6 @@ else{
       pushi=0;
       touch=-1;
    }
-
-if(pauseg==0 && c64mouse_enable){
-/*
-	mouse_move((int)mouse_x, (int)mouse_y);
-	mouse_button(0,mmbL);
-	mouse_button(1,mmbR);
-*/
-}
 
    gmx+=rmouse_x;
    gmy+=rmouse_y;
