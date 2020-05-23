@@ -223,6 +223,8 @@ void unlockscr (void)
 #include "joystick.h"
 extern int Retro_PollEvent();
 #define getjoystate(NR,DIR,BUT) read_joystick(NR,DIR,BUT)
+extern DISK_GUI_change (void);
+
 void flush_screen ()
 {
     //SDL_UnlockSurface (prSDLScreen);
@@ -232,6 +234,7 @@ void flush_screen ()
         inputmode_redraw();	
     }
 
+    DISK_GUI_change();
 
     if (savestate_state == STATE_DOSAVE)
     {

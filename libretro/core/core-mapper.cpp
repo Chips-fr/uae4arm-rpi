@@ -438,17 +438,17 @@ void Process_key()
 In joy mode
 L3  GUI LOAD
 R3  GUI SNAP 
-L2  STATUS ON/OFF
-R2  AUTOLOAD TAPE
-L   CAT
-R   RESET
+L2  LEFT MOUSE BUTTON
+R2  RIGHT MOUSE BUTTON
+L   PREVIOUS DISK
+R   NEXT DISK
 SEL MOUSE/JOY IN GUI
-STR ENTER/RETURN
+STR
 A   FIRE1/VKBD KEY
-B   RUN
-X   FIRE2
-Y   VKBD ON/OFF
-In Keayboard mode
+B   FIRE2
+
+
+In Keyboard mode
 F8 LOAD DSK/TAPE
 F9 MEM SNAPSHOT LOAD/SAVE
 F10 MAIN GUI
@@ -456,6 +456,7 @@ F12 PLAY TAPE
 */
 extern int lastmx, lastmy, newmousecounters;
 extern int buttonstate[3];
+extern void changedisk( bool );
 
 int Retro_PollEvent()
 {
@@ -477,8 +478,8 @@ int Retro_PollEvent()
    if(SHOWKEY==-1 && pauseg==0)Process_key();
 
  
-      if(pauseg==0)
-      { // if emulation running
+   if(pauseg==0)
+   { // if emulation running
 
       // Joy mode for first/main joystick.
       for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
@@ -503,12 +504,11 @@ int Retro_PollEvent()
             second_joystick_enable = 1;
          }
       }
-
-}// if pauseg=0
-else{
-   // if in gui
-
-}
+   }// if pauseg=0
+   else
+   {
+      // if in gui
+   }
 
 
    i=RETRO_DEVICE_ID_JOYPAD_SELECT;     //show vkbd toggle
@@ -536,14 +536,32 @@ else{
 
    }
 
+   i=RETRO_DEVICE_ID_JOYPAD_L;     //select previous disk
+   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
+      mbt[i]=1;
+   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
+   {
+      mbt[i]=0;
+      changedisk((bool) false);
+   }
+
+   i=RETRO_DEVICE_ID_JOYPAD_R;     //select next disk
+   if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) && mbt[i]==0 )
+      mbt[i]=1;
+   else if ( mbt[i]==1 && ! input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, i) )
+   {
+      mbt[i]=0;
+      changedisk((bool) true);
+   }
+
    if(MOUSE_EMULATED==1){
 
-	  if(slowdown>0 && pauseg!=0 )return 1;
+      if(slowdown>0 && pauseg!=0 )return 1;
 
       if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))rmouse_x += PAS;
-      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT))rmouse_x -= PAS;
-      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))rmouse_y += PAS;
-      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))rmouse_y -= PAS;
+      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT ))rmouse_x -= PAS;
+      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN ))rmouse_y += PAS;
+      if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP   ))rmouse_y -= PAS;
       mouse_l=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);
       mouse_r=input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
 
@@ -553,11 +571,11 @@ else{
 
       mouse_wu = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
       mouse_wd = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-//if(mouse_wu || mouse_wd)printf("-----------------MOUSE UP:%d DOWN:%d\n",mouse_wu, mouse_wd);
+      //if(mouse_wu || mouse_wd)printf("-----------------MOUSE UP:%d DOWN:%d\n",mouse_wu, mouse_wd);
       rmouse_x = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
       rmouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
-      mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
-      mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+      mouse_l  = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
+      mouse_r  = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
 
    }
 

@@ -301,7 +301,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_version  = "0.2";
    info->valid_extensions = "adf|dms|zip|ipf|hdf|lha|uae";
    info->need_fullpath    = true;
-   info->block_extract = false;
+   info->block_extract    = true;
 }
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
