@@ -1524,7 +1524,11 @@ void init_row_map (void)
   j = 0;  
   for (i = gfxvidinfo.height; i < MAX_VIDHEIGHT + 1; i++)
     row_map[i] = row_tmp;
-  for (i = 0; i < gfxvidinfo.height; i++, j += gfxvidinfo.rowbytes)
+
+  if (gfxvidinfo.height > MAX_VIDHEIGHT)
+    gfxvidinfo.height = MAX_VIDHEIGHT;
+
+  for (i = 0; i < gfxvidinfo.height ; i++, j += gfxvidinfo.rowbytes)
 		row_map[i] = gfxvidinfo.bufmem + j;
 }
 

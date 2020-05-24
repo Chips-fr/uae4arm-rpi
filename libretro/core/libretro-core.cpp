@@ -297,8 +297,8 @@ void retro_set_controller_port_device( unsigned port, unsigned device )
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "uae4arm chips/rtype version";
-   info->library_version  = "0.2";
+   info->library_name     = "uae4arm_chips-rtype_version";
+   info->library_version  = "0.3";
    info->valid_extensions = "adf|dms|zip|ipf|hdf|lha|uae";
    info->need_fullpath    = true;
    info->block_extract    = true;

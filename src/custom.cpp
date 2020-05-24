@@ -3756,7 +3756,7 @@ static void do_sprites (int hpos)
     	return;
     
     if (maxspr > SPR0_HPOS + MAX_SPRITES * 4)
-    	maxspr = SPR0_HPOS + MAX_SPRITES * 4;
+    	maxspr = SPR0_HPOS + MAX_SPRITES * 4 - 1;
     if (minspr < SPR0_HPOS)
     	minspr = SPR0_HPOS;
     

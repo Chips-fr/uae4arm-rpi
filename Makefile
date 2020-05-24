@@ -78,6 +78,9 @@ else ifeq ($(platform), rpi2)
    	CXX = g++ 
 	LDFLAGS += -lz -lpthread
 
+        #LDFLAGS += -fsanitize=address -fsanitize=bounds 
+        #CPU_FLAGS += -fsanitize=address -fsanitize=bounds 
+
 	# use for raspberry pi
 else ifeq ($(platform), rpi) 
 	TARGET := $(TARGET_NAME)_libretro.so
