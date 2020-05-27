@@ -487,6 +487,10 @@ static void real_main2 (int argc, char **argv)
   {
 	  overwrite_with_retroarch_opt();
 	  parse_cmdline_and_init_file (argc, argv);
+
+	  // Puae always set 68020+ product with 14Mhz minimum by default in newcpu.cpp ...
+	  if ((currprefs.cpu_model >= 68020) &&  (currprefs.m68k_speed == 0))
+	     currprefs.m68k_speed = M68K_SPEED_14MHZ_CYCLES;
   }
   else
   	currprefs = changed_prefs;
