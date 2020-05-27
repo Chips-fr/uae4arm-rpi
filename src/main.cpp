@@ -451,6 +451,7 @@ void overwrite_with_retroarch_opt(void)
    currprefs.address_space_24 = tmp_prefs.address_space_24;
    currprefs.chipset_mask =     tmp_prefs.chipset_mask;
    currprefs.chipmem_size =     tmp_prefs.chipmem_size;
+   currprefs.fastmem_size =     tmp_prefs.fastmem_size;
    strcpy (currprefs.romfile,   tmp_prefs.romfile);
    currprefs.m68k_speed =       tmp_prefs.m68k_speed;
    currprefs.cpu_compatible =   tmp_prefs.cpu_compatible;

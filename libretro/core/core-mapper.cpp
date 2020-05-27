@@ -596,7 +596,7 @@ int Retro_PollEvent()
       changedisk((bool) true);
    }
 
-   if(MOUSE_EMULATED==1){
+   if(MOUSE_EMULATED==1 && SHOWKEY==-1 ){
 
       if(slowdown>0 && pauseg!=0 )return 1;
 
