@@ -27,7 +27,10 @@ extern void Retro_Draw_string(char *surf, signed short int x, signed short int y
 
 extern void Draw_text(char *buffer,int x,int y,unsigned    fgcol,unsigned   int bgcol ,int scalex,int scaley , int max,const char *string,...);
 
-
+extern void DrawFBoxBmpRGBA(unsigned short *dst,int x,int y,int dx,int dy,unsigned /*short*/ int color,unsigned char alpha);
+extern void Gui_Text(unsigned short *buffer,int x, int y, const char *txt,unsigned short col,unsigned short bg,int fscale);
+extern void initsmfont();
+extern void initmfont();
 
 #endif
 

@@ -1,6 +1,7 @@
 #include "libretro.h"
 #include "libretro-core.h"
 #include "retroscreen.h"
+#include "graph.h"
 
 //CORE VAR
 #ifdef _WIN32
@@ -175,6 +176,10 @@ void texture_uninit(void)
 
 void texture_init(void)
 {
+
+   initsmfont();
+   initmfont();
+
    memset(Retro_Screen, 0, sizeof(Retro_Screen));
    memset(old_Key_Sate ,0, sizeof(old_Key_Sate));
 
@@ -223,6 +228,15 @@ void retro_key_up(int key)
 
 }
 
+typedef struct {
+	char norml[NLETT];
+	char shift[NLETT];
+	int val;	
+	int box;
+	int color;
+} Mvk;
+
+extern Mvk MVk[NPLGN*NLIGN*2];
 
 void vkbd_key(int key,int pressed){
 
@@ -261,6 +275,8 @@ void retro_virtualkb(void)
    static int oldi=-1;
    static int vkx=0,vky=0;
 
+   int page= (NPAGE==-1) ? 0 : NPLGN*NLIGN;
+
    if(oldi!=-1)
    {
       vkbd_key(oldi,0);
@@ -277,6 +293,12 @@ void retro_virtualkb(void)
       {
          vkflag[0]=0;
          vky -= 1; 
+	 if(vky<0)vky=NLIGN-1;
+
+	 while(MVk[(vky*NPLGN)+vkx+page].box==0){
+         	vkx -= 1;
+	 	if(vkx<0)vkx=NPLGN-1;
+      	 }
       }
 
       if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN) && vkflag[1]==0 )
@@ -285,6 +307,12 @@ void retro_virtualkb(void)
       {
          vkflag[1]=0;
          vky += 1; 
+	 if(vky>NLIGN-1)vky=0;
+
+	 while(MVk[(vky*NPLGN)+vkx+page].box==0){
+         	vkx -= 1;
+	 	if(vkx<0)vkx=NPLGN-1;
+      	 }
       }
 
       if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT) && vkflag[2]==0 )
@@ -293,6 +321,12 @@ void retro_virtualkb(void)
       {
          vkflag[2]=0;
          vkx -= 1;
+	 if(vkx<0)vkx=NPLGN-1;
+
+	 while(MVk[(vky*NPLGN)+vkx+page].box==0){
+         	vkx -= 1;
+	 	if(vkx<0)vkx=NPLGN-1;
+      	 }
       }
 
       if ( input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT) && vkflag[3]==0 )
@@ -301,12 +335,20 @@ void retro_virtualkb(void)
       {
          vkflag[3]=0;
          vkx += 1;
+	 if(vkx>NPLGN-1)vkx=0;
+
+	 while(MVk[(vky*NPLGN)+vkx+page].box==0){
+         	vkx += 1;
+	 	if(vkx>NPLGN-1)vkx=0;
+      	 }
+
       }
 
       if(vkx<0)vkx=NPLGN-1;
       if(vkx>NPLGN-1)vkx=0;
       if(vky<0)vky=NLIGN-1;
       if(vky>NLIGN-1)vky=0;
+
 
       virtual_kdb(( char *)Retro_Screen,vkx,vky);
  
