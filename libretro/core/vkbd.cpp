@@ -51,12 +51,12 @@ void virtual_kdb(char *pixels,int vx,int vy)
 	posy=YBASE+YSIDE2*y ;
 
 
-        if(MVk[(y*NPLGN)+x+page].box>1 && MVk[(y*NPLGN)+x+page].color!=1 )DrawFBoxBmpRGBA(pix,x*XSIDE2,YBASE+y*YSIDE2+1, -2+XSIDE2*MVk[(y*NPLGN)+x+page].box,YSIDE2-2,RGB565(22,20,18),128);
+        if(MVk[(y*NPLGN)+x+page].box>1 && MVk[(y*NPLGN)+x+page].color!=1 )DrawFBoxBmpRGBA(pix,posx,posy+1, -2+XSIDE2*MVk[(y*NPLGN)+x+page].box,YSIDE2-2,RGB565(22,20,18),128);
 	else {
 		if(MVk[(y*NPLGN)+x+page].color==2 && MVk[(y*NPLGN)+x+page].box!=0 )
-			DrawFBoxBmpRGBA(pix,x*XSIDE2,YBASE+y*YSIDE2+1, -2+XSIDE2,YSIDE2-2,RGB565(22,20,18),128);
+			DrawFBoxBmpRGBA(pix,posx,posy+1, -2+XSIDE2,YSIDE2-2,RGB565(22,20,18),128);
 		else if(MVk[(y*NPLGN)+x+page].color==3 && MVk[(y*NPLGN)+x+page].box!=0 )
-			DrawFBoxBmpRGBA(pix,x*XSIDE2,YBASE+y*YSIDE2+1, -2+XSIDE2,YSIDE2-2,RGB565(31,31,27),128);
+			DrawFBoxBmpRGBA(pix,posx,posy+1, -2+XSIDE2,YSIDE2-2,RGB565(31,31,27),128);
 	}
 
 	Gui_Text(pix,posx, posy+1,SHIFTON==-1?MVk[(y*NPLGN)+x+page].norml:MVk[(y*NPLGN)+x+page].shift,coul,BKGCOLOR,scale);
@@ -64,7 +64,7 @@ void virtual_kdb(char *pixels,int vx,int vy)
       }
    }
 
-   DrawBoxBmp((char*)pix,vx*XSIDE2,YBASE+vy*YSIDE2+1,-2+ XSIDE2*MVk[(vy*NPLGN)+vx+page].box,YSIDE2-2, RGB565(2,31,1));
+   DrawBoxBmp((char*)pix,XBASE+vx*XSIDE2,YBASE+vy*YSIDE2+1,-2+ XSIDE2*MVk[(vy*NPLGN)+vx+page].box,YSIDE2-2, RGB565(2,31,1));
 
 
 }
