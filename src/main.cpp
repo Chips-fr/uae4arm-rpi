@@ -52,7 +52,7 @@ extern int pauseg;
 
 long int version = 256*65536L*UAEMAJOR + 65536L*UAEMINOR + UAESUBREV;
 
-struct uae_prefs currprefs, changed_prefs; 
+struct uae_prefs currprefs, changed_prefs, tmp_prefs; 
 
 int no_gui = 0;
 int cloanto_rom = 0;
@@ -440,6 +440,25 @@ void leave_program (void)
     do_leave_program ();
 }
 
+void overwrite_with_retroarch_opt(void)
+{
+   // Save options coming from libretro options...
+   currprefs.gfx_size.width =   tmp_prefs.gfx_size.width;
+   currprefs.gfx_size.height =  tmp_prefs.gfx_size.height ;
+   currprefs.gfx_resolution =   tmp_prefs.gfx_resolution;
+   currprefs.leds_on_screen =   tmp_prefs.leds_on_screen;
+   currprefs.cpu_model =        tmp_prefs.cpu_model;
+   currprefs.address_space_24 = tmp_prefs.address_space_24;
+   currprefs.chipset_mask =     tmp_prefs.chipset_mask;
+   currprefs.chipmem_size =     tmp_prefs.chipmem_size;
+   strcpy (currprefs.romfile,   tmp_prefs.romfile);
+   currprefs.m68k_speed =       tmp_prefs.m68k_speed;
+   currprefs.cpu_compatible =   tmp_prefs.cpu_compatible;
+   currprefs.floppy_speed =     tmp_prefs.floppy_speed;
+}
+
+
+
 static void real_main2 (int argc, char **argv)
 {
 #ifdef RASPBERRY
@@ -452,6 +471,7 @@ static void real_main2 (int argc, char **argv)
   SDL_Init (SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
 #endif
 #endif
+  tmp_prefs=changed_prefs;
 
   if (restart_config[0]) {
 	  default_prefs (&currprefs, 0);
@@ -463,7 +483,10 @@ static void real_main2 (int argc, char **argv)
   }
 
   if (restart_config[0])
+  {
+	  overwrite_with_retroarch_opt();
 	  parse_cmdline_and_init_file (argc, argv);
+  }
   else
   	currprefs = changed_prefs;
 
@@ -558,7 +581,9 @@ void real_main (int argc, char **argv)
   strcat (restart_config, OPTIONSFILENAME);
   strcat (restart_config, ".uae");
   while (restart_program) {
+#ifndef __LIBRETRO__
 	  changed_prefs = currprefs;
+#endif
 	  real_main2 (argc, argv);
     leave_program ();
 	  quit_program = 0;
