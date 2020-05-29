@@ -33,7 +33,7 @@
 #include "readcpu.h"
 
 #if defined(__LIBRETRO__)
-#include "md-retro/m68k.h"
+#include "osdep/m68k.h"
 #else
 #include "md-pandora/m68k.h"
 #endif

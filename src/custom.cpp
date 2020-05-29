@@ -17,7 +17,7 @@
 #include "gensound.h"
 #include "audio.h"
 #if defined(__LIBRETRO__)
-#include "sd-retro/sound.h"
+#include "osdep/sound.h"
 #else
 #include "sd-pandora/sound.h"
 #endif
@@ -3756,7 +3756,7 @@ static void do_sprites (int hpos)
     	return;
     
     if (maxspr > SPR0_HPOS + MAX_SPRITES * 4)
-    	maxspr = SPR0_HPOS + MAX_SPRITES * 4;
+    	maxspr = SPR0_HPOS + MAX_SPRITES * 4 - 1;
     if (minspr < SPR0_HPOS)
     	minspr = SPR0_HPOS;
     

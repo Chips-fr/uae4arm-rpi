@@ -23,7 +23,7 @@
 #include "ersatz.h"
 
 #if defined(__LIBRETRO__)
-#include "md-retro/md-fpp.h"
+#include "osdep/md-fpp.h"
 #else
 #include "md-pandora/md-fpp.h"
 #endif

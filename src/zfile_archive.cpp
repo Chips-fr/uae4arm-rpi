@@ -19,6 +19,12 @@
 
 #include <zlib.h>
 
+#if defined(__CELLOS_LV2__) || defined(_WIN32) || defined(WIIU) || defined(__SWITCH__) || defined(VITA)
+#define tzset() 
+#define timezone 0
+#define daylight 0
+#endif
+
 static time_t fromdostime(uae_u32 dd)
 {
     struct tm tm;

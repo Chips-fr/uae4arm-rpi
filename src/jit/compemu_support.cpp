@@ -87,7 +87,12 @@ static int untranslated_compfn(const void *e1, const void *e2)
 #define NATMEM_OFFSETX (uae_u32)natmem_offset
 
 // %%% BRIAN KING WAS HERE %%%
+#ifndef VITA
 #include <sys/mman.h>
+#else
+#include <vitasdk.h>
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+#endif
 extern void jit_abort(const char*,...);
 static compop_func *compfunctbl[65536];
 static compop_func *nfcompfunctbl[65536];
@@ -182,16 +187,49 @@ void cache_free (void *cache, int size)
 {
   // FIXME: Must add (address, size) to a list in cache_alloc, so the memory
   // can be correctly released here...
+#ifdef VITA
+write_log("free Size:%d\n",size);
+
+SceUID block = sceKernelFindMemBlockByAddr(cache, size);
+sceKernelSyncVMDomain(block, cache,size);
+	if (cache) {
+		if (sceKernelFreeMemBlock(block) < 0)
+			;//Com_Printf(S_COLOR_RED "Memory unmap failed, possible memory leak\n");
+write_log("Memory unmap failed, possible memory leak\n\n");
+	}
+	cache = NULL;
+
+#else
   munmap(cache, size);
+#endif
   //free(cache);
 }
 
 void *cache_alloc (int size)
 {
+#ifdef VITA
+  size = size < (8* 1024 * 1024) ? (8* 1024 * 1024) : size;
+#else
   size = size < getpagesize() ? getpagesize() : size;
+#endif
 
+#ifdef VITA
+
+		SceUID blkid  = sceKernelAllocMemBlockForVM("mmap", ALIGN(ALIGN(size, 4 * 1024), 1 * 1024 * 1024));
+
+void *cache = NULL;
+		sceKernelGetMemBlockBase(blkid, &cache);
+
+		if(blkid < 0){
+write_log("VM_CompileARM: can't mmap memory:%d\n",size);
+			//Com_Error(ERR_FATAL, "VM_CompileARM: can't mmap memory");
+}
+		sceKernelOpenVMDomain();
+
+#else
   void *cache = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
   //void *cache = malloc(size);
+#endif
   if (!cache) {
         printf ("Cache_Alloc of %d failed. ERR=%d\n", size, errno);
     }

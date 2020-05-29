@@ -25,8 +25,9 @@ struct zvolume *archive_directory_lha(struct zfile *zf)
     struct zarchive_info zai;
     LzHeader hdr;
     int i;
-
+#if !defined(VITA)
     tzset();
+#endif
     zv = zvolume_alloc(zf, ArchiveFormatLHA, NULL);
     while (get_header(zf, &hdr)) {
 	struct znode *zn;
@@ -40,7 +41,11 @@ struct zvolume *archive_directory_lha(struct zfile *zf)
 	zai.name = hdr.name;
 	zai.size = hdr.original_size;
 	zai.flags = hdr.attribute;
+#if !defined(VITA)
 	zai.t = hdr.unix_last_modified_stamp -= timezone;
+#else
+	zai.t = hdr.unix_last_modified_stamp;
+#endif
 	if (hdr.name[strlen(hdr.name) + 1] != 0)
 	    zai.comment = &hdr.name[strlen(hdr.name) + 1];
 	if (method == LZHDIRS_METHOD_NUM) {

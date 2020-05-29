@@ -21,7 +21,9 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
+#ifndef VITA
 #include <sys/statfs.h>
+#endif
 #include <SDL.h>
 
 #include "fsusage.h"
@@ -45,6 +47,27 @@ static long adjust_blocks(long blocks, int fromsize, int tosize)
     return (blocks + (blocks < 0 ? -1 : 1)) / (tosize / fromsize);
 }
 
+#ifdef VITA
+#define TCHAR char
+static int get_fs_usage_fake (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
+{
+    //fsp->total = 0x7fffff;
+    //fsp->avail = 0x3fffff;
+
+	fsp->fsu_blocks = 507289;
+	fsp->fsu_bfree = 3435973;
+	fsp->fsu_bavail = 507289 / 2;
+	fsp->fsu_files = 3435973;
+	fsp->fsu_ffree = 3435973;
+
+    return 0;
+}
+
+int get_fs_usage (const TCHAR *path, const TCHAR *disk, struct fs_usage *fsp)
+{
+    return get_fs_usage_fake(path, disk, fsp);
+}
+#else
 
 /* Read LEN bytes at PTR from descriptor DESC, retrying if interrupted.
    Return the actual number of bytes read, zero for EOF, or negative
@@ -239,3 +262,4 @@ get_fs_usage
 
   return 0;
 }
+#endif

@@ -4,7 +4,7 @@
 
 #define kCrcPoly 0xEDB88320
 
-UInt32 g_CrcTable[256];
+UInt32 g7_CrcTable[256];
 
 void InitCrcTable()
 {
@@ -18,7 +18,7 @@ void InitCrcTable()
         r = (r >> 1) ^ kCrcPoly;
       else     
         r >>= 1;
-    g_CrcTable[i] = r;
+    g7_CrcTable[i] = r;
   }
 }
 
@@ -27,7 +27,7 @@ UInt32 CrcGetDigest(UInt32 *crc) { return *crc ^ 0xFFFFFFFF; }
 
 void CrcUpdateByte(UInt32 *crc, Byte b)
 {
-  *crc = g_CrcTable[((Byte)(*crc)) ^ b] ^ (*crc >> 8);
+  *crc = g7_CrcTable[((Byte)(*crc)) ^ b] ^ (*crc >> 8);
 }
 
 void CrcUpdateUInt16(UInt32 *crc, UInt16 v)
@@ -58,7 +58,7 @@ void CrcUpdate(UInt32 *crc, const void *data, size_t size)
   UInt32 v = *crc;
   const Byte *p = (const Byte *)data;
   for (; size > 0 ; size--, p++)
-    v = g_CrcTable[((Byte)(v)) ^ *p] ^ (v >> 8);
+    v = g7_CrcTable[((Byte)(v)) ^ *p] ^ (v >> 8);
   *crc = v;
 }
 
