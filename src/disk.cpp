@@ -1883,14 +1883,14 @@ void DISK_GUI_change (void)
             i--;
         }
 
-            Draw_text((char*)Retro_Screen,20 , 20 ,RGB565(28, 28, 31), 0xFF808080 ,1, 1,10,"Switch to:");
+            Draw_text((char*)Retro_Screen,20 , 20 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,10,"Switch to:");
             if (currprefs.gfx_size.width > 320)
-                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(28, 28, 31), 0xFF808080 ,1, 1,100,(currprefs.df[idx]) + i);
+                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,100,(currprefs.df[idx]) + i);
             else
             {
-                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(28, 28, 31), 0xFF808080 ,1, 1,40,(currprefs.df[idx]) + i);
+                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,40,(currprefs.df[idx]) + i);
                 if (strlen (currprefs.df[idx]) > 40)
-                    Draw_text((char*)Retro_Screen,20 , 40 ,RGB565(28, 28, 31), 0xFF808080 ,1, 1,40,(currprefs.df[idx]) + i + 40);
+                    Draw_text((char*)Retro_Screen,20 , 40 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,40,(currprefs.df[idx]) + i + 40);
             }
     }
 #endif
