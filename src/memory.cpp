@@ -26,6 +26,8 @@
 #include <android/log.h> 
 #endif
 
+#include "core-log.h"
+
 #ifdef JIT
 /* Set by each memory handler that does not simply access real memory. */
 int special_mem;
@@ -2037,6 +2039,39 @@ static void patch_kick(void)
     	kickstart_fix_checksum (kickmemory, kickmem_size);
 }
 
+extern unsigned char arosrom[];
+extern unsigned int arosrom_len;
+static int load_kickstart_replacement (void)
+{
+	struct zfile *f;
+	LOGI("Load aros kickstart replacement.\n");
+	f = zfile_fopen_data ("aros.gz", arosrom_len, arosrom);
+	if (!f)
+		return false;
+	f = zfile_gunzip (f);
+	if (!f)
+		return false;
+	kickmem_mask = 0x80000 - 1;
+	kickmem_size = 0x80000;
+	extendedkickmem_size = 0x80000;
+	extendedkickmem_type = EXTENDED_ROM_KS;
+	extendedkickmemory = mapped_malloc (extendedkickmem_size, "rom_e0");
+	extendedkickmem_bank.baseaddr = extendedkickmemory;
+	read_kickstart (f, extendedkickmemory, extendedkickmem_size, 0, 1);
+	extendedkickmem_mask = extendedkickmem_size - 1;
+	read_kickstart (f, kickmemory, 0x80000, 1, 0);
+	zfile_fclose (f);
+
+	// config without any other fast ram with m68k aros: enable special extra RAM.
+	if (	currprefs.fastmem_size == 0 &&
+		currprefs.z3fastmem_size == 0 &&
+		currprefs.gfxmem_size == 0) {
+		changed_prefs.fastmem_size = 0x100000;
+		LOGI("1MB fastmem added for AROS support\n");
+	}
+	return 1;
+}
+
 static int load_kickstart (void)
 {
     struct zfile *f;
@@ -2062,6 +2097,7 @@ static int load_kickstart (void)
     }
     addkeydir (currprefs.romfile);
     if( f == NULL ) { /* still no luck */
+        return load_kickstart_replacement();
 #if defined(AMIGA)||defined(__POS__)
 #define USE_UAE_ERSATZ "USE_UAE_ERSATZ"
 	if( !getenv(USE_UAE_ERSATZ)) 

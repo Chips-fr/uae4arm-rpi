@@ -15,6 +15,7 @@ INCFLAGS += -I$(CORE_DIR)/libretro/libco \
 
 OBJS =	\
 	$(EMU)/audio.o \
+	$(EMU)/aros.rom.o \
 	$(EMU)/autoconf.o \
 	$(EMU)/blitfunc.o \
 	$(EMU)/blittable.o \
