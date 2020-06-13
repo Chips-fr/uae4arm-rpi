@@ -89,7 +89,6 @@ USE_PICASSO96 := 1
 ifeq ($(USE_PICASSO96), 1)
 	OBJS += $(LIBRETRO)/osdep/picasso96.o
 endif
-HAVE_NEON := 1
 ifeq ($(HAVE_NEON), 1)
 	OBJS +=  $(LIBRETRO)/osdep/neon_helper.o
 endif
