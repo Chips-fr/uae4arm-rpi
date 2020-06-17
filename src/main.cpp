@@ -462,9 +462,17 @@ void overwrite_with_retroarch_opt(void)
 
 static void real_main2 (int argc, char **argv)
 {
-#ifdef RASPBERRY
   printf("Uae4arm v0.4 for Raspberry Pi by Chips\n");
+
+#ifdef GIT_VERSION
+#define STR_(x) #x
+#define STR(x) STR_(x)
+  const char git_version[] = STR(GIT_VERSION);
+
+  printf("Git revision: %s\n",git_version);
 #endif
+
+
 #ifdef PANDORA
   SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE | SDL_INIT_VIDEO);
 #else 

@@ -164,6 +164,13 @@ endif
 	LDFLAGS := -lm -lz
 endif
 
+
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+	CFLAGS += -DGIT_VERSION=$(GIT_VERSION)
+endif
+
+
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else
@@ -219,7 +226,6 @@ $(TARGET): $(OBJECTS)
 else
 $(TARGET): $(OBJECTS)
 	$(CXX) $(fpic) $(SHARED) $(INCDIRS) -o $@ $(OBJECTS) $(LDFLAGS)
-
 endif
 
 ifeq ($(platform), vita)
