@@ -7,6 +7,8 @@
 #include "options.h"
 #include "custom.h"
 
+#include "uae.h"
+
 cothread_t mainThread;
 cothread_t emuThread;
 
@@ -325,8 +327,9 @@ void retro_shutdown_core(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-void retro_reset(void){
-
+void retro_reset(void)
+{
+   uae_reset(1);
 }
 
 void retro_init(void)
