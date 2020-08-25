@@ -7,6 +7,8 @@
 #include "options.h"
 #include "custom.h"
 
+#include "uae.h"
+
 cothread_t mainThread;
 cothread_t emuThread;
 
@@ -15,6 +17,7 @@ int CROP_HEIGHT;
 int VIRTUAL_WIDTH ;
 int retrow=1024; 
 int retroh=1024;
+static unsigned msg_interface_version = 0;
 
 #define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
 #define RETRO_DEVICE_AMIGA_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
@@ -104,6 +107,42 @@ void retro_set_environment(retro_environment_t cb)
    };
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
+}
+
+void Retro_Kickstart_Replacement_Msg(void)
+{
+
+   static char Already_done = 0;
+
+   if (Already_done)
+      return;
+
+   const char *msg_str = "No Kickstart file found - add for better compatibility";
+
+   if (msg_interface_version >= 1)
+   {
+      struct retro_message_ext msg = {
+         msg_str,
+         3000,
+         3,
+         RETRO_LOG_WARN,
+         RETRO_MESSAGE_TARGET_ALL,
+         RETRO_MESSAGE_TYPE_NOTIFICATION,
+         -1
+      };
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+   }
+   else
+   {
+      struct retro_message msg = {
+         msg_str,
+         180
+      };
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+   }
+
+   Already_done = 1;
+
 }
 
 
@@ -288,13 +327,17 @@ void retro_shutdown_core(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-void retro_reset(void){
-
+void retro_reset(void)
+{
+   uae_reset(1);
 }
 
 void retro_init(void)
 {
    const char *system_dir = NULL;
+
+   msg_interface_version = 0;
+   environ_cb(RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION, &msg_interface_version);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &system_dir) && system_dir)
    {

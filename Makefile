@@ -21,19 +21,26 @@ TARGET_NAME := uae4arm
 CORE_DIR  := .
 ROOT_DIR  := .
 
-ifeq ($(platform), unix)
+	# Default (ARM) unix
+ifneq (,$(findstring unix,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	LDFLAGS := -lz -lpthread
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
+   	ifneq (,$(findstring neon,$(platform)))
+		PLATFORM_DEFINES += -mfpu=neon -march=armv7-a
+		CFLAGS += $(PLATFORM_DEFINES)
+		HAVE_NEON = 1
+		CPU_FLAGS +=  -marm
+	endif
 else ifeq ($(platform), crosspi)
    	TARGET := $(TARGET_NAME)_libretro.so
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__ -DARM_ASM -D__NEON_OPT
+	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 
-	PLATFORM_DEFINES += -I ../usr/include -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
+	PLATFORM_DEFINES += -I ../usr/include -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -46,13 +53,13 @@ else ifeq ($(platform), crossand)
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc  
 	PLATFORM_DEFINES +=  -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon
-        CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ -DARM_ASM -D__NEON_OPT
+        CPU_FLAGS += -marm  -march=armv7-a -mfloat-abi=softfp -mfpu=neon -D__arm__ 
 
 	#-march=armv7-a -mfloat-abi=hard -mhard-float  
 	#-mfpu=neon
-	# -mfpu=neon-vfpv4 -mfloat-abi=hard
+	#-mfpu=neon-vfpv4 -mfloat-abi=hard
 
-	PLATFORM_DEFINES +=  -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
+	PLATFORM_DEFINES +=  -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -62,14 +69,16 @@ else ifeq ($(platform), crossand)
 	AR = @arm-linux-androideabi-ar
 	LD = @arm-linux-androideabi-g++ 
 	LDFLAGS += -lz -llog
+
+	# Raspberry Pi 2 and above
 else ifeq ($(platform), rpi2)
     	TARGET := $(TARGET_NAME)_libretro.so
    	fpic = -fPIC
    	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__ -DARM_ASM -D__NEON_OPT
+	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 
-	PLATFORM_DEFINES +=   -DLSB_FIRST -DALIGN_DWORD -DWITH_LOGGING
+	PLATFORM_DEFINES +=  -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -78,10 +87,10 @@ else ifeq ($(platform), rpi2)
    	CXX = g++ 
 	LDFLAGS += -lz -lpthread
 
-        #LDFLAGS += -fsanitize=address -fsanitize=bounds 
+        #LDFLAGS   += -fsanitize=address -fsanitize=bounds 
         #CPU_FLAGS += -fsanitize=address -fsanitize=bounds 
 
-	# use for raspberry pi
+	# Raspberry Pi 0 & 1
 else ifeq ($(platform), rpi) 
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
@@ -92,28 +101,89 @@ else ifeq ($(platform), rpi)
 	# Sony Ps vita
 else ifeq ($(platform), vita)
 	TARGET := $(TARGET_NAME)_libretro_vita.a
-   	CC = arm-vita-eabi-gcc
-   	CXX = arm-vita-eabi-g++
-   	AR = arm-vita-eabi-ar
-   	PLATFLAGS +=  -marm -mfpu=neon -mtune=cortex-a9 -mfloat-abi=hard -ffast-math
-        PLATFLAGS +=  -fno-asynchronous-unwind-tables -funroll-loops
-        PLATFLAGS +=  -mword-relocations -fno-unwind-tables -fno-optimize-sibling-calls
-        PLATFLAGS +=   -mvectorize-with-neon-quad -funsafe-math-optimizations
-        PLATFLAGS +=   -mlittle-endian -munaligned-access
-	PLATFLAGS += -D__arm__ -DARM_ASM -D__NEON_OPT  -DVITA
-	PLATFLAGS +=   -DLSB_FIRST -DALIGN_DWORD 
+	CC = arm-vita-eabi-gcc
+	CXX = arm-vita-eabi-g++
+	AR = arm-vita-eabi-ar
+	PLATFLAGS += -marm -mfpu=neon -mtune=cortex-a9 -mfloat-abi=hard -ffast-math
+	PLATFLAGS += -fno-asynchronous-unwind-tables -funroll-loops
+	PLATFLAGS += -mword-relocations -fno-unwind-tables -fno-optimize-sibling-calls
+	PLATFLAGS += -mvectorize-with-neon-quad -funsafe-math-optimizations
+	PLATFLAGS += -mlittle-endian -munaligned-access
+	PLATFLAGS += -D__arm__ -DVITA 
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
-	PLATFLAGS +=  -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int -DLSB_FIRST
-	PLATFLAGS +=  -DHAVE_STRTOUL -DVITA -DWITH_LOGGING
+	PLATFLAGS += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
+	PLATFLAGS += -DHAVE_STRTOUL -DVITA -DWITH_LOGGING
 	CFLAGS += $(PLATFLAGS) 
 	CXXFLAGS += $(PLATFLAGS) 
 	STATIC_LINKING = 1
+
+# Classic Platforms ####################
+# Platform affix = classic_<ISA>_<µARCH>
+# Help at https://modmyclassic.com/comp
+
+# (armv7 a7, hard point, neon based) ### 
+# NESC, SNESC, C64 mini 
+else ifeq ($(platform), classic_armv7_a7)
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
+	PLATFORM_DEFINES += -DWITH_LOGGING
+	HAVE_NEON = 1
+	USE_PICASSO96 = 1
+	CPU_FLAGS += -DARM -Ofast \
+	-flto=4 -fwhole-program -fuse-linker-plugin \
+	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+	-fno-stack-protector -fno-ident -fomit-frame-pointer \
+	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
+	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
+	-fmerge-all-constants -fno-math-errno \
+	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+	CXXFLAGS += $(CPU_FLAGS)
+	CPPFLAGS += $(CPU_FLAGS)
+	ASFLAGS += $(CPU_FLAGS)
+	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+	  CFLAGS += -march=armv7-a
+	else
+	  CFLAGS += -march=armv7ve
+	  # If gcc is 5.0 or later
+	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+	    LDFLAGS += -static-libgcc -static-libstdc++
+	  endif
+	endif
+# (armv8 a35, hard point, neon based) ###
+# PS Classic
+else ifeq ($(platform), classic_armv8_a35)
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
+	PLATFORM_DEFINES += -DWITH_LOGGING
+	HAVE_NEON = 1
+	USE_PICASSO96 = 1
+	CPU_FLAGS += -DARM -Ofast \
+	-flto=4 -fwhole-program -fuse-linker-plugin \
+	-fdata-sections -ffunction-sections -Wl,--gc-sections \
+	-fno-stack-protector -fno-ident -fomit-frame-pointer \
+	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
+	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
+	-fmerge-all-constants -fno-math-errno \
+	-marm -mtune=cortex-a35 -mfpu=neon-fp-armv8 -mfloat-abi=hard
+	CXXFLAGS += $(CPU_FLAGS)
+	CPPFLAGS += $(CPU_FLAGS)
+	ASFLAGS += $(CPU_FLAGS)
+	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
+	  CFLAGS += -march=armv8-a
+	else
+	  CFLAGS += -march=armv8-a
+	  # If gcc is 5.0 or later
+	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
+	    LDFLAGS += -static-libgcc -static-libstdc++
+	  endif
+	endif
 else ifeq ($(platform), osx)
 	TARGET := $(TARGET_NAME)_libretro.dylib
 	fpic := -fPIC -mmacosx-version-min=10.6
 	SHARED := -dynamiclib
-	PLATFLAGS +=  -DRETRO -DLSB_FIRST -DALIGN_DWORD
 else ifeq ($(platform), android)
 	CC = arm-linux-androideabi-gcc
 	CXX =arm-linux-androideabi-g++
@@ -123,7 +193,7 @@ else ifeq ($(platform), android)
 	fpic := -fPIC
 	LDFLAGS := -lz -lm -llog
 	SHARED :=  -Wl,--fix-cortex-a8 -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
-	PLATFLAGS += -DWITH_LOGGING -DANDROID -DRETRO -DAND -DLSB_FIRST -DALIGN_DWORD -DANDPORT -DARM_OPT_TEST=1
+	PLATFLAGS += -DWITH_LOGGING -DANDROID -DAND -DANDPORT -DARM_OPT_TEST=1
 else ifeq ($(platform), wii)
 	TARGET := $(TARGET_NAME)_libretro_wii.a
 	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
@@ -133,7 +203,7 @@ else ifeq ($(platform), wii)
 	-DWIIPORT=1 -DHAVE_MEMALIGN -DHAVE_ASPRINTF -I$(ZLIB_DIR) -I$(DEVKITPRO)/libogc/include \
 	-D__powerpc__ -D__POWERPC__ -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -D__ppc__
 	LDFLAGS :=   -lm -lpthread -lc
-	PLATFLAGS +=  -DRETRO -DALIGN_DWORD -DWIIPORT
+	PLATFLAGS += -DWIIPORT
 else ifeq ($(platform), ps3)
 	TARGET := $(TARGET_NAME)_libretro_ps3.a
 	CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
@@ -141,10 +211,8 @@ else ifeq ($(platform), ps3)
 	ZLIB_DIR = $(LIBUTILS)/zlib/
 	LDFLAGS :=   -lm -lpthread -lc
 	CFLAGS += -DSDL_BYTEORDER=SDL_BIG_ENDIAN -DMSB_FIRST -DBYTE_ORDER=BIG_ENDIAN  -DBYTE_ORDER=BIG_ENDIAN \
-	-D__CELLOS_LV2 -DPS3PORT=1 -DHAVE_MEMALIGN -DHAVE_ASPRINTF -I$(ZLIB_DIR) 
-	PLATFLAGS +=  -DRETRO -DALIGN_DWORD 
+	-D__CELLOS_LV2 -DPS3PORT=1 -DHAVE_MEMALIGN -DHAVE_ASPRINTF -I$(ZLIB_DIR)  
 else
-
 
 ifeq ($(subplatform), 32)
 	CC = i586-mingw32msvc-gcc
@@ -152,12 +220,19 @@ else
 	CC = x86_64-w64-mingw32-gcc
 	CFLAGS += -fno-aggressive-loop-optimizations
 endif
-	PLATFLAGS +=  -DRETRO -DLSB_FIRST -DALIGN_DWORD -DWIN32PORT -DWIN32
+	PLATFLAGS += -DWIN32PORT -DWIN32
 	TARGET := $(TARGET_NAME)_libretro.dll
 	fpic := -fPIC
 	SHARED := -shared -static-libgcc -s -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined 
 	LDFLAGS := -lm -lz
 endif
+
+
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+	CFLAGS += -DGIT_VERSION=$(GIT_VERSION)
+endif
+
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
@@ -165,9 +240,8 @@ else
 	CFLAGS += -O3 -fomit-frame-pointer -finline -fno-builtin
 endif
 
-DEFINES += 
 
-DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DGP2X -DPANDORA -DSIX_AXIS_WORKAROUND
+DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DPANDORA
 
 ifeq ($(platform), vita)
 DEFS += -DROM_PATH_PREFIX=\"ux0:/data/retroarch/system/uae4arm/\" -DDATA_PREFIX=\"ux0:/data/retroarch/system/uae4arm/data/\" -DSAVE_PREFIX=\"ux0:/data/retroarch/system/uae4arm/saves/\"
@@ -187,7 +261,7 @@ endif
 
 DEFINES += -D__LIBRETRO__ $(DEFS)
 #-std=gnu99 
-CFLAGS += $(DEFINES) -DRETRO=1 -DINLINE="inline" $(CPU_FLAGS) -fexceptions -fpermissive
+CFLAGS += $(DEFINES) -DINLINE="inline" $(CPU_FLAGS) -fexceptions -fpermissive
 
 include Makefile.common
 
@@ -215,16 +289,17 @@ $(TARGET): $(OBJECTS)
 else
 $(TARGET): $(OBJECTS)
 	$(CXX) $(fpic) $(SHARED) $(INCDIRS) -o $@ $(OBJECTS) $(LDFLAGS)
-
 endif
 
 ifeq ($(platform), vita)
 $(LIBRETRO)/osdep/neon_helper.o: $(LIBRETRO)/osdep/neon_helper.s
 	$(CXX) $(CFLAGS)  $(PLATFLAGS) -Wall -o $(LIBRETRO)/osdep/neon_helper.o -c $(LIBRETRO)/osdep/neon_helper.s
 else
+ifeq ($(HAVE_NEON), 1)
 $(LIBRETRO)/osdep/neon_helper.o: $(LIBRETRO)/osdep/neon_helper.s
 	$(CXX) $(CPU_FLAGS) $(PLATFORM_DEFINES) -Wall -o $(LIBRETRO)/osdep/neon_helper.o -c $(LIBRETRO)/osdep/neon_helper.s
 	echo $(OBJS)
+endif
 endif
 
 %.o: %.cpp

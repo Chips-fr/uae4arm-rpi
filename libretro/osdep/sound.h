@@ -12,9 +12,10 @@
 #define DEFAULT_SOUND_CHANNELS 1
 #endif
 
+#define SOUND_BUFFERS_COUNT 1
 #define SNDBUFFER_LEN 2048
 
-extern uae_u16 sndbuffer[4][(SNDBUFFER_LEN+32)*DEFAULT_SOUND_CHANNELS];
+extern uae_u16 sndbuffer[SOUND_BUFFERS_COUNT][(SNDBUFFER_LEN+32)*DEFAULT_SOUND_CHANNELS];
 extern uae_u16 *sndbufpt;
 extern uae_u16 *render_sndbuff;
 extern uae_u16 *finish_sndbuff;
@@ -33,7 +34,7 @@ extern void sound_volume (int);
 
 STATIC_INLINE void clear_sound_buffers (void)
 {
-    memset (sndbuffer, 0, 4 * (SNDBUFFER_LEN + 32) * DEFAULT_SOUND_CHANNELS);
+    memset (sndbuffer, 0, sizeof (sndbuffer));
 }
 
 #define PUT_SOUND_WORD(b) do { *(uae_u16 *)sndbufpt = b; sndbufpt = (uae_u16 *)(((uae_u8 *)sndbufpt) + 2); } while (0)

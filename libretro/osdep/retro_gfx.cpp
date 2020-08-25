@@ -17,14 +17,14 @@
 #endif
 #include "osdep/thread.h"
 
-extern int retrow,retroh,stylusClickOverride;
+extern int retrow,retroh;
 
 #include "libretro-core.h"
 
 /* Possible screen modes (x and y resolutions) */
-#define MAX_SCREEN_MODES 7
-static int x_size_table[MAX_SCREEN_MODES] = { 640, 640, 800, 800,1024, 1152, 1280 };
-static int y_size_table[MAX_SCREEN_MODES] = { 400, 480, 480, 600, 768,  864,  960 };
+#define MAX_SCREEN_MODES 14
+static int x_size_table[MAX_SCREEN_MODES] = {640, 640, 720, 800, 800, 960, 1024, 1280, 1280, 1280, 1360, 1366, 1680, 1920};
+static int y_size_table[MAX_SCREEN_MODES] = {400, 480, 400, 480, 600, 540, 768, 720, 800, 1024, 768, 768, 1050, 1080};
 
 static int red_bits, green_bits, blue_bits;
 static int red_shift, green_shift, blue_shift;
@@ -45,12 +45,8 @@ static void CreateScreenshot(void);
 static int save_thumb(char *path);
 int delay_savestate_frame = 0;
 
-int justClicked = 0;
 int mouseMoving = 0;
 int fcounter = 0;
-int doStylusRightClick = 0;
-
-int DispManXElementpresent = 0;
 
 static unsigned long previous_synctime = 0;
 static unsigned long next_synctime = 0;
@@ -69,24 +65,12 @@ VC_RECT_T       src_rect;
 VC_RECT_T       dst_rect;
 VC_RECT_T       blit_rect;
 */
-unsigned char current_resource_amigafb = 0;
+
 
 #include "libco.h"
 
 extern cothread_t mainThread;
 extern cothread_t emuThread;
-
-void vsync_callback(unsigned int a, void* b)
-{
-LOGI("vsync\n");
-//co_switch(mainThread);
-	//vsync_timing=SDL_GetTicks();
-	//vsync_frequency = vsync_timing - old_time;
-	//old_time = vsync_timing;
-	//need_frameskip =  ( vsync_frequency > 31 ) ? (need_frameskip+1) : need_frameskip;
-	//printf("d: %i", vsync_frequency     );
-	uae_sem_post (&vsync_wait_sem);
-}
 
 
 int graphics_setup (void)
@@ -153,7 +137,7 @@ static void open_screen(struct uae_prefs *p)
   } else
 #endif
   {
-p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
+    p->gfx_resolution = p->gfx_size.width > 600 ? 1 : 0;
     width  = p->gfx_size.width;
     height = p->gfx_size.height;
   }
@@ -222,7 +206,6 @@ void unlockscr (void)
 #include "inputdevice.h"
 #include "joystick.h"
 extern int Retro_PollEvent();
-#define getjoystate(NR,DIR,BUT) read_joystick(NR,DIR,BUT)
 extern DISK_GUI_change (void);
 
 void flush_screen ()
@@ -252,10 +235,15 @@ void flush_screen ()
 
   unsigned long start = read_processor_time();
 
+
+  adjust_idletime (start - last_synctime);
+
+
 co_switch(mainThread);
 
   last_synctime = read_processor_time();
-  
+
+#if 0
   if(last_synctime - next_synctime > time_per_frame - 1000)
     adjust_idletime(0);
   else
@@ -265,6 +253,7 @@ co_switch(mainThread);
     next_synctime = last_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
   else
     next_synctime = next_synctime + time_per_frame * (1 + currprefs.gfx_framerate);
+#endif
 
 	init_row_map();
 
@@ -622,7 +611,7 @@ void picasso_InitResolutions (void)
   }
   DisplayModes[count].depth = -1;
   sortmodes();
-  modesList();
+  //modesList();
   DisplayModes = Displays[0].DisplayModes;
 }
 

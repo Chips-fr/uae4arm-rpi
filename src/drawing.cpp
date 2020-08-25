@@ -217,8 +217,8 @@ void adjust_idletime(unsigned long ms_waited)
     idletime_percent = idletime_time * 100 / ms_per_frames;
     if(idletime_percent < 0)
       idletime_percent = 0;
-    else if(idletime_percent > 100)
-      idletime_percent = 100;
+    //else if(idletime_percent > 100)
+    //  idletime_percent = 100;
     idletime_time = 0;
     idletime_frames = 0;
   }
@@ -1909,7 +1909,8 @@ static void draw_status_line (int line)
 			off_rgb = 0x666;
 		} else if (led < 0) {
 			/* Power */
-			track = gui_data.fps;
+			//track = gui_data.fps;
+			track = -2;
 			on = gui_data.powerled;
 			on_rgb = 0xc00;
 			off_rgb = 0x300;
