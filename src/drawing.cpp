@@ -85,6 +85,20 @@ bool aga_mode; /* mirror of chipset_mask & CSMASK_AGA */
    coordinates have a lower resolution (i.e. we're shrinking the image).  */
 static int res_shift;
 
+
+#if defined(__LIBRETRO__)
+#include "libretro-core.h"
+extern int retrow,retroh;
+typedef struct sdl_surface {
+	int w;
+	int h;
+	int pitch;
+	unsigned char *pixels;
+}SDL_Surface ;
+
+SDL_Surface *prSDLScreen;
+#endif
+
 static int linedbl;
 
 int interlace_seen;
@@ -2466,6 +2480,15 @@ static void *render_thread (void *unused)
 
 void drawing_init (void)
 {
+
+#if defined(__LIBRETRO__)
+prSDLScreen = (SDL_Surface*)malloc( sizeof(*prSDLScreen) );
+    prSDLScreen->w = retrow;
+    prSDLScreen->h = retroh;
+    prSDLScreen->pitch = retrow*2;
+    prSDLScreen->pixels =(unsigned char*)Retro_Screen;
+#endif
+
   gen_pfield_tables();
 
 	gen_direct_drawing_table();

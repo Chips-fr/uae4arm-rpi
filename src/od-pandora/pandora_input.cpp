@@ -4,7 +4,7 @@
 #include "options.h"
 #include "keyboard.h"
 #include "inputdevice.h"
-#include <SDL.h>
+#include "SDL.h"
 
 
 static int joyXviaCustom = 0;
@@ -45,10 +45,17 @@ static int get_mouse_num (void)
 
 static TCHAR *get_mouse_friendlyname (int mouse)
 {
+#ifdef __LIBRETRO__
+  if(mouse == 0)
+    return "Libretro mouse 0";
+  else
+    return "Libretro mouse 1";
+#else
   if(mouse == 0)
     return "Nubs as mouse";
   else
     return "dPad as mouse";
+#endif
 }
 
 static TCHAR *get_mouse_uniquename (int mouse)
@@ -99,6 +106,7 @@ static int get_mouse_widget_type (int mouse, int num, TCHAR *name, uae_u32 *code
 
 static void read_mouse (void) 
 {
+#ifndef __LIBRETRO__
   if(currprefs.input_tablet > TABLET_OFF) {
     // Mousehack active
     int x, y;
@@ -128,6 +136,7 @@ static void read_mouse (void)
   } 
    
   // Nubs as mouse handled in handle_msgpump()
+#endif
 }
 
 
@@ -260,17 +269,24 @@ static char JoystickName[MAX_INPUT_DEVICES][80];
 
 static char IsPS3Controller[MAX_INPUT_DEVICES];
 
+#ifndef __LIBRETRO__
 static SDL_Joystick* Joysticktable[MAX_INPUT_DEVICES];
+#endif
 
 
 static int get_joystick_num (void)
 {
+#ifdef __LIBRETRO__
+  return 2;
+#else
   // Keep joystick 0 as Pandora implementation...
   return (nr_joysticks + 1);
+#endif
 }
 
 static int init_joystick (void)
 {
+#ifndef __LIBRETRO__
   //This function is called too many times... we can filter if number of joy is good...
   if (nr_joysticks == SDL_NumJoysticks ())
     return 1;
@@ -296,16 +312,18 @@ static int init_joystick (void)
     else
       IsPS3Controller[cpt] = 0;
   }
-
+#endif
   return 1;
 }
 
 static void close_joystick (void)
 {
+#ifndef __LIBRETRO__
   for (int cpt; cpt < nr_joysticks; cpt++)
   {
 	SDL_JoystickClose (Joysticktable[cpt]);
   }
+#endif
 }
 
 
@@ -320,10 +338,17 @@ static void unacquire_joystick (int num)
 
 static TCHAR *get_joystick_friendlyname (int joy)
 {
+#ifdef __LIBRETRO__
+  if (joy == 0) 
+    return "Libretro Joystick 0";
+  else
+    return "Libretro Joystick 1";
+#else
   if (joy == 0) 
     return "dPad as joystick";
   else
     return JoystickName[joy - 1];
+#endif
 }
 
 static TCHAR *get_joystick_uniquename (int joy)
@@ -417,7 +442,7 @@ static int get_joystick_flags (int num)
 
 static void read_joystick (void)
 {
-
+#ifndef __LIBRETRO__
   for (int joyid = 0; joyid < MAX_JPORTS ; joyid ++)
   // First handle fake joystick from pandora...
   if(currprefs.jports[joyid].id == JSEM_JOYS)
@@ -510,6 +535,7 @@ static void read_joystick (void)
            setjoystickstate (hostjoyid + 1, 0, -32767, 32767);
       }
     }
+#endif
 }
 
 struct inputdevice_functions inputdevicefunc_joystick = {

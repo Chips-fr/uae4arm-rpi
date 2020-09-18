@@ -10,6 +10,10 @@
   * Original High Density Drive Handling by Dr. Adil Temel (C) 2001 [atemel1@hotmail.com]
   *
   */
+#include <string>
+#include <list>
+#include <stdio.h>
+#include <sstream>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -32,6 +36,10 @@
 #endif
 #ifdef CAPS
 #include "uae/caps.h"
+#endif
+#ifdef __LIBRETRO__
+#include "graph.h"
+#include "libretro-core.h"
 #endif
 
 #include "crc32.h"
@@ -2599,6 +2607,38 @@ void disk_insert_force (int num, const TCHAR *name, bool forcedwriteprotect)
 	disk_insert_2 (num, name, 1, forcedwriteprotect);
 }
 
+void DISK_GUI_change (void)
+{
+
+#ifdef __LIBRETRO__
+    int idx = 0;
+    if (floppy[idx].dskchange_time)
+    {
+        int i = strlen (currprefs.floppyslots[idx].df) - 1;
+        while (i > 0)
+        {
+            if (currprefs.floppyslots[idx].df[i] == '/' || currprefs.floppyslots[idx].df[i] == '\\')
+            {
+                i++;
+                break;
+            }
+            i--;
+        }
+
+            Draw_text((char*)Retro_Screen,20 , 20 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,10,"Switch to:");
+            if (currprefs.gfx_size.width > 320)
+                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,100,(currprefs.floppyslots[idx].df) + i);
+            else
+            {
+                Draw_text((char*)Retro_Screen,20 , 30 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,40,(currprefs.floppyslots[idx].df) + i);
+                if (strlen (currprefs.floppyslots[idx].df) > 40)
+                    Draw_text((char*)Retro_Screen,20 , 40 ,RGB565(7, 7, 7), RGB565(29, 29, 29) ,1, 1,40,(currprefs.floppyslots[idx].df) + i + 40);
+            }
+    }
+#endif
+
+}
+
 static void DISK_check_change (void)
 {
   if (currprefs.floppy_speed != changed_prefs.floppy_speed)
@@ -4018,3 +4058,65 @@ uae_u8 *save_floppy(int *len, uae_u8 *dstptr)
 }
 
 #endif /* SAVESTATE */
+
+void changedisk(bool plus)
+{
+    std::string fname=currprefs.floppyslots[0].df;
+    int lfname =fname.length();
+
+    std::string constdisk="(Disk ";
+    std::string constdiskof=" of ";
+    std::size_t finiziodisk = fname.find(constdisk);
+    if (finiziodisk==std::string::npos)return;
+    std::size_t finiziodiskof = fname.find(constdiskof,finiziodisk);
+    if (finiziodiskof==std::string::npos)return;
+    std::size_t ffinedisk = fname.find_last_of(")")+1;
+    if (ffinedisk==std::string::npos)return;
+			
+    std::string strndisk=fname.substr(finiziodisk+constdisk.length(),finiziodiskof-finiziodisk-constdisk.length());
+    std::string strntotdisk=fname.substr(finiziodiskof+constdiskof.length(),ffinedisk-finiziodiskof-constdiskof.length()-1);
+    std::string fnamenodsk=fname.substr(0,finiziodisk);
+    std::string strdisk = fname.substr(finiziodisk,ffinedisk-finiziodisk);
+    std::string ext = fname.substr(ffinedisk,fname.length()-ffinedisk);
+    int newdisk=0;
+    int totdisk= atoi(strntotdisk.c_str());
+    if (plus)
+    {
+        // Swap with disk index superior
+        newdisk= atoi(strndisk.c_str());
+        newdisk=newdisk+1;
+        if (newdisk>totdisk) 
+        {
+            newdisk=1;
+        }
+    }
+    else
+    {
+        // Swap with disk index inferior
+        newdisk= atoi(strndisk.c_str());
+        newdisk=newdisk-1;
+        if (newdisk<1) 
+        {
+            newdisk=totdisk;
+        }
+    }
+    std::string strnewdisk;
+    std::stringstream convert;   // stream used for the conversion
+    convert << newdisk;          // insert the textual representation of 'Number' in the characters in the stream
+    strnewdisk = convert.str();
+    std::string strtotdisk;
+    std::stringstream converttot;
+    converttot << totdisk;       // insert the textual representation of 'Number' in the characters in the stream
+    strtotdisk = converttot.str();
+    std::string strnefile = fnamenodsk + constdisk + strnewdisk + constdiskof + strtotdisk + ")" + ext;
+    if ( access( strnefile.c_str(), F_OK ) != -1 )
+    {
+        disk_insert(0, strnefile.c_str());
+        //LOGI("Insert disk: %s.\n",strnefile.c_str());
+    }
+    else
+    {
+        //LOGI("Disk %s not found !.\n",strnefile.c_str());
+    }
+}
+

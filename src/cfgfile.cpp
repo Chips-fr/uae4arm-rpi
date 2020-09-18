@@ -41,8 +41,9 @@
 #undef strcasecmp
 #define strcasecmp _tcsicmp
 #endif
-
+#if !defined(__LIBRETRO__)
 #include "SDL_keysym.h"
+#endif
 
 static int config_newfilesystem;
 static struct strlist *temp_lines;
@@ -4420,7 +4421,7 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
 	p->jports[3].id = -1;
 	if (reset) {
 		inputdevice_joyport_config_store(p, _T("mouse"), 0, -1, 0);
-		inputdevice_joyport_config_store(p, _T("joy1"), 1, -1, 0);
+		inputdevice_joyport_config_store(p, _T("joy0"), 1, -1, 0);
 	}
 	p->keyboard_lang = KBD_LANG_US;
 
@@ -4449,7 +4450,7 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
   p->gfx_size.width = 640;
   p->gfx_size.height = 262;
 #endif
-  p->gfx_resolution = RES_LORES;
+  p->gfx_resolution = p->gfx_size.width > 600 ? RES_HIRES : RES_LORES;
 #ifdef RASPBERRY
   p->gfx_correct_aspect = 1;
   p->gfx_fullscreen_ratio = 100;
@@ -4553,8 +4554,11 @@ void default_prefs (struct uae_prefs *p, bool reset, int type)
 	p->socket_emu = 0;
 
   p->input_tablet = TABLET_OFF;
-
+#ifdef __LIBRETRO__
+  p->key_for_menu = 0x45;//RETROK_F12;
+#else
   p->key_for_menu = SDLK_F12;
+#endif
   p->key_for_quit = 0;
   p->button_for_menu = -1;
   p->button_for_quit = -1;

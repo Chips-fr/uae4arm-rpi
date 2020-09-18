@@ -2,8 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#ifndef __LIBRETRO__
 #include <guichan.hpp>
 #include <guichan/sdl.hpp>
+#endif
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "config.h"
@@ -12,8 +14,10 @@
 #include "keybuf.h"
 #include "zfile.h"
 #include "gui.h"
+#ifndef __LIBRETRO__
 #include "od-pandora/gui/SelectorEntry.hpp"
 #include "gui/gui_handling.h"
+#endif
 #include "memory.h"
 #include "rommgr.h"
 #include "newcpu.h"
@@ -30,12 +34,58 @@
 #include "filesys.h"
 #include "autoconf.h"
 #include "blkdev.h"
-#include <SDL.h>
+#include "SDL.h"
 #include "td-sdl/thread.h"
 
 #ifdef RASPBERRY
  #include <linux/kd.h>
  #include <sys/ioctl.h>
+#endif
+
+#ifdef __LIBRETRO__
+// Todo: create specific file for libretro ?
+#define MAX_HD_DEVICES 5
+int currentStateNum = 0;
+
+typedef struct {
+  char Name[MAX_DPATH];
+  char FullPath[MAX_DPATH];
+  char Description[MAX_DPATH];
+} ConfigFileInfo;
+extern std::vector<ConfigFileInfo*> ConfigFilesList;
+extern void ReadDirectory(const char *path, std::vector<std::string> *dirs, std::vector<std::string> *files);
+extern void FilterFiles(std::vector<std::string> *files, const char *filter[]);
+
+#define MAX_STARTUP_TITLE 64
+#define MAX_STARTUP_MESSAGE 256
+static TCHAR startup_title[MAX_STARTUP_TITLE] = _T("");
+static TCHAR startup_message[MAX_STARTUP_MESSAGE] = _T("");
+
+static char last_active_config[MAX_PATH] = { '\0' };
+
+void target_startup_msg(TCHAR *title, TCHAR *msg)
+{
+  _tcsncpy(startup_title, title, MAX_STARTUP_TITLE);
+  _tcsncpy(startup_message, msg, MAX_STARTUP_MESSAGE);
+}
+
+bool gui_running = false;
+
+void gui_restart(void)
+{
+  gui_running = false;
+}
+
+void run_gui(void)
+{
+  gui_running = true;
+}
+
+void SetLastActiveConfig(const char *filename)
+{
+  extractFileName(filename, last_active_config);
+  removeFileExtension(last_active_config);
+}
 #endif
 
 int emulating = 0;
@@ -430,6 +480,7 @@ void gui_purge_events(void)
 {
 	int counter = 0;
 
+#ifndef __LIBRETRO__
 	SDL_Event event;
 	SDL_Delay(150);
 	// Strangely PS3 controller always send events, so we need a maximum number of event to purge.
@@ -438,12 +489,14 @@ void gui_purge_events(void)
 		counter++;
 		SDL_Delay(10);
 	}
+#endif
 	keybuf_init();
 }
 
 
 int gui_update (void)
 {
+#ifndef __LIBRETRO__
   char tmp[MAX_PATH];
 
   fetch_savestatepath(savestate_fname, MAX_DPATH);
@@ -477,6 +530,7 @@ int gui_update (void)
 	   	strncat(savestate_fname,".uss", MAX_PATH - 1);
   		strncat(screenshot_filename,".png", MAX_PATH - 1);
   }
+#endif
   return 0;
 }
 
@@ -530,6 +584,7 @@ extern char keyboard_type;
 
 void gui_handle_events (void)
 {
+#ifndef __LIBRETRO__
 	Uint8 *keystate = SDL_GetKeyState(NULL);
 
 	// Strangely in FBCON left window is seen as left alt ??
@@ -542,6 +597,7 @@ void gui_handle_events (void)
 		if(keystate[SDLK_LCTRL] && keystate[SDLK_LSUPER] && (keystate[SDLK_RSUPER] ||keystate[SDLK_MENU]))
 			uae_reset(0,1);
 	}
+#endif
 }
 
 void gui_disk_image_change (int unitnum, const char *name, bool writeprotected)

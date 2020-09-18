@@ -1,0 +1,244 @@
+
+EMU      = $(CORE_DIR)/src
+LIBUTILS = $(CORE_DIR)/utils
+#GUI      = $(CORE_DIR)/src/gui-retro
+LIBRETRO = $(CORE_DIR)/libretro
+GUI	 := $(CORE_DIR)/libretro/gui
+
+INCFLAGS := -I$(EMU) -I$(EMU)/od-pandora -I$(EMU)/include -I$(LIBRETRO) \
+	-I$(LIBRETRO)/libco -I$(LIBRETRO)/core -I$(LIBUTILS)  -I$(EMU)menu -Ideps -I$(EMU)/archivers
+
+INCFLAGS += -I$(CORE_DIR)/libretro/libco \
+			-I$(CORE_DIR)/libretro/core \
+			-I$(CORE_DIR)/libretro/include \
+			-I$(CORE_DIR)/libretro/emu \
+			-I$(CORE_DIR)/libretro \
+			-I$(CORE_DIR) 
+OBJS =	\
+	$(EMU)/akiko.o \
+	$(EMU)/ar.o \
+	$(EMU)/aros.rom.o \
+	$(EMU)/audio.o \
+	$(EMU)/autoconf.o \
+	$(EMU)/blitfunc.o \
+	$(EMU)/blittable.o \
+	$(EMU)/blitter.o \
+	$(EMU)/blkdev.o \
+	$(EMU)/blkdev_cdimage.o \
+	$(EMU)/bsdsocket.o \
+	$(EMU)/calc.o \
+	$(EMU)/cd32_fmv.o \
+	$(EMU)/cd32_fmv_genlock.o \
+	$(EMU)/cdrom.o \
+	$(EMU)/cfgfile.o \
+	$(EMU)/cia.o \
+	$(EMU)/crc32.o \
+	$(EMU)/custom.o \
+	$(EMU)/def_icons.o \
+	$(EMU)/devices.o \
+	$(EMU)/disk.o \
+	$(EMU)/diskutil.o \
+	$(EMU)/dlopen.o \
+	$(EMU)/drawing.o \
+	$(EMU)/events.o \
+	$(EMU)/expansion.o \
+	$(EMU)/fdi2raw.o \
+	$(EMU)/filesys.o \
+	$(EMU)/flashrom.o \
+	$(EMU)/fpp.o \
+	$(EMU)/fsdb.o \
+	$(EMU)/fsdb_unix.o \
+	$(EMU)/fsusage.o \
+	$(EMU)/gayle.o \
+	$(EMU)/gfxboard.o \
+	$(EMU)/gfxutil.o \
+	$(EMU)/hardfile.o \
+	$(EMU)/hrtmon.rom.o \
+	$(EMU)/ide.o \
+	$(EMU)/inputdevice.o \
+	$(EMU)/keybuf.o \
+	$(EMU)/main.o \
+	$(EMU)/memory.o \
+	$(EMU)/native2amiga.o \
+	$(EMU)/rommgr.o \
+	$(EMU)/rtc.o \
+	$(EMU)/savestate.o \
+	$(EMU)/scsi.o \
+	$(EMU)/statusline.o \
+	$(EMU)/traps.o \
+	$(EMU)/uaelib.o \
+	$(EMU)/uaeresource.o \
+	$(EMU)/zfile.o \
+	$(EMU)/zfile_archive.o \
+	$(EMU)/archivers/7z/7zAlloc.o \
+	$(EMU)/archivers/7z/7zBuf.o \
+	$(EMU)/archivers/7z/7zCrc.o \
+	$(EMU)/archivers/7z/7zCrcOpt.o \
+	$(EMU)/archivers/7z/7zDec.o \
+	$(EMU)/archivers/7z/7zIn.o \
+	$(EMU)/archivers/7z/7zStream.o \
+	$(EMU)/archivers/7z/Bcj2.o \
+	$(EMU)/archivers/7z/Bra.o \
+	$(EMU)/archivers/7z/Bra86.o \
+	$(EMU)/archivers/7z/LzmaDec.o \
+	$(EMU)/archivers/7z/Lzma2Dec.o \
+	$(EMU)/archivers/7z/BraIA64.o \
+	$(EMU)/archivers/7z/Delta.o \
+	$(EMU)/archivers/7z/Sha256.o \
+	$(EMU)/archivers/7z/Xz.o \
+	$(EMU)/archivers/7z/XzCrc64.o \
+	$(EMU)/archivers/7z/XzDec.o \
+	$(EMU)/archivers/dms/crc_csum.o \
+	$(EMU)/archivers/dms/getbits.o \
+	$(EMU)/archivers/dms/maketbl.o \
+	$(EMU)/archivers/dms/pfile.o \
+	$(EMU)/archivers/dms/tables.o \
+	$(EMU)/archivers/dms/u_deep.o \
+	$(EMU)/archivers/dms/u_heavy.o \
+	$(EMU)/archivers/dms/u_init.o \
+	$(EMU)/archivers/dms/u_medium.o \
+	$(EMU)/archivers/dms/u_quick.o \
+	$(EMU)/archivers/dms/u_rle.o \
+	$(EMU)/archivers/lha/crcio.o \
+	$(EMU)/archivers/lha/dhuf.o \
+	$(EMU)/archivers/lha/header.o \
+	$(EMU)/archivers/lha/huf.o \
+	$(EMU)/archivers/lha/larc.o \
+	$(EMU)/archivers/lha/lhamaketbl.o \
+	$(EMU)/archivers/lha/lharc.o \
+	$(EMU)/archivers/lha/shuf.o \
+	$(EMU)/archivers/lha/slide.o \
+	$(EMU)/archivers/lha/uae_lha.o \
+	$(EMU)/archivers/lha/util.o \
+	$(EMU)/archivers/lzx/unlzx.o \
+	$(EMU)/archivers/mp2/kjmp2.o \
+	$(EMU)/archivers/wrp/warp.o \
+	$(EMU)/archivers/zip/unzip.o \
+	$(EMU)/caps/caps_win32.o 
+
+
+ifdef PANDORA
+OBJS += $(EMU)/od-pandora/gui/sdltruetypefont.o
+endif
+
+ifeq ($(USE_PICASSO96), 1)
+	OBJS += $(EMU)/od-pandora/picasso96.o
+endif
+
+ifeq ($(HAVE_NEON), 1)
+	OBJS += $(EMU)/od-pandora/neon_helper.o
+else
+	OBJS += $(EMU)/od-pandora/arm_helper.o
+endif
+
+
+ifdef USE_XFD
+OBJS += $(EMU)/cpu_small.o \
+	$(EMU)/cpuemu_small.o \
+	$(EMU)/cpustbl_small.o \
+	$(EMU)/archivers/xfd/xfd.o
+endif
+
+OBJS += $(EMU)/newcpu.o
+OBJS += $(EMU)/newcpu_common.o
+OBJS += $(EMU)/readcpu.o
+OBJS += $(EMU)/cpudefs.o
+OBJS += $(EMU)/cpustbl.o
+OBJS += $(EMU)/cpuemu_0.o
+OBJS += $(EMU)/cpuemu_4.o
+OBJS += $(EMU)/cpuemu_11.o
+OBJS += $(EMU)/cpuemu_40.o
+OBJS += $(EMU)/cpuemu_44.o
+OBJS += $(EMU)/jit/compemu.o
+OBJS += $(EMU)/jit/compemu_fpp.o
+OBJS += $(EMU)/jit/compstbl.o
+
+OBJS += $(EMU)/jit/compemu_support.o \
+	$(EMU)/md-pandora/support.o \
+	$(EMU)/od-pandora/bsdsocket_host.o \
+	$(EMU)/od-pandora/cda_play.o \
+	$(EMU)/od-pandora/charset.o \
+	$(EMU)/od-pandora/fsdb_host.o \
+	$(EMU)/od-pandora/hardfile_pandora.o \
+	$(EMU)/od-pandora/mp3decoder.o \
+	$(EMU)/od-pandora/keyboard.o \
+	$(EMU)/od-pandora/pandora_input.o \
+	$(EMU)/od-pandora/writelog.o \
+	$(EMU)/od-pandora/pandora.o \
+	$(EMU)/od-pandora/pandora_filesys.o \
+	$(EMU)/od-pandora/retro_gfx.o \
+	$(EMU)/od-pandora/pandora_rp9.o \
+	$(EMU)/od-pandora/pandora_mem.o \
+	$(EMU)/od-pandora/sigsegv_handler.o \
+	$(EMU)/sd-retro/sound_retro_new.o \
+	$(EMU)/od-pandora/pandora_gui.o \
+	$(EMU)/td-sdl/thread.o
+
+OBJS += \
+	$(CORE_DIR)/libretro/core/libretro-core.o \
+	$(CORE_DIR)/libretro/core/core-mapper.o \
+	$(CORE_DIR)/libretro/core/graph.o \
+	$(CORE_DIR)/libretro/core/vkbd.o 
+
+#	$(EMU)/od-rasp/rasp_gfx.o \
+#	$(EMU)/od-pandora/pandora_gui.o
+#	$(EMU)/od-pandora/gui/UaeRadioButton.o \
+#	$(EMU)/od-pandora/gui/UaeDropDown.o \
+#	$(EMU)/od-pandora/gui/UaeCheckBox.o \
+#	$(EMU)/od-pandora/gui/UaeListBox.o \
+#	$(EMU)/od-pandora/gui/InGameMessage.o \
+#	$(EMU)/od-pandora/gui/SelectorEntry.o \
+#	$(EMU)/od-pandora/gui/ShowMessage.o \
+#	$(EMU)/od-pandora/gui/SelectFolder.o \
+#	$(EMU)/od-pandora/gui/SelectFile.o \
+#	$(EMU)/od-pandora/gui/CreateFilesysHardfile.o \
+#	$(EMU)/od-pandora/gui/EditFilesysVirtual.o \
+#	$(EMU)/od-pandora/gui/EditFilesysHardfile.o \
+#	$(EMU)/od-pandora/gui/PanelPaths.o \
+#	$(EMU)/od-pandora/gui/PanelConfig.o \
+#	$(EMU)/od-pandora/gui/PanelCPU.o \
+#	$(EMU)/od-pandora/gui/PanelChipset.o \
+#	$(EMU)/od-pandora/gui/PanelROM.o \
+#	$(EMU)/od-pandora/gui/PanelRAM.o \
+#	$(EMU)/od-pandora/gui/PanelFloppy.o \
+#	$(EMU)/od-pandora/gui/PanelHD.o \
+#	$(EMU)/od-pandora/gui/PanelDisplay.o \
+#	$(EMU)/od-pandora/gui/PanelSound.o \
+#	$(EMU)/od-pandora/gui/PanelInput.o \
+#	$(EMU)/od-pandora/gui/PanelMisc.o \
+#	$(EMU)/od-pandora/gui/PanelSavestate.o \
+#	$(EMU)/od-pandora/gui/main_window.o \
+#	$(EMU)/od-pandora/gui/Navigation.o
+
+#SOURCES_C += $(EMU)/machdep/support.c \
+#				 $(EMU)/osdep/gui.c \
+#				 $(EMU)/osdep/retroglue.c \
+#				 $(EMU)/sounddep/sound.c \
+#				 $(EMU)/osdep/retromenu.c \
+#				 $(EMU)/threaddep/thread.c
+
+#SOURCES_C += $(GUI)/dialog.c\
+#				 $(GUI)/paths.c \
+#				 $(GUI)/file.c \
+#				 $(GUI)/unzip.c \
+#				 $(GUI)/thumb.c \
+#				 $(GUI)/zip.c \
+#				 $(GUI)/str.c \
+#				 $(GUI)/dlgFloppy.c \
+#				 $(GUI)/dlgHardDisk.c \
+#				 $(GUI)/dlgFileSelect.c \
+#				 $(GUI)/dlgMemory.c \
+#				 $(GUI)/dlgJoystick.c \
+#				 $(GUI)/dlgAbout.c \
+#				 $(GUI)/dlgSound.c \
+#				 $(GUI)/dlgAlert.c \
+#				 $(GUI)/dlgMain.c \
+#				 $(GUI)/dlgMisc.c \
+#				 $(GUI)/dlgVideo.c \
+#				 $(GUI)/dlgRom.c \
+#				 $(GUI)/dlgSystem.c \
+#				 $(GUI)/sdlgui.c
+
+SOURCES_C += 	 $(LIBRETRO)/libco/libco.c 
+
+

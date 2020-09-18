@@ -36,8 +36,13 @@ using namespace std;
 #include <assert.h>
 #include <limits.h>
 
+#if defined (__LIBRETRO__)
+#include <SDL.h>
+#endif
+
 #ifndef UAE
 #define UAE
+
 #endif
 
 #if defined(__x86_64__) || defined(_M_AMD64)

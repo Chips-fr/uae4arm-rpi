@@ -16,6 +16,16 @@
 #include "drawing.h"
 #include "statusline.h"
 
+#if defined(__LIBRETRO__)
+#include "libretro-core.h"
+extern int retrow,retroh;
+typedef struct sdl_surface {
+	int w;
+	int h;
+	int pitch;
+	unsigned char *pixels;
+}SDL_Surface ;
+#endif
 extern SDL_Surface *prSDLScreen;
 
 /*

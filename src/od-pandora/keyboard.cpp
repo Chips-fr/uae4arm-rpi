@@ -12,8 +12,13 @@
 #include "keyboard.h"
 #include "keybuf.h"
 #include "gui.h"
-#include <SDL.h>
 
+#ifdef __LIBRETRO__
+#include "libretro.h"
+#include "SDL.h"
+#else
+#include <SDL.h>
+#endif
 
 char keyboard_type = 0;
 
@@ -267,6 +272,72 @@ static struct uae_input_device_kbr_default keytrans_amiga_fbcon[] = {
 	{ -1, 0 }
   };
 
+#ifdef __LIBRETRO__
+
+static struct uae_input_device_kbr_default keytrans_amiga[] = {
+
+	{ RETROK_a, INPUTEVENT_KEY_A },
+	{ RETROK_b, INPUTEVENT_KEY_B },
+	{ RETROK_c, INPUTEVENT_KEY_C },
+	{ RETROK_d, INPUTEVENT_KEY_D },
+	{ RETROK_e, INPUTEVENT_KEY_E },
+	{ RETROK_f, INPUTEVENT_KEY_F },
+	{ RETROK_g, INPUTEVENT_KEY_G },
+	{ RETROK_h, INPUTEVENT_KEY_H },
+	{ RETROK_i, INPUTEVENT_KEY_I },
+	{ RETROK_j, INPUTEVENT_KEY_J },
+	{ RETROK_k, INPUTEVENT_KEY_K },
+	{ RETROK_l, INPUTEVENT_KEY_L },
+	{ RETROK_m, INPUTEVENT_KEY_M },
+	{ RETROK_n, INPUTEVENT_KEY_N },
+	{ RETROK_o, INPUTEVENT_KEY_O },
+	{ RETROK_p, INPUTEVENT_KEY_P },
+	{ RETROK_q, INPUTEVENT_KEY_Q },
+	{ RETROK_r, INPUTEVENT_KEY_R },
+	{ RETROK_s, INPUTEVENT_KEY_S },
+	{ RETROK_t, INPUTEVENT_KEY_T },
+	{ RETROK_u, INPUTEVENT_KEY_U },
+	{ RETROK_v, INPUTEVENT_KEY_V },
+	{ RETROK_w, INPUTEVENT_KEY_W },
+	{ RETROK_x, INPUTEVENT_KEY_X },
+	{ RETROK_y, INPUTEVENT_KEY_Y },
+	{ RETROK_z, INPUTEVENT_KEY_Z },
+
+	{ RETROK_0, INPUTEVENT_KEY_0 },
+	{ RETROK_1, INPUTEVENT_KEY_1 },
+	{ RETROK_2, INPUTEVENT_KEY_2 },
+	{ RETROK_3, INPUTEVENT_KEY_3 },
+	{ RETROK_4, INPUTEVENT_KEY_4 },
+	{ RETROK_5, INPUTEVENT_KEY_5 },
+	{ RETROK_6, INPUTEVENT_KEY_6 },
+	{ RETROK_7, INPUTEVENT_KEY_7 },
+	{ RETROK_8, INPUTEVENT_KEY_8 },
+	{ RETROK_9, INPUTEVENT_KEY_9 },
+
+  { RETROK_BACKSPACE, INPUTEVENT_KEY_BACKSPACE },
+	{ RETROK_TAB, INPUTEVENT_KEY_TAB },
+	{ RETROK_RETURN, INPUTEVENT_KEY_RETURN },
+	{ VK_ESCAPE, INPUTEVENT_KEY_ESC },
+	{ RETROK_SPACE, INPUTEVENT_KEY_SPACE },
+	{ RETROK_QUOTE, INPUTEVENT_KEY_SINGLEQUOTE },
+	{ RETROK_COMMA, INPUTEVENT_KEY_COMMA },
+	{ RETROK_MINUS, INPUTEVENT_KEY_SUB },
+	{ RETROK_PERIOD, INPUTEVENT_KEY_PERIOD },
+	{ RETROK_SLASH, INPUTEVENT_KEY_DIV },
+
+	{ RETROK_SEMICOLON, INPUTEVENT_KEY_SEMICOLON },
+	{ RETROK_EQUALS, INPUTEVENT_KEY_EQUALS },
+	{ RETROK_LEFTBRACKET, INPUTEVENT_KEY_LEFTBRACKET },
+	{ RETROK_BACKSLASH, INPUTEVENT_KEY_BACKSLASH },
+	{ RETROK_RIGHTBRACKET, INPUTEVENT_KEY_RIGHTBRACKET },
+	{ RETROK_BACKQUOTE, INPUTEVENT_KEY_BACKQUOTE },
+	{ RETROK_DELETE, INPUTEVENT_KEY_DEL },
+
+	{ -1, 0 }
+};
+
+
+#else
 
 static struct uae_input_device_kbr_default keytrans_amiga[] = {
 
@@ -330,6 +401,9 @@ static struct uae_input_device_kbr_default keytrans_amiga[] = {
   { -1, 0 }
 };
 
+
+#endif
+
 static struct uae_input_device_kbr_default *keytrans[] = {
 	keytrans_amiga,
 	keytrans_amiga,
@@ -358,6 +432,7 @@ static int *kbmaps[] = { kb_none, kb_none, kb_none, kb_none, kb_none,
 void keyboard_settrans (void)
 {
   char vid_drv_name[32];
+#ifndef __LIBRETRO__
   // get display type...
   SDL_VideoDriverName(vid_drv_name, sizeof(vid_drv_name));
   if (strcmp(vid_drv_name, "x11") == 0)
@@ -371,6 +446,7 @@ void keyboard_settrans (void)
     keyboard_type = KEYCODE_FBCON;
     inputdevice_setkeytranslation (keytrans_fbcon, kbmaps);
   } else
+#endif
   {
     printf("Unknown keycode to use, will use keysym\n");
     keyboard_type = KEYCODE_UNK;
@@ -381,9 +457,7 @@ void keyboard_settrans (void)
 
 int translate_pandora_keys(int symbol, int *modifier)
 {
-#ifndef PANDORA_SPECIFIC
-  return 0;
-#endif
+#ifdef PANDORA_SPECIFIC
   switch(symbol)
   {
     case VK_UP:
@@ -574,5 +648,6 @@ int translate_pandora_keys(int symbol, int *modifier)
       }
       break;
   }
+#endif
   return 0;
 }

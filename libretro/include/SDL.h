@@ -1,0 +1,21 @@
+#include "libretro.h"
+
+#define SDL_Quit()
+#define SDL_Init(...)
+#define SDL_INIT_JOYSTICK
+#define SDL_INIT_NOPARACHUTE
+#define SDL_INIT_VIDEO
+
+#define SDLK_HOME     RETROK_HOME
+#define SDLK_END      RETROK_END
+#define SDLK_PAGEDOWN RETROK_PAGEDOWN
+#define SDLK_PAGEUP   RETROK_PAGEUP
+#define SDLK_RSHIFT   RETROK_RSHIFT
+#define SDLK_RCTRL    RETROK_RCTRL
+#define SDLK_UP       RETROK_UP
+#define SDLK_DOWN     RETROK_DOWN
+#define SDLK_RIGHT    RETROK_RIGHT
+#define SDLK_LEFT     RETROK_LEFT
+#define SDLK_ESCAPE   RETROK_ESCAPE
+
+#define SDLK_LAST     320

@@ -90,6 +90,14 @@ int defaultCpuSpeed = 600;
 int max_uae_width;
 int max_uae_height;
 
+#ifdef __LIBRETRO__
+#include "core-log.h"
+#include "libco/libco.h"
+
+extern cothread_t mainThread;
+extern cothread_t emuThread;
+extern char RETRO_DIR[512];
+#endif
 
 extern "C" int main( int argc, char *argv[] );
 
@@ -483,7 +491,9 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
   write_log(_T("target_cfgfile_load(): load file %s\n"), filename);
   
   discard_prefs(p, type);
+#ifndef __LIBRETRO__
   default_prefs(p, true, 0);
+#endif
   
 	char *ptr = strstr((char *)filename, ".rp9");
   if(ptr > 0)
@@ -774,6 +784,7 @@ void loadAdfDir(void)
 int currVSyncRate = 0;
 bool SetVSyncRate(int hz)
 {
+#ifdef PANDORA_SPECIFIC
 	char cmd[64];
 
   if(currVSyncRate != hz && (hz == 50 || hz == 60))
@@ -783,6 +794,7 @@ bool SetVSyncRate(int hz)
     currVSyncRate = hz;
     return true;
   }
+#endif
   return false;
 }
 
@@ -892,7 +904,11 @@ uae_u32 emulib_target_getcpurate (uae_u32 v, uae_u32 *low)
   return 0;
 }
 
+#ifdef __LIBRETRO__
+int skel_main (int argc, char *argv[])
+#else
 int main (int argc, char *argv[])
+#endif
 {
   struct sigaction action;
   
@@ -903,6 +919,16 @@ int main (int argc, char *argv[])
   
   // Get startup path
 	getcwd(start_path_data, MAX_DPATH);
+
+#ifdef __LIBRETRO__
+//FIXME use sysdir path
+#if defined(ANDROID) || defined(__ANDROID__)
+sprintf(start_path_data,"/mnt/sdcard/uae4arm\0");
+#else
+sprintf(start_path_data,"%s/uae4arm\0",RETRO_DIR);
+#endif
+LOGI("spd(%s)\n",start_path_data);
+#endif
 	loadAdfDir();
   rp9_init();
 
@@ -962,6 +988,10 @@ int main (int argc, char *argv[])
   ioctl(0, KDSETLED, kbd_led_status);
 #endif
 
+#ifdef __LIBRETRO__
+  co_switch(mainThread);
+#endif
+
   real_main (argc, argv);
 
 #ifdef CAPSLOCK_DEBIAN_WORKAROUND
@@ -986,6 +1016,9 @@ int main (int argc, char *argv[])
 int handle_msgpump (void)
 {
 	int got = 0;
+
+
+#ifndef __LIBRETRO__
   SDL_Event rEvent;
   int keycode;
   int modifier;
@@ -1219,6 +1252,7 @@ int handle_msgpump (void)
         break;
 		}
 	}
+#endif
 	return got;
 }
 
