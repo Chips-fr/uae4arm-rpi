@@ -495,7 +495,9 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
   default_prefs(p, true, 0);
 #endif
   
-	char *ptr = strstr((char *)filename, ".rp9");
+	char *ptr;
+#ifdef RP9_SUPPORT
+	ptr = strstr((char *)filename, ".rp9");
   if(ptr > 0)
   {
     // Load rp9 config
@@ -504,6 +506,7 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
       extractFileName(filename, last_loaded_config);
   }
   else 
+#endif
 	{
   	ptr = strstr((char *)filename, ".uae");
     if(ptr > 0)
@@ -930,7 +933,9 @@ sprintf(start_path_data,"%s/uae4arm\0",RETRO_DIR);
 LOGI("spd(%s)\n",start_path_data);
 #endif
 	loadAdfDir();
+#ifdef RP9_SUPPORT
   rp9_init();
+#endif
 
   snprintf(savestate_fname, MAX_PATH, "%s/saves/default.ads", start_path_data);
 	logging_init ();
@@ -1005,7 +1010,9 @@ LOGI("spd(%s)\n",start_path_data);
   free_AmigaMem();
   lstMRUDiskList.clear();
   lstMRUCDList.clear();
+#ifdef RP9_SUPPORT
   rp9_cleanup();
+#endif
   
   logging_cleanup();
 

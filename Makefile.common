@@ -167,7 +167,6 @@ OBJS += $(EMU)/jit/compemu_support.o \
 	$(EMU)/od-pandora/pandora.o \
 	$(EMU)/od-pandora/pandora_filesys.o \
 	$(EMU)/od-pandora/retro_gfx.o \
-	$(EMU)/od-pandora/pandora_rp9.o \
 	$(EMU)/od-pandora/pandora_mem.o \
 	$(EMU)/od-pandora/sigsegv_handler.o \
 	$(EMU)/sd-retro/sound_retro_new.o \
