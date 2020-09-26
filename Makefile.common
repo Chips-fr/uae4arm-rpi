@@ -2,10 +2,10 @@
 EMU      = $(CORE_DIR)/src
 LIBUTILS = $(CORE_DIR)/utils
 LIBRETRO = $(CORE_DIR)/libretro
-
+DEPS_DIR = $(CORE_DIR)/deps
 
 INCFLAGS := -I$(EMU) -I$(LIBRETRO)/osdep -I$(EMU)/include -I$(LIBRETRO) \
-	-I$(LIBRETRO)/libco -I$(LIBRETRO)/core -I$(LIBUTILS) 
+	-I$(LIBRETRO)/libco -I$(LIBRETRO)/core -I$(LIBUTILS) -I$(DEPS_DIR)/zlib
 
 INCFLAGS += -I$(CORE_DIR)/libretro/libco \
 	-I$(CORE_DIR)/libretro/core \
@@ -134,4 +134,18 @@ OBJS += \
 
 SOURCES_C += 	 $(LIBRETRO)/libco/libco.c 
 
+SOURCES_C += $(DEPS_DIR)/zlib/adler32.o \
+	$(DEPS_DIR)/zlib/compress.o \
+	$(DEPS_DIR)/zlib/crc32.o \
+	$(DEPS_DIR)/zlib/deflate.o \
+	$(DEPS_DIR)/zlib/gzclose.o \
+	$(DEPS_DIR)/zlib/gzlib.o \
+	$(DEPS_DIR)/zlib/gzread.o \
+	$(DEPS_DIR)/zlib/gzwrite.o \
+	$(DEPS_DIR)/zlib/inffast.o \
+	$(DEPS_DIR)/zlib/inflate.o \
+	$(DEPS_DIR)/zlib/inftrees.o \
+	$(DEPS_DIR)/zlib/trees.o \
+	$(DEPS_DIR)/zlib/uncompr.o \
+	$(DEPS_DIR)/zlib/zutil.o
 

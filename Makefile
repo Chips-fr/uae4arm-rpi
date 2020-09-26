@@ -25,7 +25,7 @@ ROOT_DIR  := .
 ifneq (,$(findstring unix,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
-	LDFLAGS := -lz -lpthread
+	LDFLAGS := -lpthread
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
    	ifneq (,$(findstring neon,$(platform)))
 		PLATFORM_DEFINES += -mfpu=neon -march=armv7-a
@@ -47,7 +47,7 @@ else ifeq ($(platform), crosspi)
 	CXXFLAGS += $(PLATFORM_DEFINES)
    	CC = arm-linux-gnueabihf-gcc
    	CXX = arm-linux-gnueabihf-g++ 
-	LDFLAGS += -lz -lpthread
+	LDFLAGS += -lpthread
 else ifeq ($(platform), crossand)
    	TARGET := $(TARGET_NAME)_libretro.so
    	fpic = -fPIC
@@ -68,7 +68,7 @@ else ifeq ($(platform), crossand)
 	CXX =arm-linux-androideabi-g++ 
 	AR = @arm-linux-androideabi-ar
 	LD = @arm-linux-androideabi-g++ 
-	LDFLAGS += -lz -llog
+	LDFLAGS += -llog
 
 	# Raspberry Pi 2 and above
 else ifeq ($(platform), rpi2)
@@ -85,7 +85,7 @@ else ifeq ($(platform), rpi2)
 	CXXFLAGS += $(PLATFORM_DEFINES)
    	CC = gcc
    	CXX = g++ 
-	LDFLAGS += -lz -lpthread
+	LDFLAGS += -lpthread
 
         #LDFLAGS   += -fsanitize=address -fsanitize=bounds 
         #CPU_FLAGS += -fsanitize=address -fsanitize=bounds 
@@ -94,7 +94,7 @@ else ifeq ($(platform), rpi2)
 else ifeq ($(platform), rpi) 
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
-	LDFLAGS := -lz -lpthread
+	LDFLAGS := -lpthread
 	PLATFLAGS +=  -DARM  -marm
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
 
@@ -191,7 +191,7 @@ else ifeq ($(platform), android)
 	LD = @arm-linux-androideabi-g++ 
 	TARGET := $(TARGET_NAME)_libretro_android.so
 	fpic := -fPIC
-	LDFLAGS := -lz -lm -llog
+	LDFLAGS := -lm -llog
 	SHARED :=  -Wl,--fix-cortex-a8 -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	PLATFLAGS += -DWITH_LOGGING -DANDROID -DAND -DANDPORT -DARM_OPT_TEST=1
 else ifeq ($(platform), wii)
@@ -224,7 +224,7 @@ endif
 	TARGET := $(TARGET_NAME)_libretro.dll
 	fpic := -fPIC
 	SHARED := -shared -static-libgcc -s -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined 
-	LDFLAGS := -lm -lz
+	LDFLAGS := -lm
 endif
 
 
