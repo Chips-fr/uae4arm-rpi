@@ -28,7 +28,8 @@ ifneq (,$(findstring unix,$(platform)))
 	LDFLAGS := -lz -lpthread -lFLAC -lmpg123 -ldl
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T 
    	ifneq (,$(findstring neon,$(platform)))
-		PLATFORM_DEFINES += -mfpu=neon -march=armv7-a
+		# Uncomment below for rpi
+		#PLATFORM_DEFINES += -mfpu=neon -march=armv7-a
 		CFLAGS += $(PLATFORM_DEFINES)
 		MORE_CFLAGS += -DARMV6T2 -DUSE_JIT_FPU -DARM_HAS_DIV
 		HAVE_NEON = 1
@@ -235,7 +236,7 @@ endif
 
 DEFINES += 
 
-DEFS += -DCPU_arm -DARM_ASSEMBLY -DARMV6_ASSEMBLY -DGP2X -DPANDORA
+DEFS += -DCPU_arm -DARMV6_ASSEMBLY -DGP2X -DPANDORA
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
 DEFS += -DRASPBERRY -DWITH_INGAME_WARNING
 #-DANDROIDSDL 
