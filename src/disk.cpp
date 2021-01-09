@@ -38,6 +38,7 @@
 #include "uae/caps.h"
 #endif
 #ifdef __LIBRETRO__
+#include "glob.h"
 #include "graph.h"
 #include "libretro-core.h"
 #endif
@@ -4059,6 +4060,16 @@ uae_u8 *save_floppy(int *len, uae_u8 *dstptr)
 
 #endif /* SAVESTATE */
 
+#ifdef __LIBRETRO__
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
+}
+
 void changedisk(bool plus)
 {
     std::string fname=currprefs.floppyslots[0].df;
@@ -4116,7 +4127,22 @@ void changedisk(bool plus)
     }
     else
     {
-        //LOGI("Disk %s not found !.\n",strnefile.c_str());
+        glob_t globbuf;
+        //LOGI("Disk    %s not found !.\n",strnefile.c_str());
+        strnefile = fnamenodsk + constdisk + strnewdisk + constdiskof + strtotdisk + ")" + "*"; 
+        strnefile = ReplaceAll(strnefile, std::string("["), std::string("\\["));
+        strnefile = ReplaceAll(strnefile, std::string("]"), std::string("\\]"));
+
+        glob(strnefile.c_str(), 0, NULL, &globbuf);
+        if (globbuf.gl_pathc > 0)
+        {
+            int fd = open(globbuf.gl_pathv[0], O_RDONLY);
+            disk_insert(0, globbuf.gl_pathv[0]);
+            //LOGI("Use alt %s\n",globbuf.gl_pathv[0]);
+        }
+        //else
+            //LOGI("Disk %s not found !.\n",strnefile.c_str());
+        globfree(&globbuf);
     }
 }
-
+#endif
