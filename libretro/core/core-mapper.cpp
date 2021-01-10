@@ -572,10 +572,11 @@ int Retro_PollEvent()
       MOUSE_EMULATED=-MOUSE_EMULATED;
       if (MOUSE_EMULATED==1)
       {
-         LOGI("Switch to mouse mode for Port 0.\n");
+         LOGI("Switch to mouse emulation.\n");
          second_joystick_enable = 0;   // disable 2nd joystick if mouse activated...
       }
-
+      else
+         LOGI("Switch-off mouse emulation.\n");
    }
 
    i=RETRO_DEVICE_ID_JOYPAD_L;     //select previous disk
