@@ -2931,6 +2931,9 @@ void changedisk(bool plus)
     }
     else
     {
+#ifdef VITA
+        LOGI("Disk %s not found !.\n",strnefile.c_str());
+#else
         glob_t globbuf;
         LOGI("Disk    %s not found !.\n",strnefile.c_str());
         strnefile = fnamenodsk + constdisk + strnewdisk + constdiskof + strtotdisk + ")" + "*"; 
@@ -2947,6 +2950,7 @@ void changedisk(bool plus)
         else
             LOGI("Disk %s not found !.\n",strnefile.c_str());
         globfree(&globbuf);
+#endif
     }
 }
 
