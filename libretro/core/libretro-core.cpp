@@ -1,5 +1,8 @@
 #include "libretro.h"
 
+#ifdef VITA
+#define __GNU_VISIBLE 1
+#endif
 #include "libretro-core.h"
 
 #include "sysconfig.h"
@@ -97,11 +100,7 @@ void retro_set_environment(retro_environment_t cb)
    cb( RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports );
 
    struct retro_variable variables[] = {
-#ifdef VITA
-      { "uae4arm_model",          "Model; A500|A600|A1200", },
-#else
       { "uae4arm_model",          "Model; Auto|A500|A600|A1200", },
-#endif
       { "uae4arm_fastmem",        "Fast Mem; None|1 MB|2 MB|4 MB|8 MB", },
       { "uae4arm_resolution",     "Internal resolution; 640x270|320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270", },
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
@@ -199,7 +198,6 @@ static void update_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       LOGI("[libretro-uae4arm]: Got model: %s.\n", var.value);
-#ifndef VITA
       if (strcmp(var.value, "Auto") == 0)
       {
          if (strcasestr(RPATH,"aga") != NULL)
@@ -213,7 +211,6 @@ static void update_variables(void)
             var.value = "A500";
          }
       }
-#endif
       if (strcmp(var.value, "A600") == 0)
       {
          //strcat(uae_machine, A600);
