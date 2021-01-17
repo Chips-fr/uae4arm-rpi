@@ -112,16 +112,8 @@ void retro_set_environment(retro_environment_t cb)
 }
 
 
-void Retro_Kickstart_Replacement_Msg(void)
+void Retro_Msg(const char * msg_str)
 {
-
-   static char Already_done = 0;
-
-   if (Already_done)
-      return;
-
-   const char *msg_str = "No Kickstart file found - add for better compatibility";
-
    if (msg_interface_version >= 1)
    {
       struct retro_message_ext msg = {
@@ -143,9 +135,6 @@ void Retro_Kickstart_Replacement_Msg(void)
       };
       environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
    }
-
-   Already_done = 1;
-
 }
 
 

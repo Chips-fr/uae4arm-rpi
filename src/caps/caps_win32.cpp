@@ -85,6 +85,12 @@ int caps_init (void)
 		if (noticed)
 			return 0;
 		notify_user (NUMSG_NOCAPS);
+#ifdef __LIBRETRO__
+		extern void Retro_Msg(const char *);
+		const char *msg_str = "No capsimg.so found";
+		Retro_Msg(msg_str);
+#endif
+
 		noticed = 1;
 		return 0;
 	}
