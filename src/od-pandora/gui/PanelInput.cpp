@@ -208,8 +208,15 @@ class InputActionListener : public gcn::ActionListener
           case 2: changed_prefs.jports[0].id = JSEM_JOYS;     changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK; break;
           case 3: changed_prefs.jports[0].id = JSEM_JOYS;     changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK_CD32; break;
           case 4: changed_prefs.jports[0].id = -1;            changed_prefs.jports[0].mode = JSEM_MODE_DEFAULT; break;
-          default:changed_prefs.jports[0].id = JSEM_JOYS + cboPort0->getSelected() - 4;
-                  changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK;
+          default:if ((cboPort0->getSelected() - 4) < inputdevice_get_device_total (IDTYPE_JOYSTICK))
+                  {
+                    changed_prefs.jports[0].id = JSEM_JOYS + cboPort0->getSelected() - 4;
+                    changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK;
+                  }
+                  {
+                    changed_prefs.jports[0].id = JSEM_JOYS + cboPort0->getSelected() - 4 - (inputdevice_get_device_total (IDTYPE_JOYSTICK) -1);
+                    changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK_CD32;
+                  }
                   break;
         }
         inputdevice_updateconfig(NULL, &changed_prefs);
@@ -223,8 +230,16 @@ class InputActionListener : public gcn::ActionListener
           case 2: changed_prefs.jports[1].id = JSEM_JOYS;     changed_prefs.jports[1].mode = JSEM_MODE_JOYSTICK; break;
           case 3: changed_prefs.jports[1].id = JSEM_JOYS;     changed_prefs.jports[1].mode = JSEM_MODE_JOYSTICK_CD32; break;
           case 4: changed_prefs.jports[1].id = -1;            changed_prefs.jports[1].mode = JSEM_MODE_DEFAULT; break;
-          default:changed_prefs.jports[1].id = JSEM_JOYS + cboPort1->getSelected() - 4;
-                  changed_prefs.jports[1].mode = JSEM_MODE_JOYSTICK;
+          default:if ((cboPort1->getSelected() - 4) < inputdevice_get_device_total (IDTYPE_JOYSTICK))
+                  {
+                    changed_prefs.jports[1].id = JSEM_JOYS + cboPort1->getSelected() - 4;
+                    changed_prefs.jports[1].mode = JSEM_MODE_JOYSTICK;
+                  }
+                  else
+                  {
+                    changed_prefs.jports[1].id = JSEM_JOYS + cboPort1->getSelected() - 4 - (inputdevice_get_device_total (IDTYPE_JOYSTICK) -1);
+                    changed_prefs.jports[1].mode = JSEM_MODE_JOYSTICK_CD32;
+                  }
                   break;
         }
         inputdevice_updateconfig(NULL, &changed_prefs);
@@ -320,13 +335,19 @@ static InputActionListener* inputActionListener;
 void InitPanelInput(const struct _ConfigCategory& category)
 {
   inputActionListener = new InputActionListener();
-
   if (ctrlPortList.getNumberOfElements() < (4 + inputdevice_get_device_total (IDTYPE_JOYSTICK)))
   {
     int i;
     for(i=0; i<(inputdevice_get_device_total (IDTYPE_JOYSTICK) - 1); i++)
     {
        ctrlPortList.AddElement(inputdevice_get_device_name(IDTYPE_JOYSTICK,i + 1));
+    }
+    for(i=0; i<(inputdevice_get_device_total (IDTYPE_JOYSTICK) - 1); i++)
+    {
+       char cd32joyname [128] = "";
+       strncat(cd32joyname , inputdevice_get_device_name(IDTYPE_JOYSTICK,i + 1), 128 - 1);
+       strncat(cd32joyname ," as CD32 contr.", 128 - 1);
+       ctrlPortList.AddElement(cd32joyname);
     }
   }
 
@@ -672,7 +693,10 @@ void RefreshPanelInput(void)
       cboPort0->setSelected(4); 
       break;
     default:
-      cboPort0->setSelected(changed_prefs.jports[0].id-JSEM_JOYS + 4); 
+      if(changed_prefs.jports[0].mode != JSEM_MODE_JOYSTICK_CD32)
+        cboPort0->setSelected(changed_prefs.jports[0].id-JSEM_JOYS + 4);
+      else
+        cboPort0->setSelected(changed_prefs.jports[0].id-JSEM_JOYS + 4 + inputdevice_get_device_total (IDTYPE_JOYSTICK) - 1);
       break;
   }
   
@@ -694,7 +718,10 @@ void RefreshPanelInput(void)
       cboPort1->setSelected(4); 
       break;
     default:
-      cboPort1->setSelected(changed_prefs.jports[1].id-JSEM_JOYS + 4); 
+      if(changed_prefs.jports[1].mode != JSEM_MODE_JOYSTICK_CD32)
+        cboPort1->setSelected(changed_prefs.jports[1].id-JSEM_JOYS + 4);
+      else
+        cboPort1->setSelected(changed_prefs.jports[1].id-JSEM_JOYS + 4 + inputdevice_get_device_total (IDTYPE_JOYSTICK) - 1);
       break;
   } 
 
