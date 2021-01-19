@@ -83,7 +83,7 @@ LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
-MORE_CFLAGS += -Ofast -fomit-frame-pointer -DDEBUG
+MORE_CFLAGS += -Ofast -fomit-frame-pointer
 MORE_CFLAGS += -finline -fno-builtin
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING

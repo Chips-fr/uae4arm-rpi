@@ -117,14 +117,10 @@ static void sound_copy_produced_block(void *ud, unsigned char *stream, int len)
 		{
 			for(int i=0; i<SNDBUFFER_LEN * 2 ; ++i)
 				sndbuffer[rdcnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
+                        cdrdcnt++;
 		}
-	
-		memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN*4, len));
 	}
-	else
-	  	memcpy(stream, sndbuffer[rdcnt%SOUND_BUFFERS_COUNT], MIN(SNDBUFFER_LEN * 2, len));
-
-
+        rdcnt++;
 }
 
 static void init_soundbuffer_usage(void)
@@ -180,19 +176,21 @@ void finish_sound_buffer (void)
 	dbg("sound.c : finish_sound_buffer");
 #endif
 
-
-
 	extern void retro_audiocb(signed short int *sound_buffer,int sndbufsize);
-	retro_audiocb(sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN/2);
+
+        // In order to mix with cd audio and synchrously send to retroarch...
+        sound_copy_produced_block(0,(unsigned char *)sndbuffer[wrcnt%SOUND_BUFFERS_COUNT],SNDBUFFER_LEN/2);
+
+	retro_audiocb(sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
 	wrcnt++;
 	sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
 	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound buffer write cnt %d buf %d\n", wrcnt, wrcnt%SOUND_BUFFERS_COUNT);
 
 
 	if(currprefs.sound_stereo)
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
+	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN * 2;
 	else
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN/2;	
+	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
 
 #ifdef DEBUG_SOUND
 	dbg(" sound.c : ! finish_sound_buffer");
@@ -225,13 +223,10 @@ void finish_cdaudio_buffer (void)
 
 bool cdaudio_catchup(void)
 {
-  return true;
-#if 0
-  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 30) && (sound_thread_active != 0) && (quit_program == 0)) {
+  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 30) && (quit_program == 0)) {
     sleep_millis(10);
   }
-  return (sound_thread_active != 0);
-#endif
+  return 1;
 }
 
 

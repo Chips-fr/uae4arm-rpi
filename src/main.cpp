@@ -660,7 +660,7 @@ void leave_program (void)
     do_leave_program ();
 }
 
-
+#ifdef __LIBRETRO__
 void overwrite_with_retroarch_opt(void)
 {
    // Save options coming from libretro options...
@@ -697,6 +697,7 @@ void overwrite_with_retroarch_opt(void)
       //built_in_prefs (&currprefs, 5, 1, 0, 0);
    }
 }
+#endif
 
 static int real_main2 (int argc, TCHAR **argv)
 {
