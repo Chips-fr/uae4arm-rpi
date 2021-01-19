@@ -542,6 +542,22 @@ int Retro_PollEvent()
       setjoystickstate (0, 0, axis, 32767);
       axis = (up ? -32767 : (down ? 32767 : 0));
       setjoystickstate (0, 1, axis, 32767);
+
+      if (isCD32)
+      {
+         int b3    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_Y);
+         int b4    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_X);
+         int b5    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_START);
+         int b6    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_L);
+         int b7    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_R);
+
+         setjoybuttonstate (0, 2, b3);
+         setjoybuttonstate (0, 3, b4);
+         setjoybuttonstate (0, 6, b5);
+         setjoybuttonstate (0, 4, b6);
+         setjoybuttonstate (0, 5, b7);
+      }
+
       /*
       setjoystickstate (0, 1, up ? -32767 : 0, 32767);
       setjoystickstate (0, 1, down ? 32767 : 0, 32767);
@@ -585,6 +601,22 @@ int Retro_PollEvent()
          setjoystickstate (1, 0, axis, 32767);
          axis = (up ? -32767 : (down ? 32767 : 0));
          setjoystickstate (1, 1, axis, 32767);
+
+         if (isCD32)
+         {
+            int b3    = input_state_cb(1, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_Y);
+            int b4    = input_state_cb(1, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_X);
+            int b5    = input_state_cb(1, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_START);
+            int b6    = input_state_cb(1, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_L);
+            int b7    = input_state_cb(1, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_R);
+
+            setjoybuttonstate (1, 2, b3);
+            setjoybuttonstate (1, 3, b4);
+            setjoybuttonstate (1, 6, b5);
+            setjoybuttonstate (1, 4, b6);
+            setjoybuttonstate (1, 5, b7);
+         }
+
          /*
          setjoystickstate (1, 1, up ? -32767 : 0, 32767);
          setjoystickstate (1, 1, down ? 32767 : 0, 32767);
@@ -600,7 +632,10 @@ int Retro_PollEvent()
             LOGI("Switch to joystick mode for Port 0.\n");
             second_joystick_enable = 1;
             changed_prefs.jports[0].id   = JSEM_JOYS + 1;
-            changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK;
+            if (isCD32)
+               changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK_CD32;
+            else
+               changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK;
             inputdevice_updateconfig(NULL, &changed_prefs);
          }
       }

@@ -41,6 +41,7 @@
 #endif
 
 #if defined(__LIBRETRO__)
+#include "libretro-core.h"
 extern int pauseg;
 #endif
 #ifdef CAPSLOCK_DEBIAN_WORKAROUND
@@ -681,7 +682,7 @@ void overwrite_with_retroarch_opt(void)
    currprefs.gfx_vresolution =  tmp_prefs.gfx_vresolution;
    strcpy (currprefs.romextfile,     tmp_prefs.romextfile);
    strcpy (currprefs.cdslots[0].name,tmp_prefs.cdslots[0].name);
-   if (strlen(currprefs.romextfile))
+   if (isCD32)
    {
       // If we have romexfile set CD32 config...
       currprefs.cs_cd32c2p = currprefs.cs_cd32cd = currprefs.cs_cd32nvram = true;
@@ -692,6 +693,7 @@ void overwrite_with_retroarch_opt(void)
       currprefs.cdslots[0].inuse = true;
       currprefs.cdslots[0].type = SCSI_UNIT_IMAGE;
       currprefs.bogomem_size = 0;
+      currprefs.jports[1].mode = JSEM_MODE_JOYSTICK_CD32;
       //built_in_prefs (&currprefs, 5, 1, 0, 0);
    }
 }

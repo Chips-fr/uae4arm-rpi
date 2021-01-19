@@ -58,10 +58,7 @@ static retro_environment_t environ_cb;
 #define CD32_ROM        "kick40060.CD32"
 #define CD32_ROM_EXT    "kick40060.CD32.ext"
 
-static char uae_machine[256];
-static char uae_kickstart[16];
-static char uae_config[1024];
-
+bool isCD32 = false;
 
 #ifdef _WIN32
 #define RETRO_PATH_SEPARATOR            "\\"
@@ -208,8 +205,6 @@ static void update_variables(void)
 
       if (strcmp(var.value, "A600") == 0)
       {
-         //strcat(uae_machine, A600);
-         //strcpy(uae_kickstart, A600_ROM);
          changed_prefs.cpu_model = 68000;
          changed_prefs.chipmem_size = 2 * 0x80000;
          changed_prefs.m68k_speed = M68K_SPEED_7MHZ_CYCLES;
@@ -221,8 +216,6 @@ static void update_variables(void)
       }
       else if (strcmp(var.value, "A1200") == 0)
       {
-         //strcat(uae_machine, A1200);
-         //strcpy(uae_kickstart, A1200_ROM);
          //changed_prefs.cpu_type="68ec020";
          changed_prefs.cpu_model = 68020;
          changed_prefs.chipmem_size = 4 * 0x80000;
@@ -235,12 +228,10 @@ static void update_variables(void)
       }
       else if (strcmp(var.value, "CD32") == 0)
       {
-
          #define DRV_NONE -1
          #define SCSI_UNIT_IMAGE 1
 
-         //strcat(uae_machine, CD32);
-         //strcpy(uae_kickstart, CD32_ROM);
+         isCD32 = true;
          //changed_prefs.cpu_type="68ec020";
          changed_prefs.cpu_model = 68020;
          changed_prefs.chipmem_size = 4 * 0x80000;
@@ -258,10 +249,7 @@ static void update_variables(void)
       }
       else // if (strcmp(var.value, "A500") == 0)
       {
-         //strcat(uae_machine, A500);
-         //strcpy(uae_kickstart, A500_ROM);
          //changed_prefs.cpu_type="68000";
-         
          changed_prefs.cpu_model = 68000;
          changed_prefs.m68k_speed = M68K_SPEED_7MHZ_CYCLES;
          changed_prefs.cpu_compatible = 0;
