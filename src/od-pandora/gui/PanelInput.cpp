@@ -213,6 +213,7 @@ class InputActionListener : public gcn::ActionListener
                     changed_prefs.jports[0].id = JSEM_JOYS + cboPort0->getSelected() - 4;
                     changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK;
                   }
+                  else
                   {
                     changed_prefs.jports[0].id = JSEM_JOYS + cboPort0->getSelected() - 4 - (inputdevice_get_device_total (IDTYPE_JOYSTICK) -1);
                     changed_prefs.jports[0].mode = JSEM_MODE_JOYSTICK_CD32;
