@@ -627,7 +627,7 @@ void InitPanelQuickstart(const struct _ConfigCategory& category)
 	cboModel = new gcn::UaeDropDown(&amigaModelList);
   cboModel->setSize(160, DROPDOWN_HEIGHT);
   cboModel->setBaseColor(gui_baseCol);
-  cboModel->setId("AModel");
+  cboModel->setId("qscboAModel");
   cboModel->addActionListener(amigaModelActionListener);
 
   lblConfig = new gcn::Label("Configuration:");
@@ -636,7 +636,7 @@ void InitPanelQuickstart(const struct _ConfigCategory& category)
 	cboConfig = new gcn::UaeDropDown(&amigaConfigList);
   cboConfig->setSize(category.panel->getWidth() - lblConfig->getWidth() - 8 - 2 * DISTANCE_BORDER, DROPDOWN_HEIGHT);
   cboConfig->setBaseColor(gui_baseCol);
-  cboConfig->setId("AConfig");
+  cboConfig->setId("qscboAConfig");
   cboConfig->addActionListener(amigaModelActionListener);
 
 	chkNTSC = new gcn::UaeCheckBox("NTSC");
