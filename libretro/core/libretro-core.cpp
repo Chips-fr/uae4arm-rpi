@@ -207,8 +207,16 @@ static void update_variables(void)
          }
          else
          {
-            LOGI("[libretro-uae4arm]: Auto-model -> A500 selected\n");
-            var.value = "A500";
+            if (strcasestr(RPATH,".hdf") != NULL)
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> A600 selected\n");
+               var.value = "A600";
+            }
+            else
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> A500 selected\n");
+               var.value = "A500";
+            }
          }
       }
       if (strcmp(var.value, "A600") == 0)
