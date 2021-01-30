@@ -198,8 +198,16 @@ static void update_variables(void)
          }
          else
          {
-            LOGI("[libretro-uae4arm]: Auto-model -> A500 selected\n");
-            var.value = "A500";
+            if (strcasestr(RPATH,".hdf") != NULL)
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> A600 selected\n");
+               var.value = "A600";
+            }
+            else
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> A500 selected\n");
+               var.value = "A500";
+            }
          }
       }
 
@@ -538,7 +546,7 @@ void retro_run(void)
       AvoidFirstPoll = 1;
    else
       Retro_PollEvent();
- 
+
    co_switch(emuThread);
 
    if(pauseg==0)
