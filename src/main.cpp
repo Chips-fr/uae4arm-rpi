@@ -48,6 +48,7 @@
 #endif
 #if defined(__LIBRETRO__)
 extern int pauseg;
+extern void update_prefs_retrocfg(struct uae_prefs *);
 #endif
 
 long int version = 256*65536L*UAEMAJOR + 65536L*UAEMINOR + UAESUBREV;
@@ -440,26 +441,6 @@ void leave_program (void)
     do_leave_program ();
 }
 
-void overwrite_with_retroarch_opt(void)
-{
-   // Save options coming from libretro options...
-   currprefs.gfx_size.width =   tmp_prefs.gfx_size.width;
-   currprefs.gfx_size.height =  tmp_prefs.gfx_size.height ;
-   currprefs.gfx_resolution =   tmp_prefs.gfx_resolution;
-   currprefs.leds_on_screen =   tmp_prefs.leds_on_screen;
-   currprefs.cpu_model =        tmp_prefs.cpu_model;
-   currprefs.address_space_24 = tmp_prefs.address_space_24;
-   currprefs.chipset_mask =     tmp_prefs.chipset_mask;
-   currprefs.chipmem_size =     tmp_prefs.chipmem_size;
-   currprefs.fastmem_size =     tmp_prefs.fastmem_size;
-   strcpy (currprefs.romfile,   tmp_prefs.romfile);
-   currprefs.m68k_speed =       tmp_prefs.m68k_speed;
-   currprefs.cpu_compatible =   tmp_prefs.cpu_compatible;
-   currprefs.floppy_speed =     tmp_prefs.floppy_speed;
-}
-
-
-
 static void real_main2 (int argc, char **argv)
 {
   printf("Uae4arm v0.4 for Raspberry Pi by Chips\n");
@@ -484,6 +465,9 @@ static void real_main2 (int argc, char **argv)
 
   if (restart_config[0]) {
 	  default_prefs (&currprefs, 0);
+#ifdef __LIBRETRO__
+	  update_prefs_retrocfg(&currprefs);
+#endif
 	  fixup_prefs (&currprefs);
   }
 
@@ -493,7 +477,6 @@ static void real_main2 (int argc, char **argv)
 
   if (restart_config[0])
   {
-	  overwrite_with_retroarch_opt();
 	  parse_cmdline_and_init_file (argc, argv);
 
 	  // Puae always set 68020+ product with 14Mhz minimum by default in newcpu.cpp ...

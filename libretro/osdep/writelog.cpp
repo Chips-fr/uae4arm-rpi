@@ -41,7 +41,6 @@ void write_log (const char *format,...)
 	  fprintf( debugfile, buffer );
 	  fflush (debugfile);
   }
-LOGI(buffer);
   va_end (parms);
 }
 
