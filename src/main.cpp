@@ -42,7 +42,6 @@
 
 #if defined(__LIBRETRO__)
 #include "libretro-core.h"
-extern int pauseg;
 #endif
 #ifdef CAPSLOCK_DEBIAN_WORKAROUND
   #include <linux/kd.h>
@@ -660,45 +659,6 @@ void leave_program (void)
     do_leave_program ();
 }
 
-#ifdef __LIBRETRO__
-void overwrite_with_retroarch_opt(void)
-{
-   // Save options coming from libretro options...
-   // Should we use built_in_prefs instead ?
-
-   currprefs.gfx_size.width =   tmp_prefs.gfx_size.width;
-   currprefs.gfx_size.height =  tmp_prefs.gfx_size.height;
-   currprefs.gfx_resolution =   tmp_prefs.gfx_resolution;
-   currprefs.leds_on_screen =   tmp_prefs.leds_on_screen;
-   currprefs.cpu_model =        tmp_prefs.cpu_model;
-   currprefs.address_space_24 = tmp_prefs.address_space_24;
-   currprefs.chipset_mask =     tmp_prefs.chipset_mask;
-   currprefs.chipmem_size =     tmp_prefs.chipmem_size;
-   currprefs.fastmem[0].size =  tmp_prefs.fastmem[0].size;
-   strcpy (currprefs.romfile,   tmp_prefs.romfile);
-   currprefs.m68k_speed =       tmp_prefs.m68k_speed;
-   currprefs.cpu_compatible =   tmp_prefs.cpu_compatible;
-   currprefs.floppy_speed =     tmp_prefs.floppy_speed;
-   currprefs.gfx_vresolution =  tmp_prefs.gfx_vresolution;
-   strcpy (currprefs.romextfile,     tmp_prefs.romextfile);
-   strcpy (currprefs.cdslots[0].name,tmp_prefs.cdslots[0].name);
-   if (isCD32)
-   {
-      // If we have romexfile set CD32 config...
-      currprefs.cs_cd32c2p = currprefs.cs_cd32cd = currprefs.cs_cd32nvram = true;
-      currprefs.cs_compatible = CP_CD32;
-      currprefs.floppyslots[0].dfxtype = DRV_NONE;
-      currprefs.floppyslots[1].dfxtype = DRV_NONE;
-      currprefs.nr_floppies=0;
-      currprefs.cdslots[0].inuse = true;
-      currprefs.cdslots[0].type = SCSI_UNIT_IMAGE;
-      currprefs.bogomem_size = 0;
-      currprefs.jports[1].mode = JSEM_MODE_JOYSTICK_CD32;
-      //built_in_prefs (&currprefs, 5, 1, 0, 0);
-   }
-}
-#endif
-
 static int real_main2 (int argc, TCHAR **argv)
 {
   printf("Uae4arm v0.5 for Raspberry Pi by Chips\n");
@@ -726,7 +686,10 @@ static int real_main2 (int argc, TCHAR **argv)
   keyboard_settrans();
   if (restart_config[0]) {
 	  default_prefs (&currprefs, true, 0);
-		fixup_prefs (&currprefs, true);
+#ifdef __LIBRETRO__
+	  update_prefs_retrocfg(&currprefs);
+#endif
+	  fixup_prefs (&currprefs, true);
   }
 
   if (! graphics_setup ()) {
@@ -735,9 +698,6 @@ static int real_main2 (int argc, TCHAR **argv)
 
   if (restart_config[0])
   {
-#ifdef __LIBRETRO__
-	  overwrite_with_retroarch_opt();
-#endif
 	  parse_cmdline_and_init_file (argc, argv);
   }
   else

@@ -8,6 +8,7 @@
 #include "custom.h"
 
 #include "uae.h"
+#include "inputdevice.h"
 
 cothread_t mainThread;
 cothread_t emuThread;
@@ -15,8 +16,8 @@ cothread_t emuThread;
 int CROP_WIDTH;
 int CROP_HEIGHT;
 int VIRTUAL_WIDTH ;
-int retrow=640; 
-int retroh=480;
+int retrow=320; 
+int retroh=240;
 
 static unsigned msg_interface_version = 0;
 
@@ -134,8 +135,7 @@ void Retro_Msg(const char * msg_str)
    }
 }
 
-
-static void update_variables(void)
+void update_prefs_retrocfg(struct uae_prefs * prefs)
 {
 
    struct retro_variable var;
@@ -156,9 +156,9 @@ static void update_variables(void)
       if (pch)
          retroh = strtoul(pch, NULL, 0);
 
-      changed_prefs.gfx_size.width  = retrow;
-      changed_prefs.gfx_size.height = retroh;
-      changed_prefs.gfx_resolution  = changed_prefs.gfx_size.width > 600 ? 1 : 0;
+      prefs->gfx_size.width  = retrow;
+      prefs->gfx_size.height = retroh;
+      prefs->gfx_resolution  = prefs->gfx_size.width > 600 ? 1 : 0;
 
       LOGI("[libretro-uae4arm]: Got size: %u x %u.\n", retrow, retroh);
 
@@ -174,8 +174,8 @@ static void update_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "on")  == 0) changed_prefs.leds_on_screen = 1;
-      if (strcmp(var.value, "off") == 0) changed_prefs.leds_on_screen = 0;
+      if (strcmp(var.value, "on")  == 0) prefs->leds_on_screen = 1;
+      if (strcmp(var.value, "off") == 0) prefs->leds_on_screen = 0;
    }
 
    var.key = "uae4arm_model";
@@ -213,26 +213,26 @@ static void update_variables(void)
 
       if (strcmp(var.value, "A600") == 0)
       {
-         changed_prefs.cpu_model = 68000;
-         changed_prefs.chipmem_size = 2 * 0x80000;
-         changed_prefs.m68k_speed = M68K_SPEED_7MHZ_CYCLES;
-         changed_prefs.cpu_compatible = 0;
-         changed_prefs.address_space_24 = 1;
-         changed_prefs.chipset_mask = CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
-         //strcpy(changed_prefs.romfile, A600_ROM);
-         path_join(changed_prefs.romfile, retro_system_directory, A600_ROM);
+         prefs->cpu_model = 68000;
+         prefs->chipmem_size = 2 * 0x80000;
+         prefs->m68k_speed = M68K_SPEED_7MHZ_CYCLES;
+         prefs->cpu_compatible = 0;
+         prefs->address_space_24 = 1;
+         prefs->chipset_mask = CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         //strcpy(prefs->romfile, A600_ROM);
+         path_join(prefs->romfile, retro_system_directory, A600_ROM);
       }
       else if (strcmp(var.value, "A1200") == 0)
       {
-         //changed_prefs.cpu_type="68ec020";
-         changed_prefs.cpu_model = 68020;
-         changed_prefs.chipmem_size = 4 * 0x80000;
-         changed_prefs.m68k_speed = M68K_SPEED_14MHZ_CYCLES;
-         changed_prefs.cpu_compatible = 0;
-         changed_prefs.address_space_24 = 1;
-         changed_prefs.chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
-         //strcpy(changed_prefs.romfile, A1200_ROM);
-         path_join(changed_prefs.romfile, retro_system_directory, A1200_ROM);
+         //prefs->cpu_type="68ec020";
+         prefs->cpu_model = 68020;
+         prefs->chipmem_size = 4 * 0x80000;
+         prefs->m68k_speed = M68K_SPEED_14MHZ_CYCLES;
+         prefs->cpu_compatible = 0;
+         prefs->address_space_24 = 1;
+         prefs->chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         //strcpy(prefs->romfile, A1200_ROM);
+         path_join(prefs->romfile, retro_system_directory, A1200_ROM);
       }
       else if (strcmp(var.value, "CD32") == 0)
       {
@@ -240,32 +240,38 @@ static void update_variables(void)
          #define SCSI_UNIT_IMAGE 1
 
          isCD32 = true;
-         //changed_prefs.cpu_type="68ec020";
-         changed_prefs.cpu_model = 68020;
-         changed_prefs.chipmem_size = 4 * 0x80000;
-         changed_prefs.m68k_speed = M68K_SPEED_14MHZ_CYCLES;
-         changed_prefs.cpu_compatible = 0;
-         changed_prefs.address_space_24 = 1;
-         changed_prefs.chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
-         //strcpy(changed_prefs.romfile, CD32_ROM);
-         path_join(changed_prefs.romfile,    retro_system_directory, CD32_ROM);
-         path_join(changed_prefs.romextfile, retro_system_directory, CD32_ROM_EXT);
-         changed_prefs.floppyslots[0].dfxtype = DRV_NONE;
-         changed_prefs.floppyslots[1].dfxtype = DRV_NONE;
-         changed_prefs.cdslots[0].inuse = true;
-         changed_prefs.cdslots[0].type = SCSI_UNIT_IMAGE;
+         //prefs->cpu_type="68ec020";
+         prefs->cpu_model = 68020;
+         prefs->chipmem_size = 4 * 0x80000;
+         prefs->m68k_speed = M68K_SPEED_14MHZ_CYCLES;
+         prefs->cpu_compatible = 0;
+         prefs->address_space_24 = 1;
+         prefs->chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         //strcpy(prefs->romfile, CD32_ROM);
+         path_join(prefs->romfile,    retro_system_directory, CD32_ROM);
+         path_join(prefs->romextfile, retro_system_directory, CD32_ROM_EXT);
+         prefs->floppyslots[0].dfxtype = DRV_NONE;
+         prefs->floppyslots[1].dfxtype = DRV_NONE;
+         prefs->cdslots[0].inuse = true;
+         prefs->cdslots[0].type = SCSI_UNIT_IMAGE;
+         prefs->cs_cd32c2p = prefs->cs_cd32cd = prefs->cs_cd32nvram = true;
+         prefs->cs_compatible = CP_CD32;
+         prefs->nr_floppies=0;
+         prefs->bogomem_size = 0;
+         prefs->jports[1].mode = JSEM_MODE_JOYSTICK_CD32;
+         //built_in_prefs (&currprefs, 5, 1, 0, 0);
       }
       else // if (strcmp(var.value, "A500") == 0)
       {
-         //changed_prefs.cpu_type="68000";
-         changed_prefs.cpu_model = 68000;
-         changed_prefs.m68k_speed = M68K_SPEED_7MHZ_CYCLES;
-         changed_prefs.cpu_compatible = 0;
-         changed_prefs.chipmem_size = 2 * 0x80000;
-         changed_prefs.address_space_24 = 1;
-         changed_prefs.chipset_mask = CSMASK_ECS_AGNUS;
-         //strcpy(changed_prefs.romfile, A500_ROM);
-         path_join(changed_prefs.romfile, retro_system_directory, A500_ROM);
+         //prefs->cpu_type="68000";
+         prefs->cpu_model = 68000;
+         prefs->m68k_speed = M68K_SPEED_7MHZ_CYCLES;
+         prefs->cpu_compatible = 0;
+         prefs->chipmem_size = 2 * 0x80000;
+         prefs->address_space_24 = 1;
+         prefs->chipset_mask = CSMASK_ECS_AGNUS;
+         //strcpy(prefs->romfile, A500_ROM);
+         path_join(prefs->romfile, retro_system_directory, A500_ROM);
       }
    }
 
@@ -276,23 +282,23 @@ static void update_variables(void)
    {
       if (strcmp(var.value, "None") == 0)
       {
-         changed_prefs.fastmem[0].size = 0;
+         prefs->fastmem[0].size = 0;
       }
       if (strcmp(var.value, "1 MB") == 0)
       {
-         changed_prefs.fastmem[0].size = 0x100000;
+         prefs->fastmem[0].size = 0x100000;
       }
       if (strcmp(var.value, "2 MB") == 0)
       {
-         changed_prefs.fastmem[0].size = 0x100000 * 2;
+         prefs->fastmem[0].size = 0x100000 * 2;
       }
       if (strcmp(var.value, "4 MB") == 0)
       {
-         changed_prefs.fastmem[0].size = 0x100000 * 4;
+         prefs->fastmem[0].size = 0x100000 * 4;
       }
       if (strcmp(var.value, "8 MB") == 0)
       {
-         changed_prefs.fastmem[0].size = 0x100000 * 8;
+         prefs->fastmem[0].size = 0x100000 * 8;
       }
    }
 
@@ -301,19 +307,17 @@ static void update_variables(void)
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      changed_prefs.floppy_speed=atoi(var.value);
+      prefs->floppy_speed=atoi(var.value);
    }
 
    var.key = "uae4arm_linedoubling";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "on")  == 0) changed_prefs.gfx_vresolution = 1;
-      if (strcmp(var.value, "off") == 0) changed_prefs.gfx_vresolution = 0;
+      if (strcmp(var.value, "on")  == 0) prefs->gfx_vresolution = 1;
+      if (strcmp(var.value, "off") == 0) prefs->gfx_vresolution = 0;
    }
 
-   
-   //fixup_prefs (&changed_prefs);
 }
 
 static void retro_wrap_emulator()
@@ -347,7 +351,6 @@ void Emu_init(){
       emuThread = co_create(8*65536*sizeof(void*), retro_wrap_emulator);
    }
 
-   //update_variables();
 }
 
 void Emu_uninit(){
@@ -539,7 +542,7 @@ void retro_run(void)
    static bool AvoidFirstPoll = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-      update_variables();
+      update_prefs_retrocfg(&changed_prefs);
 
    // First poll segfault since emu not initialized...
    if (AvoidFirstPoll == 0)
@@ -566,8 +569,6 @@ bool retro_load_game(const struct retro_game_info *info)
    full_path = info->path;
 
    strcpy(RPATH,full_path);
-
-   update_variables();
 
 #ifdef RENDER16B
    memset(Retro_Screen,0,1280*1024*2);

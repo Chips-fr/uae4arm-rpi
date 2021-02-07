@@ -45,6 +45,8 @@ extern char Key_Sate2[512];
 
 extern int pauseg; 
 
+extern void update_prefs_retrocfg(struct uae_prefs *);
+
 #if  defined(__ANDROID__) || defined(ANDROID)
 #include <android/log.h>
 #define LOG_TAG "RetroArch.UAE4ARM"
