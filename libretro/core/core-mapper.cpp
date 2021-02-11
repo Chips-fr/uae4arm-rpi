@@ -430,9 +430,9 @@ void retro_virtualkb(void)
             {
                oldi=-1;
             }
-	    else if(i==-13) //GUI
+	    else if(i==-13) //GUI. Not implemented...
             {     
-	       pauseg=1;
+	       //pauseg=1;
                oldi=-1;
             }
 	    else if(i==-14) //JOY PORT TOGGLE
@@ -521,12 +521,11 @@ int Retro_PollEvent()
    int16_t rmouse_x,rmouse_y;
    rmouse_x=rmouse_y=0;
 
-   if(SHOWKEY==-1 && pauseg==0)Process_key();
+   if(SHOWKEY==-1 && pauseg==0)
+   { 
+      // if emulation running
 
- 
-   if(pauseg==0)
-   { // if emulation running
-
+      Process_key();
 
       int up    = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_UP);
       int down  = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0,RETRO_DEVICE_ID_JOYPAD_DOWN);
