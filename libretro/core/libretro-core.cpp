@@ -5,12 +5,19 @@
 #endif
 #include "libretro-core.h"
 
+#include "libretro/retrodep/WHDLoad_hdf.gz.c"
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "options.h"
 #include "custom.h"
 
 #include "uae.h"
+
+#include "zlib.h"
+#include "fsdb.h"
+#include "filesys.h"
+#include "autoconf.h"
 
 cothread_t mainThread;
 cothread_t emuThread;
@@ -147,6 +154,24 @@ void Retro_Kickstart_Replacement_Msg(void)
 
 }
 
+void gz_uncompress(gzFile in, FILE *out)
+{
+   char gzbuf[16384];
+   int len;
+   int err;
+
+   for (;;)
+   {
+      len = gzread(in, gzbuf, sizeof(gzbuf));
+      if (len < 0)
+         fprintf(stdout, "%s", gzerror(in, &err));
+      if (len == 0)
+         break;
+      if ((int)fwrite(gzbuf, 1, (unsigned)len, out) != len)
+         fprintf(stdout, "Write error!\n");
+   }
+}
+
 void update_prefs_retrocfg(struct uae_prefs * prefs)
 {
    uae_machine[0] = '\0';
@@ -206,10 +231,19 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          }
          else
          {
-            if (strcasestr(RPATH,".hdf") != NULL)
+            if ((strcasestr(RPATH,".hdf") != NULL) || (strcasestr(RPATH,".lha") != NULL))
             {
-               LOGI("[libretro-uae4arm]: Auto-model -> A600 selected\n");
-               var.value = "A600";
+               if (strcasestr(RPATH,"cd32") != NULL)
+               {
+                  // Some whdload have cd32 in their name...
+                  LOGI("[libretro-uae4arm]: Auto-model -> A1200 selected\n");
+                  var.value = "A1200";
+               }
+               else
+               {
+                  LOGI("[libretro-uae4arm]: Auto-model -> A600 selected\n");
+                  var.value = "A600";
+               }
             }
             else
             {
@@ -218,6 +252,72 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
             }
          }
       }
+
+      // Treat .lha files as whdload slave. A better implementation would use zfile_isdiskimage...
+      if (strcasestr(RPATH,".lha") != NULL)
+      {
+
+          char whdload_hdf[512] = {0};
+          path_join((char*)&whdload_hdf, retro_save_directory, "WHDLoad.hdf");
+
+          /* Verify WHDLoad.hdf */
+          if (!my_existsfile(whdload_hdf))
+          {
+             LOGI("[libretro-uae4arm]: WHDLoad image file '%s' not found, attempting to create one\n", (const char*)&whdload_hdf);
+
+             char whdload_hdf_gz[512];
+             path_join((char*)&whdload_hdf_gz, retro_save_directory, "WHDLoad.hdf.gz");
+
+             FILE *whdload_hdf_gz_fp;
+             if ((whdload_hdf_gz_fp = fopen(whdload_hdf_gz, "wb")))
+             {
+                /* Write GZ */
+                fwrite(___whdload_WHDLoad_hdf_gz, ___whdload_WHDLoad_hdf_gz_len, 1, whdload_hdf_gz_fp);
+                fclose(whdload_hdf_gz_fp);
+
+                /* Extract GZ */
+                struct gzFile_s *whdload_hdf_gz_fp;
+                if ((whdload_hdf_gz_fp = gzopen(whdload_hdf_gz, "r")))
+                {
+                   FILE *whdload_hdf_fp;
+                   if ((whdload_hdf_fp = fopen(whdload_hdf, "wb")))
+                   {
+                      gz_uncompress(whdload_hdf_gz_fp, whdload_hdf_fp);
+                      fclose(whdload_hdf_fp);
+                   }
+                   gzclose(whdload_hdf_gz_fp);
+                }
+                remove(whdload_hdf_gz);
+             }
+             else
+                LOGI("[libretro-uae4arm]: Unable to create WHDLoad image file: '%s'\n", (const char*)&whdload_hdf);
+          }
+
+          /* Attach HDF */
+          if (my_existsfile(whdload_hdf))
+          {
+              //uaedev_config_info ci;
+              struct uaedev_config_info *uci;
+
+              LOGI("[libretro-uae4arm]: Attach HDF\n");
+
+              uci = add_filesys_config(prefs, -1, "WHDLoad", 0, whdload_hdf, 0, 
+                    32, 1, 2, 512, 0, 0, 0, 0);
+
+              if (uci)
+                  hardfile_do_disk_change (uci, 1);
+          }
+          /* Attach LHA */
+          struct uaedev_config_info *uci;
+
+          LOGI("[libretro-uae4arm]: Attach LHA\n");
+
+          uci = add_filesys_config(prefs, -1, "DH0", "LHA", RPATH, 
+            0, 0, 0, 0, 0, -128, 0, 0, 0);
+          if (uci)
+              filesys_media_change (uci->rootdir, 1, uci);
+      }
+
       if (strcmp(var.value, "A600") == 0)
       {
          //strcat(uae_machine, A600);
@@ -245,7 +345,7 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          //strcpy(prefs->romfile, A1200_ROM);
          path_join(prefs->romfile, retro_system_directory, A1200_ROM);
       }
-     else // if (strcmp(var.value, "A500") == 0)
+      else // if (strcmp(var.value, "A500") == 0)
       {
          //strcat(uae_machine, A500);
          //strcpy(uae_kickstart, A500_ROM);

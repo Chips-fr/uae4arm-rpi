@@ -1,6 +1,6 @@
 # uae4arm-libretro
 
-Basic port. Based on r-type version. Updated by Chips-fr.
+Based on old uae4arm version.
 
 ## Controls
 
@@ -17,11 +17,13 @@ Basic port. Based on r-type version. Updated by Chips-fr.
 
 Right analog stick controls the mouse.
 
-In mouse emulation dpad and fire buttons controls the mouse.
+In mouse emulation mode dpad and fire button controls the mouse.
 
 Two joysticks support. Switch automatically between mouse or second joystick when a mouse or 2nd joystick button is pressed.
 
 L & R button can change DF0: current disk for multiple disk roms. Each disk should be named with "(Disk x of y)"
+
+Automatic support of WHDload slave in .lha file. 
 
 Kickstarts supported in options configuration:
 

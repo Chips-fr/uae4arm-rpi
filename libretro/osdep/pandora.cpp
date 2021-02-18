@@ -349,10 +349,11 @@ int target_cfgfile_load (struct uae_prefs *p, char *filename, int type, int isde
 {
   int i;
   int result = 0;
-
+#if 0
   filesys_prepare_reset();
   while(p->mountitems > 0)
     kill_filesys_unitconfig(p, 0);
+#endif
   discard_prefs(p, type);
   
 	char *ptr = strstr(filename, ".uae");

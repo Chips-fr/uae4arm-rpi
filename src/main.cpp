@@ -83,7 +83,9 @@ void discard_prefs (struct uae_prefs *p, int type)
   }
 #ifdef FILESYS
   filesys_cleanup ();
+#ifndef __LIBRETRO__
   p->mountitems = 0;
+#endif
 #endif
 }
 
