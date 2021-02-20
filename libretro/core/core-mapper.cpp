@@ -204,7 +204,6 @@ void retro_key_down(int key)
 {
   int iAmigaKeyCode = keyboard_translation[key];
   //LOGI("kbdkey(%d)=%d pressed\n",key,iAmigaKeyCode);
-  unsigned char kkey = iAmigaKeyCode | 0x80;
 
   if (iAmigaKeyCode >= 0)
   	if (!uae4all_keystate[iAmigaKeyCode])
@@ -219,7 +218,7 @@ void retro_key_up(int key)
 {
   int iAmigaKeyCode = keyboard_translation[key];
   //LOGI("kbdkey(%d)=%d released\n",key,iAmigaKeyCode);
-  unsigned char kkey = iAmigaKeyCode | 0x00;
+
   if (iAmigaKeyCode >= 0)
   {
 	uae4all_keystate[iAmigaKeyCode] = 0;
@@ -416,9 +415,9 @@ void retro_virtualkb(void)
             {
                oldi=-1;
             }
-	    else if(i==-13) //GUI
+	    else if(i==-13) //GUI. Not implemented...
             {     
-	       pauseg=1;
+	       //pauseg=1;
                oldi=-1;
             }
 	    else if(i==-14) //JOY PORT TOGGLE
@@ -445,34 +444,31 @@ void Screen_SetFullUpdate(int scr)
 
 void Process_key()
 {
-	int i;
+   int i;
 
-	for(i=0;i<320;i++)
-        	Key_Sate[i]=input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0,i) ? 0x80: 0;
+   for(i=0;i<320;i++)
+      Key_Sate[i]=input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0,i) ? 0x80: 0;
    
-	if(memcmp( Key_Sate,old_Key_Sate , sizeof(Key_Sate) ) )
-	 	for(i=0;i<320;i++)
-			if(Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
-        	{	
-				if(i==RETROK_F12){					
-					continue;
-				}
-				//printf("press: %d \n",i);
-				retro_key_down(i);
+   if(memcmp( Key_Sate,old_Key_Sate , sizeof(Key_Sate) ) )
+   {
+      for(i=0;i<320;i++)
+         if(Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
+         {	
+            if(i==RETROK_F12)
+                continue;
+            retro_key_down(i);
 	
-        	}	
-        	else if ( !Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
-        	{
-				if(i==RETROK_F12){
-					continue;
-				}
+         }	
+         else if ( !Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
+         {
+            if(i==RETROK_F12)
+               continue;
 
-				//printf("release: %d \n",i);
-				retro_key_up(i);
-	
-        	}	
-
-	memcpy(old_Key_Sate,Key_Sate , sizeof(Key_Sate) );
+            //printf("release: %d \n",i);
+            retro_key_up(i);
+         }	
+   }
+   memcpy(old_Key_Sate,Key_Sate , sizeof(Key_Sate) );
 
 }
 
@@ -517,11 +513,12 @@ int Retro_PollEvent()
    int16_t rmouse_x,rmouse_y;
    rmouse_x=rmouse_y=0;
 
-   if(SHOWKEY==-1 && pauseg==0)Process_key();
-
  
-   if(pauseg==0)
-   { // if emulation running
+   if(SHOWKEY==-1 && pauseg==0)
+   {
+      // if emulation running
+
+      Process_key();
 
       // Joy mode for first/main joystick.
       for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
