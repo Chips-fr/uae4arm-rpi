@@ -258,6 +258,9 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       {
 
           char whdload_hdf[512] = {0};
+          char tmp_str [512];
+          struct uaedev_config_info *uci;
+
           path_join((char*)&whdload_hdf, retro_save_directory, "WHDLoad.hdf");
 
           /* Verify WHDLoad.hdf */
@@ -307,8 +310,25 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
               if (uci)
                   hardfile_do_disk_change (uci, 1);
           }
+
+
+          // Attach retro_system_directory as a read only hard drive for WHDLoad kickstarts/prefs/key
+          LOGI("[libretro-uae4arm]: Attach whdcommon\n");
+
+          // Force the ending slash to make sure the path is not treated as a file
+          if (retro_system_directory[strlen(retro_system_directory) - 1] != '/')
+             sprintf(tmp_str,"%s%s",retro_system_directory, "/");
+          else
+             sprintf(tmp_str,"%s",retro_system_directory);
+
+          uci = add_filesys_config(prefs, -1, "whdcommon", "", tmp_str, 
+            0, 0, 0, 0, 0, -128, 0, 0, 0);
+
+          if (uci)
+              filesys_media_change (uci->rootdir, 1, uci);
+
+
           /* Attach LHA */
-          struct uaedev_config_info *uci;
 
           LOGI("[libretro-uae4arm]: Attach LHA\n");
 
@@ -611,8 +631,6 @@ void retro_audiocb(signed short int *sound_buffer,int sndbufsize){
 
 void retro_run(void)
 {
-   int x;
-
    bool updated = false;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)

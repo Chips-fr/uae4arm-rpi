@@ -40,7 +40,7 @@ else ifeq ($(platform), crosspi)
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 
-	PLATFORM_DEFINES += -I ../usr/include -DWITH_LOGGING
+	PLATFORM_DEFINES += -I ../usr/include
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -59,7 +59,6 @@ else ifeq ($(platform), crossand)
 	#-mfpu=neon
 	#-mfpu=neon-vfpv4 -mfloat-abi=hard
 
-	PLATFORM_DEFINES +=  -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -78,7 +77,6 @@ else ifeq ($(platform), rpi2)
 	PLATFORM_DEFINES += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	CPU_FLAGS +=  -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -D__arm__
 
-	PLATFORM_DEFINES +=  -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -113,7 +111,7 @@ else ifeq ($(platform), vita)
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	PLATFLAGS += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
-	PLATFLAGS += -DHAVE_STRTOUL -DVITA -DWITH_LOGGING
+	PLATFLAGS += -DHAVE_STRTOUL -DVITA
 	CFLAGS += $(PLATFLAGS) 
 	CXXFLAGS += $(PLATFLAGS) 
 	STATIC_LINKING = 1
@@ -128,7 +126,6 @@ else ifeq ($(platform), classic_armv7_a7)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
-	PLATFORM_DEFINES += -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CPU_FLAGS += -DARM -Ofast \
@@ -157,7 +154,6 @@ else ifeq ($(platform), classic_armv8_a35)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
-	PLATFORM_DEFINES += -DWITH_LOGGING
 	HAVE_NEON = 1
 	USE_PICASSO96 = 1
 	CPU_FLAGS += -DARM -Ofast \
@@ -193,7 +189,7 @@ else ifeq ($(platform), android)
 	fpic := -fPIC
 	LDFLAGS := -lm -llog
 	SHARED :=  -Wl,--fix-cortex-a8 -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
-	PLATFLAGS += -DWITH_LOGGING -DANDROID -DAND -DANDPORT -DARM_OPT_TEST=1
+	PLATFLAGS += -DANDROID -DAND -DANDPORT -DARM_OPT_TEST=1
 else ifeq ($(platform), wii)
 	TARGET := $(TARGET_NAME)_libretro_wii.a
 	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
@@ -298,7 +294,6 @@ else
 ifeq ($(HAVE_NEON), 1)
 $(LIBRETRO)/osdep/neon_helper.o: $(LIBRETRO)/osdep/neon_helper.s
 	$(CXX) $(CPU_FLAGS) $(PLATFORM_DEFINES) -Wall -o $(LIBRETRO)/osdep/neon_helper.o -c $(LIBRETRO)/osdep/neon_helper.s
-	echo $(OBJS)
 endif
 endif
 

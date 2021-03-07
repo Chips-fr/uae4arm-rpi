@@ -148,7 +148,7 @@ void finish_sound_buffer (void)
 #endif
 
 	extern void retro_audiocb(signed short int *sound_buffer,int sndbufsize);
-	retro_audiocb(sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
+	retro_audiocb((short int*)sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
 
 
 	wrcnt++;

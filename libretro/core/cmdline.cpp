@@ -25,7 +25,7 @@ void Add_Option(const char* option)
    sprintf(XARGV[PARAMCOUNT++],"%s\0",option);
 }
 
-int pre_main(const char *argv)
+void pre_main(const char *argv)
 {
    int i;
    bool Only1Arg;

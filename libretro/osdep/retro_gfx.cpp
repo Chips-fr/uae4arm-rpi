@@ -206,7 +206,7 @@ void unlockscr (void)
 #include "inputdevice.h"
 #include "joystick.h"
 extern int Retro_PollEvent();
-extern DISK_GUI_change (void);
+extern void DISK_GUI_change (void);
 
 void flush_screen ()
 {
@@ -509,8 +509,8 @@ static int save_thumb(char *path)
 	  SDL_FreeSurface(current_screenshot);
 	  current_screenshot = NULL;
 	}
-	return ret;
 #endif
+	return ret;
 }
 
 

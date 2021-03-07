@@ -297,6 +297,7 @@ int target_parse_option (struct uae_prefs *p, char *option, char *value)
     || cfgfile_intval (option, value, "autofire_button", &p->pandora_autofireButton1, 1)
     || cfgfile_intval (option, value, "jump", &p->pandora_jump, 1)
     );
+  return result;
 }
 
 
