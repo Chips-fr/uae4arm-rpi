@@ -1630,7 +1630,11 @@ void default_prefs (struct uae_prefs *p, int type)
   p->sound_filter_type = 0;
   p->sound_auto = 1;
 
+#ifdef __LIBRETRO__
+  p->cachesize = 0;
+#else
   p->cachesize = DEFAULT_JIT_CACHE_SIZE;
+#endif
 
   for (i = 0;i < 10; i++)
 	  p->optcount[i] = -1;
