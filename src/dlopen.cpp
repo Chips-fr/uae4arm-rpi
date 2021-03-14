@@ -84,9 +84,9 @@ UAE_DLHANDLE uae_dlopen_plugin(const TCHAR *name)
 */
 	UAE_DLHANDLE handle = uae_dlopen("./capsimg.so");
 	if (handle == 0)
-	{
 		handle = uae_dlopen("/usr/lib/capsimg.so");
-	}
+	if (handle == 0)
+		handle = uae_dlopen("/usr/lib/libcapsimage.so");
 #elif defined(WINUAE)
 	TCHAR path[MAX_DPATH];
 	_tcscpy(path, name);
