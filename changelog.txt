@@ -1,3 +1,4 @@
+2021-03-16 - Bugfix JIT AARCH64 (DIVS)
 2020-02-21 - JIT: implemented BFINS
 2020-02-17 - JIT: bugfix CMP.W (32 bit only)
 2020-02-14 - JIT: bugfix shift opcodes
