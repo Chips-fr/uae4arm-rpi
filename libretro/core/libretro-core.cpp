@@ -204,6 +204,32 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       if (strcmp(var.value, "off") == 0) prefs->leds_on_screen = 0;
    }
 
+   var.key = "uae4arm_fastmem";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "None") == 0)
+      {
+         prefs->fastmem[0].size = 0;
+      }
+      if (strcmp(var.value, "1 MB") == 0)
+      {
+         prefs->fastmem[0].size = 0x100000;
+      }
+      if (strcmp(var.value, "2 MB") == 0)
+      {
+         prefs->fastmem[0].size = 0x100000 * 2;
+      }
+      if (strcmp(var.value, "4 MB") == 0)
+      {
+         prefs->fastmem[0].size = 0x100000 * 4;
+      }
+      if (strcmp(var.value, "8 MB") == 0)
+      {
+         prefs->fastmem[0].size = 0x100000 * 8;
+      }
+   }
+
    var.key = "uae4arm_model";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -251,6 +277,11 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       {
 
           char whdload_hdf[512] = {0};
+          char tmp_str [512];
+
+          struct uaedev_config_info ci;
+          struct uaedev_config_data *uci;
+
           path_join((char*)&whdload_hdf, retro_save_directory, "WHDLoad.hdf");
 
           /* Verify WHDLoad.hdf */
@@ -323,10 +354,31 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
                       hardfile_added(&ci);
               }
           }
-          /* Attach LHA */
-          struct uaedev_config_info ci;
-          struct uaedev_config_data *uci;
+
+          // Attach retro_system_directory as a read only hard drive for WHDLoad kickstarts/prefs/key
+          LOGI("[libretro-uae4arm]: Attach whdcommon\n");
+
+          // Force the ending slash to make sure the path is not treated as a file
+          if (retro_system_directory[strlen(retro_system_directory) - 1] != '/')
+             sprintf(tmp_str,"%s%s",retro_system_directory, "/");
+          else
+             sprintf(tmp_str,"%s",retro_system_directory);
+
+          uci_set_defaults(&ci, true);
+          strncpy(ci.devname, "whdcommon", MAX_DPATH);
+          strncpy(ci.volname, "",          MAX_DPATH);
+          strncpy(ci.rootdir, tmp_str,     MAX_DPATH);
+          ci.type = UAEDEV_DIR;
+          ci.readonly = 0;
+          ci.bootpri = -128;
     
+          uci = add_filesys_config(prefs, -1, &ci);
+          if (uci) {
+            filesys_media_change (ci.rootdir, 1, uci);
+          }
+
+
+          /* Attach LHA */    
           LOGI("[libretro-uae4arm]: Attach LHA\n");
 
           uci_set_defaults(&ci, true);
@@ -341,6 +393,9 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
           if (uci) {
             filesys_media_change (ci.rootdir, 1, uci);
           }
+
+          // Temp: Add automatically 8 MBytes of Fast...
+          prefs->fastmem[0].size = 0x100000 * 8;
       }
 
       if (strcmp(var.value, "A600") == 0)
@@ -409,34 +464,6 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          path_join(prefs->romfile, retro_system_directory, A500_ROM);
       }
    }
-
-
-   var.key = "uae4arm_fastmem";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "None") == 0)
-      {
-         prefs->fastmem[0].size = 0;
-      }
-      if (strcmp(var.value, "1 MB") == 0)
-      {
-         prefs->fastmem[0].size = 0x100000;
-      }
-      if (strcmp(var.value, "2 MB") == 0)
-      {
-         prefs->fastmem[0].size = 0x100000 * 2;
-      }
-      if (strcmp(var.value, "4 MB") == 0)
-      {
-         prefs->fastmem[0].size = 0x100000 * 4;
-      }
-      if (strcmp(var.value, "8 MB") == 0)
-      {
-         prefs->fastmem[0].size = 0x100000 * 8;
-      }
-   }
-
 
    var.key = "uae4arm_floppy_speed";
    var.value = NULL;
