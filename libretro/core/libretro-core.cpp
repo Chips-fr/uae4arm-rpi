@@ -1,7 +1,10 @@
 #include "libretro.h"
 #include "libretro-core.h"
 
+#include "libretro/retrodep/WHDLoad_files.zip.c"
 #include "libretro/retrodep/WHDLoad_hdf.gz.c"
+#include "libretro/retrodep/WHDSaves_hdf.gz.c"
+#include "libretro/retrodep/WHDLoad_prefs.gz.c"
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -26,6 +29,7 @@ int retrow=320;
 int retroh=240;
 
 static unsigned msg_interface_version = 0;
+unsigned int opt_use_whdload = 1;
 
 #define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
 #define RETRO_DEVICE_AMIGA_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
@@ -109,6 +113,7 @@ void retro_set_environment(retro_environment_t cb)
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
       { "uae4arm_floppy_speed",   "Floppy speed; 100|200|400|800", },
       { "uae4arm_linedoubling",   "Line doubling (de-interlace); off|on", },
+      { "uae4arm_whdloadmode",    "whdload mode; files|hdfs"},
       { NULL, NULL },
    };
 
@@ -157,6 +162,150 @@ void gz_uncompress(gzFile in, FILE *out)
       if ((int)fwrite(gzbuf, 1, (unsigned)len, out) != len)
          fprintf(stdout, "Write error!\n");
    }
+}
+
+#include "archivers/zip/unzip.h"
+//#include "file/file_path.h"
+#include "zfile.h"
+#ifdef WIN32
+#define DIR_SEP_STR "\\"
+#else
+#define DIR_SEP_STR "/"
+#endif
+void zip_uncompress(char *in, char *out, char *lastfile)
+{
+    unzFile uf = NULL;
+
+    struct zfile *zf;
+    zf = zfile_fopen(in, _T("rb"));
+
+    uf = unzOpen(zf);
+
+    uLong i;
+    unz_global_info gi;
+    int err;
+    err = unzGetGlobalInfo (uf, &gi);
+
+    const char* password = NULL;
+    int size_buf = 8192;
+
+    for (i = 0; i < gi.number_entry; i++)
+    {
+        char filename_inzip[256];
+        char filename_withpath[512];
+        filename_inzip[0] = '\0';
+        filename_withpath[0] = '\0';
+        char* filename_withoutpath;
+        char* p;
+        unz_file_info file_info;
+        FILE *fout = NULL;
+        void* buf;
+
+        buf = (void*)malloc(size_buf);
+        if (buf == NULL)
+        {
+            fprintf(stderr, "Unzip: Error allocating memory\n");
+            return;
+        }
+
+        err = unzGetCurrentFileInfo(uf, &file_info, filename_inzip, sizeof(filename_inzip), NULL, 0, NULL, 0);
+        snprintf(filename_withpath, sizeof(filename_withpath), "%s%s%s", out, DIR_SEP_STR, filename_inzip);
+        //if (dc_get_image_type(filename_inzip) == DC_IMAGE_TYPE_FLOPPY && lastfile != NULL)
+        //    snprintf(lastfile, RETRO_PATH_MAX, "%s", filename_inzip);
+
+        p = filename_withoutpath = filename_inzip;
+        while ((*p) != '\0')
+        {
+            if (((*p) == '/') || ((*p) == '\\'))
+                filename_withoutpath = p+1;
+            p++;
+        }
+
+        if ((*filename_withoutpath) == '\0')
+        {
+            fprintf(stdout, "Unzip mkdir:   %s\n", filename_withpath);
+            my_mkdir(filename_withpath);
+        }
+        else
+        {
+            const char* write_filename;
+            int skip = 0;
+
+            write_filename = filename_withpath;
+
+            err = unzOpenCurrentFile(uf);
+            if (err != UNZ_OK)
+            {
+                fprintf(stderr, "Unzip: Error %d with zipfile in unzOpenCurrentFilePassword: %s\n", err, write_filename);
+            }
+
+            if ((skip == 0) && (err == UNZ_OK))
+            {
+                fout = fopen(write_filename, "wb");
+                if (fout == NULL)
+                {
+                    fprintf(stderr, "Unzip: Error opening %s\n", write_filename);
+                }
+            }
+
+            if (fout != NULL)
+            {
+                fprintf(stdout, "Unzip extract: %s\n", write_filename);
+
+                do
+                {
+                    err = unzReadCurrentFile(uf, buf, size_buf);
+                    if (err < 0)
+                    {
+                        fprintf(stderr, "Unzip: Error %d with zipfile in unzReadCurrentFile\n", err);
+                        break;
+                    }
+                    if (err > 0)
+                    {
+                        if (!fwrite(buf, err, 1, fout))
+                        {
+                            fprintf(stderr, "Unzip: Error in writing extracted file\n");
+                            err = UNZ_ERRNO;
+                            break;
+                        }
+                    }
+                }
+                while (err > 0);
+                if (fout)
+                    fclose(fout);
+            }
+
+            if (err == UNZ_OK)
+            {
+                err = unzCloseCurrentFile(uf);
+                if (err != UNZ_OK)
+                {
+                    fprintf(stderr, "Unzip: Error %d with zipfile in unzCloseCurrentFile\n", err);
+                }
+            }
+            else
+                unzCloseCurrentFile(uf);
+        }
+
+        free(buf);
+
+        if ((i+1) < gi.number_entry)
+        {
+            err = unzGoToNextFile(uf);
+            if (err != UNZ_OK)
+            {
+                fprintf(stderr, "Unzip: Error %d with zipfile in unzGoToNextFile\n", err);
+                break;
+            }
+        }
+    }
+
+    if (uf)
+    {
+        unzCloseCurrentFile(uf);
+        unzClose(uf);
+        uf = NULL;
+    }
 }
 
 
@@ -230,6 +379,20 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       }
    }
 
+   var.key = "uae4arm_whdloadmode";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "hdfs") == 0)
+      {
+         opt_use_whdload = 2;
+      }
+      else
+      {
+         opt_use_whdload = 1;
+      }
+   }
+
    var.key = "uae4arm_model";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -243,7 +406,7 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
             LOGI("[libretro-uae4arm]: Auto-model -> CD32 selected\n");
             var.value = "CD32";
          }
-         else if (strcasestr(RPATH,"aga") != NULL)
+         else if ((strcasestr(RPATH,"aga") != NULL) || (strcasestr(RPATH,"amiga1200") != NULL))
          {
             LOGI("[libretro-uae4arm]: Auto-model -> A1200 selected\n");
             var.value = "A1200";
@@ -276,83 +439,149 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       if (strcasestr(RPATH,".lha") != NULL)
       {
 
-          char whdload_hdf[512] = {0};
-          char tmp_str [512];
+          char whdload_hdf[PATH_MAX] = {0};
+          char tmp_str [PATH_MAX];
 
           struct uaedev_config_info ci;
           struct uaedev_config_data *uci;
 
-          path_join((char*)&whdload_hdf, retro_save_directory, "WHDLoad.hdf");
-
-          /* Verify WHDLoad.hdf */
-          if (!my_existsfile(whdload_hdf))
+          // WHDLoad HDF mode
+          if (opt_use_whdload == 2)
           {
-             LOGI("[libretro-uae4arm]: WHDLoad image file '%s' not found, attempting to create one\n", (const char*)&whdload_hdf);
 
-             char whdload_hdf_gz[512];
-             path_join((char*)&whdload_hdf_gz, retro_save_directory, "WHDLoad.hdf.gz");
+             path_join((char*)&whdload_hdf, retro_system_directory, "WHDLoad.hdf");
 
-             FILE *whdload_hdf_gz_fp;
-             if ((whdload_hdf_gz_fp = fopen(whdload_hdf_gz, "wb")))
+             // Verify WHDLoad
+             if (!my_existsfile(whdload_hdf))
+                path_join((char*)&whdload_hdf, retro_save_directory, "WHDLoad.hdf");
+
+             /* Verify WHDLoad.hdf */
+             if (!my_existsfile(whdload_hdf))
              {
-                /* Write GZ */
-                fwrite(___whdload_WHDLoad_hdf_gz, ___whdload_WHDLoad_hdf_gz_len, 1, whdload_hdf_gz_fp);
-                fclose(whdload_hdf_gz_fp);
+                LOGI("[libretro-uae4arm]: WHDLoad image file '%s' not found, attempting to create one\n", (const char*)&whdload_hdf);
 
-                /* Extract GZ */
-                struct gzFile_s *whdload_hdf_gz_fp;
-                if ((whdload_hdf_gz_fp = gzopen(whdload_hdf_gz, "r")))
+                char whdload_hdf_gz[512];
+                path_join((char*)&whdload_hdf_gz, retro_save_directory, "WHDLoad.hdf.gz");
+
+                FILE *whdload_hdf_gz_fp;
+                if ((whdload_hdf_gz_fp = fopen(whdload_hdf_gz, "wb")))
                 {
-                   FILE *whdload_hdf_fp;
-                   if ((whdload_hdf_fp = fopen(whdload_hdf, "wb")))
+                   /* Write GZ */
+                   fwrite(___whdload_WHDLoad_hdf_gz, ___whdload_WHDLoad_hdf_gz_len, 1, whdload_hdf_gz_fp);
+                   fclose(whdload_hdf_gz_fp);
+
+                   /* Extract GZ */
+                   struct gzFile_s *whdload_hdf_gz_fp;
+                   if ((whdload_hdf_gz_fp = gzopen(whdload_hdf_gz, "r")))
                    {
-                      gz_uncompress(whdload_hdf_gz_fp, whdload_hdf_fp);
-                      fclose(whdload_hdf_fp);
+                      FILE *whdload_hdf_fp;
+                      if ((whdload_hdf_fp = fopen(whdload_hdf, "wb")))
+                      {
+                         gz_uncompress(whdload_hdf_gz_fp, whdload_hdf_fp);
+                         fclose(whdload_hdf_fp);
+                      }
+                      gzclose(whdload_hdf_gz_fp);
                    }
-                   gzclose(whdload_hdf_gz_fp);
+                   remove(whdload_hdf_gz);
                 }
-                remove(whdload_hdf_gz);
+                else
+                   LOGI("[libretro-uae4arm]: Unable to create WHDLoad image file: '%s'\n", (const char*)&whdload_hdf);
+             }
+
+             /* Attach HDF */
+             if (my_existsfile(whdload_hdf))
+             {
+                 uaedev_config_info ci;
+                 struct uaedev_config_data *uci;
+
+                 LOGI("[libretro-uae4arm]: Attach WHDLoad HDF\n");
+
+                 uci_set_defaults(&ci, false);
+                 strncpy(ci.devname, "WHDLoad", MAX_DPATH);
+                 strncpy(ci.rootdir, whdload_hdf, MAX_DPATH);
+                 ci.type = UAEDEV_HDF;
+                 ci.controller_type = 0;        // UAE vs IDE
+                 ci.controller_type_unit = 0;
+                 ci.controller_unit = 0;
+                 ci.controller_media_type = 0;
+                 ci.unit_feature_level = 1;
+                 ci.unit_special_flags = 0;
+                 ci.readonly = 0; // ro should be ok
+                 ci.sectors = 32;
+                 ci.surfaces = 1;
+                 ci.reserved = 2;
+                 ci.blocksize = 512;
+                 ci.bootpri = 0;
+                 ci.physical_geometry = hardfile_testrdb(ci.rootdir);
+
+                 //tmp_str = string_replace_substring(whdload_hdf, "\\", "\\\\");
+                 uci = add_filesys_config (prefs, -1,&ci);
+                 //fprintf(configfile, "hardfile2=rw,WHDLoad:\"%s\",32,1,2,512,0,,uae0\n", (const char*)tmp_str);
+                 if (uci) {
+                     struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
+                     if(hfd)
+                         hardfile_media_change (hfd, &ci, true, false);
+                     else
+                         hardfile_added(&ci);
+                 }
+             }
+          }
+          // WHDLoad File mode
+          else
+          {
+             char whdload_path[PATH_MAX];
+             path_join((char*)&whdload_path, retro_save_directory, "WHDLoad");
+
+             char whdload_c_path[PATH_MAX];
+             path_join((char*)&whdload_c_path, retro_save_directory, "WHDLoad/C");
+
+             if (!my_existsdir(whdload_path) || (my_existsdir(whdload_path) && !my_existsdir(whdload_c_path)))
+             {
+                LOGI("[libretro-uae4arm]: WHDLoad image directory '%s' not found, attempting to create one\n", (const char*)&whdload_path);
+                my_mkdir(whdload_path);
+
+                char whdload_files_zip[PATH_MAX];
+                path_join((char*)&whdload_files_zip, retro_save_directory, "WHDLoad_files.zip");
+
+                FILE *whdload_files_zip_fp;
+                if (whdload_files_zip_fp = fopen(whdload_files_zip, "wb"))
+                {
+                   // Write ZIP
+                   fwrite(___whdload_WHDLoad_files_zip, ___whdload_WHDLoad_files_zip_len, 1, whdload_files_zip_fp);
+                   fclose(whdload_files_zip_fp);
+
+                   // Extract ZIP
+                   zip_uncompress(whdload_files_zip, whdload_path, NULL);
+                   remove(whdload_files_zip);
+                }
+                else
+                   LOGI("[libretro-uae4arm]: Error extracting WHDLoad directory: '%s'!\n", (const char*)&whdload_path);
+             }
+             if (my_existsdir(whdload_path) && my_existsdir(whdload_c_path))
+             {
+                LOGI("[libretro-uae4arm]: Attach WHDLoad files\n");
+                //tmp_str = string_replace_substring(whdload_path, "\\", "\\\\");
+                //fprintf(configfile, "filesystem2=rw,WHDLoad:WHDLoad:\"%s\",0\n", (const char*)tmp_str);
+                //free(tmp_str);
+                //tmp_str = NULL;
+
+                uci_set_defaults(&ci, true);
+                strncpy(ci.devname, "WHDLoad",     MAX_DPATH);
+                strncpy(ci.volname, "WHDLoad",     MAX_DPATH);
+                strncpy(ci.rootdir, whdload_path,  MAX_DPATH);
+                ci.type = UAEDEV_DIR;
+                ci.readonly = 0;
+                ci.bootpri  = 0;
+    
+                uci = add_filesys_config(prefs, -1, &ci);
+                if (uci) {
+                  filesys_media_change (ci.rootdir, 1, uci);
+                }
+
+
              }
              else
-                LOGI("[libretro-uae4arm]: Unable to create WHDLoad image file: '%s'\n", (const char*)&whdload_hdf);
-          }
-
-          /* Attach HDF */
-          if (my_existsfile(whdload_hdf))
-          {
-              uaedev_config_info ci;
-              struct uaedev_config_data *uci;
-
-              LOGI("[libretro-uae4arm]: Attach HDF\n");
-
-              uci_set_defaults(&ci, false);
-              strncpy(ci.devname, "WHDLoad", MAX_DPATH);
-              strncpy(ci.rootdir, whdload_hdf, MAX_DPATH);
-              ci.type = UAEDEV_HDF;
-              ci.controller_type = 0;        // UAE vs IDE
-              ci.controller_type_unit = 0;
-              ci.controller_unit = 0;
-              ci.controller_media_type = 0;
-              ci.unit_feature_level = 1;
-              ci.unit_special_flags = 0;
-              ci.readonly = 0; // ro should be ok
-              ci.sectors = 32;
-              ci.surfaces = 1;
-              ci.reserved = 2;
-              ci.blocksize = 512;
-              ci.bootpri = 0;
-              ci.physical_geometry = hardfile_testrdb(ci.rootdir);
-
-              //tmp_str = string_replace_substring(whdload_hdf, "\\", "\\\\");
-              uci = add_filesys_config (prefs, -1,&ci);
-              //fprintf(configfile, "hardfile2=rw,WHDLoad:\"%s\",32,1,2,512,0,,uae0\n", (const char*)tmp_str);
-              if (uci) {
-  		  struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
-                  if(hfd)
-                      hardfile_media_change (hfd, &ci, true, false);
-                  else
-                      hardfile_added(&ci);
-              }
+                LOGI("[libretro-uae4arm]: Error creating WHDLoad directory: '%s'!\n", (const char*)&whdload_path);
           }
 
           // Attach retro_system_directory as a read only hard drive for WHDLoad kickstarts/prefs/key
@@ -376,6 +605,115 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
           if (uci) {
             filesys_media_change (ci.rootdir, 1, uci);
           }
+
+
+          // WHDSaves HDF mode
+          if (opt_use_whdload == 2)
+          {
+             // Attach WHDSaves.hdf if available
+             char whdsaves_hdf[MAX_DPATH];
+             path_join((char*)&whdsaves_hdf, retro_system_directory, "WHDSaves.hdf");
+             if (!my_existsfile(whdsaves_hdf))
+                path_join((char*)&whdsaves_hdf, retro_save_directory, "WHDSaves.hdf");
+             if (!my_existsfile(whdsaves_hdf))
+             {
+                fprintf(stdout, "[libretro-uae4arm]: WHDSaves image file '%s' not found, attempting to create one\n", (const char*)&whdsaves_hdf);
+
+                char whdsaves_hdf_gz[MAX_DPATH];
+                path_join((char*)&whdsaves_hdf_gz, retro_save_directory, "WHDSaves.hdf.gz");
+
+                FILE *whdsaves_hdf_gz_fp;
+                if (whdsaves_hdf_gz_fp = fopen(whdsaves_hdf_gz, "wb"))
+                {
+                   // Write GZ
+                   fwrite(___whdload_WHDSaves_hdf_gz, ___whdload_WHDSaves_hdf_gz_len, 1, whdsaves_hdf_gz_fp);
+                   fclose(whdsaves_hdf_gz_fp);
+
+                   // Extract GZ
+                   struct gzFile_s *whdsaves_hdf_gz_fp;
+                   if (whdsaves_hdf_gz_fp = gzopen(whdsaves_hdf_gz, "r"))
+                   {
+                      FILE *whdsaves_hdf_fp;
+                      if (whdsaves_hdf_fp = fopen(whdsaves_hdf, "wb"))
+                      {
+                         gz_uncompress(whdsaves_hdf_gz_fp, whdsaves_hdf_fp);
+                         fclose(whdsaves_hdf_fp);
+                      }
+                      gzclose(whdsaves_hdf_gz_fp);
+                   }
+                   remove(whdsaves_hdf_gz);
+                }
+                else
+                   fprintf(stderr, "Error creating WHDSaves.hdf: '%s'!\n", (const char*)&whdsaves_hdf);
+             }
+             if (my_existsfile(whdsaves_hdf))
+             {
+                //tmp_str = string_replace_substring(whdsaves_hdf, "\\", "\\\\");
+                //fprintf(configfile, "hardfile2=rw,WHDSaves:\"%s\",32,1,2,512,0,,uae2\n", (const char*)tmp_str);
+                //free(tmp_str);
+                //tmp_str = NULL;
+
+                uci_set_defaults(&ci, false);
+                strncpy(ci.devname, "WHDSaves", MAX_DPATH);
+                strncpy(ci.rootdir, whdsaves_hdf, MAX_DPATH);
+                ci.type = UAEDEV_HDF;
+                ci.controller_type = 0;        // UAE vs IDE
+                ci.controller_type_unit = 0;
+                ci.controller_unit = 0;
+                ci.controller_media_type = 0;
+                ci.unit_feature_level = 1;
+                ci.unit_special_flags = 0;
+                ci.readonly = 0; // ro should be ok
+                ci.sectors = 32;
+                ci.surfaces = 1;
+                ci.reserved = 2;
+                ci.blocksize = 512;
+                ci.bootpri = 0;
+                ci.physical_geometry = hardfile_testrdb(ci.rootdir);
+
+                uci = add_filesys_config (prefs, -1,&ci);
+                if (uci) {
+                    struct hardfiledata *hfd = get_hardfile_data (uci->configoffset);
+                    if(hfd)
+                        hardfile_media_change (hfd, &ci, true, false);
+                    else
+                        hardfile_added(&ci);
+                }
+
+             }
+          }
+          // WHDSaves file mode
+          else
+          {
+             char whdsaves_path[MAX_DPATH];
+             path_join((char*)&whdsaves_path, retro_save_directory, "WHDSaves");
+             if (!my_existsdir(whdsaves_path))
+                my_mkdir(whdsaves_path);
+             if (my_existsdir(whdsaves_path))
+             {
+                //tmp_str = string_replace_substring(whdsaves_path, "\\", "\\\\");
+                //fprintf(configfile, "filesystem2=rw,WHDSaves:WHDSaves:\"%s\",-128\n", (const char*)tmp_str);
+                //free(tmp_str);
+                //tmp_str = NULL;
+                LOGI("[libretro-uae4arm]: Attach WHDSaves files\n");
+                uci_set_defaults(&ci, true);
+                strncpy(ci.devname, "WHDSaves",    MAX_DPATH);
+                strncpy(ci.volname, "WHDSaves",    MAX_DPATH);
+                strncpy(ci.rootdir, whdsaves_path,  MAX_DPATH);
+                ci.type = UAEDEV_DIR;
+                ci.readonly = 0;
+                ci.bootpri  = 0;
+    
+                uci = add_filesys_config(prefs, -1, &ci);
+                if (uci) {
+                  filesys_media_change (ci.rootdir, 1, uci);
+                }
+             }
+             else
+                fprintf(stderr, "Error creating WHDSaves directory: '%s'!\n", (const char*)&whdsaves_path);
+          }
+
+
 
 
           /* Attach LHA */    
