@@ -332,10 +332,20 @@ void inputdevice_vsync (void)
 	getjoystate (0, &joy1dir, &joy1button);
 	getjoystate (1, &joy0dir, &joy0button);
 
-	if (joy0button!=back_joy0button)
-  {
+
+	if (second_joystick_enable == 1)
+	{
 		back_joy0button= joy0button;
 		buttonstate[0]= joy0button & 0x01;
+
+	}
+	else
+	{
+		if (joy0button!=back_joy0button)
+  		{
+			back_joy0button= joy0button;
+			buttonstate[0]= joy0button & 0x01;
+		}
 	}
 }
 
