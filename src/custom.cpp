@@ -594,7 +594,7 @@ static void create_cycle_diagram_table(void)
      		rplanes = planes;
      		if (rplanes > max_planes)
    		    rplanes = 0;
-     		if (rplanes == 7 && fm == 0 && res == 0 && !(aga_mode))
+     		if (rplanes == 7 && fm == 0 && res == 0 && !(currprefs.chipset_mask & CSMASK_AGA))
    		    rplanes = 4;
        	real_bitplane_number[fm][res][planes] = rplanes;
       }
