@@ -113,7 +113,8 @@ void retro_set_environment(retro_environment_t cb)
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
       { "uae4arm_floppy_speed",   "Floppy speed; 100|200|400|800", },
       { "uae4arm_linedoubling",   "Line doubling (de-interlace); off|on", },
-      { "uae4arm_whdloadmode",    "whdload mode; files|hdfs"},
+      { "uae4arm_whdloadmode",    "whdload mode; files|hdfs", },
+      { "uae4arm_fastcopper",     "fast copper; off|on", },
       { NULL, NULL },
    };
 
@@ -817,6 +818,16 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       if (strcmp(var.value, "on")  == 0) prefs->gfx_vresolution = 1;
       if (strcmp(var.value, "off") == 0) prefs->gfx_vresolution = 0;
    }
+
+   var.key = "uae4arm_fastcopper";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "on")  == 0) prefs->fast_copper = 1;
+      if (strcmp(var.value, "off") == 0) prefs->fast_copper = 0;
+   }
+
+   set_config_changed();
 
 }
 
