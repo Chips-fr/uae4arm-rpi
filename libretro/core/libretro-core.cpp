@@ -112,6 +112,7 @@ void retro_set_environment(retro_environment_t cb)
       { "uae4arm_resolution",     "Internal resolution; 640x270|320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270", },
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
       { "uae4arm_floppy_speed",   "Floppy speed; 100|200|400|800", },
+      { "uae4arm_fastcopper",     "fast copper; on|off", },
       { NULL, NULL },
    };
 
@@ -215,6 +216,32 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
    {
       if (strcmp(var.value, "on") == 0)  prefs->leds_on_screen = 1;
       if (strcmp(var.value, "off") == 0) prefs->leds_on_screen = 0;
+   }
+
+   var.key = "uae4arm_fastmem";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "None") == 0)
+      {
+         prefs->fastmem_size = 0;
+      }
+      if (strcmp(var.value, "1 MB") == 0)
+      {
+         prefs->fastmem_size = 0x100000;
+      }
+      if (strcmp(var.value, "2 MB") == 0)
+      {
+         prefs->fastmem_size = 0x100000 * 2;
+      }
+      if (strcmp(var.value, "4 MB") == 0)
+      {
+         prefs->fastmem_size = 0x100000 * 4;
+      }
+      if (strcmp(var.value, "8 MB") == 0)
+      {
+         prefs->fastmem_size = 0x100000 * 8;
+      }
    }
 
    var.key = "uae4arm_model";
@@ -336,6 +363,10 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
             0, 0, 0, 0, 0, -128, 0, 0, 0);
           if (uci)
               filesys_media_change (uci->rootdir, 1, uci);
+
+          // Temp: Add automatically 8 MBytes of Fast...
+          prefs->fastmem_size = 0x100000 * 8;
+
       }
 
       if (strcmp(var.value, "A600") == 0)
@@ -382,39 +413,19 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       }
    }
 
-
-   var.key = "uae4arm_fastmem";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "None") == 0)
-      {
-         prefs->fastmem_size = 0;
-      }
-      if (strcmp(var.value, "1 MB") == 0)
-      {
-         prefs->fastmem_size = 0x100000;
-      }
-      if (strcmp(var.value, "2 MB") == 0)
-      {
-         prefs->fastmem_size = 0x100000 * 2;
-      }
-      if (strcmp(var.value, "4 MB") == 0)
-      {
-         prefs->fastmem_size = 0x100000 * 4;
-      }
-      if (strcmp(var.value, "8 MB") == 0)
-      {
-         prefs->fastmem_size = 0x100000 * 8;
-      }
-   }
-
-
    var.key = "uae4arm_floppy_speed";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       prefs->floppy_speed=atoi(var.value);
+   }
+
+   var.key = "uae4arm_fastcopper";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "on")  == 0) prefs->fast_copper = 1;
+      if (strcmp(var.value, "off") == 0) prefs->fast_copper = 0;
    }
 
 }
