@@ -5,6 +5,7 @@ struct zfile {
     FILE *f;
     uae_u8 *data;
     int size;
+    int allocsize;
     int seek;
     int deleteafterclose;
     struct zfile *next;

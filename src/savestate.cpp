@@ -58,6 +58,11 @@
 #include "audio.h"
 #include "filesys.h"
 
+#ifdef __LIBRETRO__
+#include "libretro-core.h"
+extern struct zfile *retro_deserialize_file;
+#endif
+
 int savestate_state = 0;
 
 struct zfile *savestate_file;
@@ -69,6 +74,9 @@ char savestate_fname[MAX_DPATH]={
 
 static void state_incompatible_warn(void)
 {
+#ifdef __LIBRETRO__
+	return;
+#endif
     static int warned;
     int dowarn = 0;
     int i;
@@ -358,7 +366,11 @@ static void restore_header (uae_u8 *src)
 
 /* restore all subsystems */
 
+#ifdef __LIBRETRO__
+void restore_state (void)
+#else
 void restore_state (const char *filename)
+#endif
 {
     struct zfile *f;
     uae_u8 *chunk,*end;
@@ -368,7 +380,11 @@ void restore_state (const char *filename)
     int z3num;
 
     chunk = 0;
+#ifdef __LIBRETRO__
+	f = retro_deserialize_file;
+#else
     f = zfile_fopen (filename, "rb");
+#endif
     if (!f)
 	goto error;
     zfile_fseek (f, 0, SEEK_END);
@@ -376,9 +392,15 @@ void restore_state (const char *filename)
     zfile_fseek (f, 0, SEEK_SET);
 
     chunk = restore_chunk (f, name, &len, &totallen, &filepos);
+#ifdef __LIBRETRO__
+    if (!chunk || memcmp (name, "ASF ", 4)) {
+	write_log ("STATERESTORE libretro serialization data is not an AmigaStateFile\n");
+	goto error;
+#else
     if (!chunk || memcmp (name, "ASF ", 4)) {
 	write_log ("%s is not an AmigaStateFile\n",filename);
 	goto error;
+#endif
     }
     savestate_file = f;
     restore_header (chunk);
@@ -510,8 +532,16 @@ void restore_state (const char *filename)
     savestate_file = 0;
     if (chunk)
 	xfree (chunk);
+#ifdef __LIBRETRO__
+	if (retro_deserialize_file)
+	{
+		zfile_fclose (retro_deserialize_file);
+		retro_deserialize_file = NULL;
+	}
+#else
     if (f)
 	zfile_fclose (f);
+#endif
 }
 
 void savestate_restore_finish (void)
@@ -567,7 +597,11 @@ static void save_rams (struct zfile *f, int comp)
 
 /* Save all subsystems  */
 
+#ifdef __LIBRETRO__
+struct zfile *save_state (const char *description, uae_u64 size)
+#else
 int save_state (const char *filename, const char *description)
+#endif
 {
     uae_u8 endhunk[] = { 'E', 'N', 'D', ' ', 0, 0, 0, 8 };
     uae_u8 header[1000];
@@ -576,20 +610,37 @@ int save_state (const char *filename, const char *description)
     struct zfile *f;
     int len,i;
     char name[5];
+#ifdef __LIBRETRO__
+	int comp = 0;
+	savestate_nodialogs = 1;
+#else
     int comp = savestate_docompress;
+#endif
 
     if (!savestate_specialdump && !savestate_nodialogs) {
 	state_incompatible_warn();
 	if (!save_filesys_cando()) {
 	    gui_message("Filesystem active. Try again later");
+#ifdef __LIBRETRO__
+	    return NULL;
+#else
 	    return -1;
+#endif
 	}
     }
     savestate_nodialogs = 0;
     custom_prepare_savestate ();
+#ifdef __LIBRETRO__
+    f = zfile_fopen_empty (description, size);
+#else
     f = zfile_fopen (filename, "w+b");
+#endif
     if (!f)
+#ifdef __LIBRETRO__
+  	return NULL;
+#else
 	return 0;
+#endif
     if (savestate_specialdump) {
 	    size_t pos;
 	    pos = zfile_ftell(f);
@@ -688,6 +739,9 @@ int save_state (const char *filename, const char *description)
     dst = save_filesys_common (&len);
     if (dst) {
 	save_chunk (f, dst, len, "FSYC", 0);
+#ifdef __LIBRETRO__
+		xfree (dst);
+#endif
     for (i = 0; i < nr_units (); i++) {
 	dst = save_filesys (i, &len);
 	if (dst) {
@@ -700,10 +754,17 @@ int save_state (const char *filename, const char *description)
 
     zfile_fwrite (endhunk, 1, 8, f);
 
+#ifdef __LIBRETRO__
+    write_log ("STATESAVE libretro serialization complete\n");
+    savestate_state = 0;
+    zfile_fseek (f, 0, SEEK_SET);
+    return f;
+#else
     write_log ("Save of '%s' complete\n", filename);
     zfile_fclose (f);
     savestate_state = 0;
     return 1;
+#endif
 }
 
 void savestate_quick (int slot, int save)

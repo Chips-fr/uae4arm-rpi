@@ -17,7 +17,7 @@
 #endif
 #include "osdep/thread.h"
 
-extern int retrow,retroh;
+extern unsigned int retrow,retroh;
 
 #include "libretro-core.h"
 

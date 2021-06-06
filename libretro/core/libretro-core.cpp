@@ -13,8 +13,10 @@
 #include "custom.h"
 
 #include "uae.h"
+#include "savestate.h"
 
 #include "zlib.h"
+#include "zfile.h"
 #include "fsdb.h"
 #include "filesys.h"
 #include "autoconf.h"
@@ -22,11 +24,11 @@
 cothread_t mainThread;
 cothread_t emuThread;
 
-int CROP_WIDTH;
-int CROP_HEIGHT;
-int VIRTUAL_WIDTH ;
-int retrow=320; 
-int retroh=240;
+unsigned int CROP_WIDTH;
+unsigned int CROP_HEIGHT;
+unsigned int VIRTUAL_WIDTH ;
+unsigned int retrow=320; 
+unsigned int retroh=240;
 static unsigned msg_interface_version = 0;
 
 #define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
@@ -59,6 +61,9 @@ static retro_video_refresh_t video_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 static retro_environment_t environ_cb;
+
+struct zfile *retro_deserialize_file = NULL;
+static size_t save_state_file_size = 0;
 
 // Amiga default kickstarts
 
@@ -536,6 +541,22 @@ void retro_init(void)
       exit(0);
    }
 
+   // Savestates
+   // > Considered incomplete because runahead cannot
+   //   be enabled until content is full loaded
+   static uint64_t quirks = RETRO_SERIALIZATION_QUIRK_INCOMPLETE;
+   environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &quirks);
+
+   // > Ensure save state de-serialization file
+   //   is closed/NULL
+   //   (redundant safety check, possibly required
+   //   for static builds...)
+   if (retro_deserialize_file)
+   {
+      zfile_fclose(retro_deserialize_file);
+      retro_deserialize_file = NULL;
+   }
+
    struct retro_input_descriptor inputDescriptors[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "A" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "B" },
@@ -643,9 +664,53 @@ void retro_audiocb(signed short int *sound_buffer,int sndbufsize){
 void retro_run(void)
 {
    bool updated = false;
+   static int Deffered = 0;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       update_prefs_retrocfg(&changed_prefs);
+
+   // Too early event poll or savesate segfault since emu not initialized...
+   if (Deffered == 0)
+   {
+      Deffered = 1;
+   }
+   else
+   {
+      if (Deffered == 1)
+      {
+         // Save states
+         // > Ensure that save state file path is empty,
+         //   since we use memory based save states
+         savestate_fname[0] = '\0';
+         // > Get save state size
+         //   Here we use initial size + 5%
+         //   Should be sufficient in all cases
+         // NOTE: It would be better to calculate the
+         // state size based on current config parameters,
+         // but while
+         //   - currprefs.chipmem_size
+         //   - currprefs.bogomem_size
+         //   - currprefs.fastmem_size
+         // account for *most* of the size, there are
+         // simply too many other factors to rely on this
+         // alone (i.e. mem size + 5% is fine in most cases,
+         // but if the user supplies a custom uae config file
+         // then this is not adequate at all). Untangling the
+         // full set of values that are recorded is beyond
+         // my patience...
+         struct zfile *state_file = save_state("libretro", 0);
+
+         if (state_file)
+         {
+            save_state_file_size  = (size_t)zfile_size(state_file);
+            save_state_file_size += (size_t)(((float)save_state_file_size * 0.05f) + 0.5f);
+            zfile_fclose(state_file);
+         }
+         Deffered = 2;
+      }
+
+      //Retro_PollEvent();
+   }
 
    co_switch(emuThread);
 
@@ -660,8 +725,6 @@ void retro_run(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    const char *full_path;
-
-   (void)info;
 
    full_path = info->path;
 
@@ -681,12 +744,22 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
+   // Ensure save state de-serialization file
+   // is closed/NULL
+   // Note: Have to do this here (not in retro_deinit())
+   // since leave_program() calls zfile_exit()
+   if (retro_deserialize_file)
+   {
+      zfile_fclose(retro_deserialize_file);
+      retro_deserialize_file = NULL;
+   }
+
    pauseg=-1;
 }
 
 unsigned retro_get_region(void)
 {
-   return RETRO_REGION_NTSC;
+   return RETRO_REGION_PAL;
 }
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
@@ -699,17 +772,122 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 
 size_t retro_serialize_size(void)
 {
-   return 0;
+   return save_state_file_size;
 }
 
 bool retro_serialize(void *data_, size_t size)
 {
-   return false;
+   struct zfile *state_file = save_state("libretro", (uae_u64)save_state_file_size);
+   bool success = false;
+
+   if (state_file)
+   {
+      uae_s64 state_file_size = zfile_size(state_file);
+
+      if (size >= state_file_size)
+      {
+         size_t len = zfile_fread(data_, 1, state_file_size, state_file);
+
+         if (len == state_file_size)
+            success = true;
+      }
+
+      zfile_fclose(state_file);
+   }
+
+   return success;
 }
 
 bool retro_unserialize(const void *data_, size_t size)
 {
-   return false;
+   // TODO: When attempting to use runahead, CD32
+   // and WHDLoad content will hang on boot. It seems
+   // we cannot restore a state until the system has
+   // passed some level of initialisation - but the
+   // point at which a restore becomes 'safe' is
+   // unknown (for CD32 content, for example, we have
+   // to wait ~300 frames before runahead can be enabled)
+   bool success = false;
+
+   // Cannot restore state while any 'savestate'
+   // operation is underway
+   // > Actual restore is deferred until m68k_go(),
+   //   so we have to use a shared shared state file
+   //   object - this cannot be modified until the
+   //   restore is complete
+   // > Note that this condition should never be
+   //   true - if a save state operation is underway
+   //   at this point then we are dealing with an
+   //   unknown error
+   if (!savestate_state)
+   {
+      // Savestates also save CPU prefs, therefore refresh core options, but skip it for now
+      //request_check_prefs_timer = 4;
+
+      if (retro_deserialize_file)
+      {
+         zfile_fclose(retro_deserialize_file);
+         retro_deserialize_file = NULL;
+      }
+
+      retro_deserialize_file = zfile_fopen_empty("libretro", size);
+
+      if (retro_deserialize_file)
+      {
+         size_t len = zfile_fwrite(data_, 1, size, retro_deserialize_file);
+
+         if (len == size)
+         {
+            unsigned frame_counter = 0;
+            unsigned max_frames    = 50;
+
+            zfile_fseek(retro_deserialize_file, 0, SEEK_SET);
+            savestate_state = STATE_DORESTORE;
+
+            // For correct operation of the frontend,
+            // the save state restore must be completed
+            // by the time this function returns.
+            // Since P-UAE requires several (2) frames to get
+            // itself in order during a restore event, we
+            // have to keep emulating frames until the
+            // restore is complete...
+            // > Note that we set a 'timeout' of 50 frames
+            //   here (1s of emulated time at 50Hz) to
+            //   prevent lock-ups in the event of unexpected
+            //   errors
+            // > Temporarily 'deactivate' runloop - this lets
+            //   us call m68k_go() without accessing frontend
+            //   features - specifically, it disables the audio
+            //   callback functionality
+#if 0 // TEMP
+            libretro_runloop_active = 0;
+            while (savestate_state && (frame_counter < max_frames))
+            {
+               // Note that retro_deserialize_file will be
+               // closed inside m68k_go() upon successful
+               // completion of the restore event
+               restart_pending = m68k_go(1, 1);
+               frame_counter++;
+            }
+            libretro_runloop_active = 1;
+
+            // If the above while loop times out, then
+            // everything is completely broken. We cannot
+            // handle this here, so just assume the restore
+            // completed successfully...
+            request_reset_drawing = true;
+#endif
+            success               = true;
+         }
+         else
+         {
+            zfile_fclose(retro_deserialize_file);
+            retro_deserialize_file = NULL;
+         }
+      }
+   }
+
+   return success;
 }
 
 void *retro_get_memory_data(unsigned id)

@@ -108,8 +108,13 @@ extern uae_u8 *restore_rom (uae_u8 *);
 extern uae_u8 *save_rom (int, int *, uae_u8 *);
 
 extern void savestate_initsave (const char *filename, int docompress, int nodialogs);
+#ifdef __LIBRETRO__
+extern struct zfile *save_state (const char *description, uae_u64 size);
+void restore_state (void);
+#else
 extern int save_state (const char *filename, const char *description);
 extern void restore_state (const char *filename);
+#endif
 extern void savestate_restore_finish (void);
 
 extern void custom_save_state (void);

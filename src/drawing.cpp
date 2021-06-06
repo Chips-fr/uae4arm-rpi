@@ -76,7 +76,7 @@ static int res_shift;
 
 #if defined(__LIBRETRO__)
 #include "libretro-core.h"
-extern int retrow,retroh;
+extern unsigned int retrow,retroh;
 typedef struct sdl_surface {
 	int w;
 	int h;
@@ -2203,7 +2203,7 @@ void drawing_init (void)
 {
 
 #if defined(__LIBRETRO__)
-prSDLScreen = (SDL_Surface*)malloc( sizeof(*prSDLScreen) );
+    prSDLScreen = (SDL_Surface*)malloc( sizeof(*prSDLScreen) );
     prSDLScreen->w = retrow;
     prSDLScreen->h = retroh;
     prSDLScreen->pitch = retrow*2;

@@ -1712,7 +1712,11 @@ void m68k_go (int may_quit)
 	    hardboot = 0;
 #ifdef SAVESTATE
 	    if (savestate_state == STATE_RESTORE)
+#ifdef __LIBRETRO__
+		restore_state ();
+#else
 		restore_state (savestate_fname);
+#endif
 #endif
       check_prefs_changed_adr24();
 	    customreset (hardreset);

@@ -17,6 +17,7 @@ extern struct zfile *zfile_fopen_data (const char *name, int size, uae_u8 *data)
 extern int zfile_exists (const char *name);
 extern void zfile_fclose (struct zfile *);
 extern int zfile_fseek (struct zfile *z, long offset, int mode);
+extern int zfile_size (struct zfile *z);
 extern long zfile_ftell (struct zfile *z);
 extern size_t zfile_fread (void *b, size_t l1, size_t l2, struct zfile *z);
 extern size_t zfile_fwrite (void *b, size_t l1, size_t l2, struct zfile *z);
