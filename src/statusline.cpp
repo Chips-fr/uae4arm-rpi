@@ -18,7 +18,7 @@
 
 #if defined(__LIBRETRO__)
 #include "libretro-core.h"
-extern int retrow,retroh;
+extern unsigned int retrow,retroh;
 typedef struct sdl_surface {
 	int w;
 	int h;

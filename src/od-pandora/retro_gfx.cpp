@@ -27,7 +27,7 @@
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 
-extern int retrow,retroh;
+extern unsigned int retrow,retroh;
 
 #include "libretro-core.h"
 typedef struct sdl_surface {

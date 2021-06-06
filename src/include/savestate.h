@@ -160,8 +160,13 @@ extern uae_u8 *restore_hrtmon (uae_u8 *);
 extern uae_u8 *save_hrtmon (int *, uae_u8 *);
 
 extern void savestate_initsave (const TCHAR *filename, int docompress, int nodialogs, bool save);
+#ifdef __LIBRETRO__
+extern struct zfile *save_state (const TCHAR *description, uae_u64 size);
+void restore_state (void);
+#else
 extern int save_state (const TCHAR *filename, const TCHAR *description);
 extern void restore_state (const TCHAR *filename);
+#endif
 extern void savestate_restore_finish (void);
 
 extern void custom_prepare_savestate (void);

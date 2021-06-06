@@ -62,6 +62,11 @@
 #include "td-sdl/thread.h"
 #include "devices.h"
 
+#ifdef __LIBRETRO__
+#include "libretro-core.h"
+extern struct zfile *retro_deserialize_file;
+#endif
+
 int savestate_state = 0;
 
 static bool new_blitter = false;
@@ -73,6 +78,9 @@ TCHAR savestate_fname[MAX_DPATH];
 
 static void state_incompatible_warn(void)
 {
+#ifdef __LIBRETRO__
+	return;
+#endif
   static int warned;
   int dowarn = 0;
   int i;
@@ -225,12 +233,14 @@ TCHAR *restore_path_func (uae_u8 **dstp, int type)
 			return my_strdup (tmp2);
 		}
   }
+#ifndef __LIBRETRO__
 	getpathpart (tmp2, sizeof tmp2 / sizeof (TCHAR), savestate_fname);
 	_tcscat (tmp2, tmp);
 	if (zfile_exists (tmp2)) {
 		xfree (s);
 		return my_strdup (tmp2);
 	}
+#endif
 	return s;
 }
 
@@ -414,7 +424,11 @@ static void restore_header (uae_u8 *src)
 
 /* restore all subsystems */
 
+#ifdef __LIBRETRO__
+void restore_state (void)
+#else
 void restore_state (const TCHAR *filename)
+#endif
 {
   struct zfile *f;
   uae_u8 *chunk,*end;
@@ -424,7 +438,11 @@ void restore_state (const TCHAR *filename)
 	int z3num, z2num;
 
   chunk = 0;
+#ifdef __LIBRETRO__
+	f = retro_deserialize_file;
+#else
 	f = zfile_fopen (filename, _T("rb"), ZFD_NORMAL);
+#endif
   if (!f)
   	goto error;
   zfile_fseek (f, 0, SEEK_END);
@@ -433,11 +451,19 @@ void restore_state (const TCHAR *filename)
   savestate_state = STATE_RESTORE;
 
   chunk = restore_chunk (f, name, &len, &totallen, &filepos);
+#ifdef __LIBRETRO__
+  if (!chunk || _tcsncmp (name, _T("ASF "), 4)) {
+		write_log (_T("STATERESTORE libretro serialization data is not an AmigaStateFile\n"));
+  	goto error;
+  }
+	write_log (_T("STATERESTORE libretro serialization data:\n"));
+#else
   if (!chunk || _tcsncmp (name, _T("ASF "), 4)) {
 		write_log (_T("%s is not an AmigaStateFile\n"), filename);
   	goto error;
   }
 	write_log (_T("STATERESTORE: '%s'\n"), filename);
+#endif
 	set_config_changed ();
   savestate_file = f;
   restore_header (chunk);
@@ -594,7 +620,9 @@ void restore_state (const TCHAR *filename)
 	      name, totallen, end - chunk);
   	xfree (chunk);
   }
+#ifndef __LIBRETRO__
 	target_addtorecent (filename, 0);
+#endif
   return;
 
 error:
@@ -602,15 +630,31 @@ error:
   savestate_file = 0;
   if (chunk)
   	xfree (chunk);
+#ifdef __LIBRETRO__
+	if (retro_deserialize_file)
+	{
+		zfile_fclose (retro_deserialize_file);
+		retro_deserialize_file = NULL;
+	}
+#else
   if (f)
   	zfile_fclose (f);
+#endif
 }
 
 void savestate_restore_finish (void)
 {
 	if (!isrestore ())
   	return;
+#ifdef __LIBRETRO__
+	if (retro_deserialize_file)
+	{
+		zfile_fclose (retro_deserialize_file);
+		retro_deserialize_file = NULL;
+	}
+#else
   zfile_fclose (savestate_file);
+#endif
   savestate_file = 0;
   restore_cpu_finish();
 	restore_audio_finish ();
@@ -818,6 +862,9 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
   dst = save_filesys_common (&len);
   if (dst) {
 		save_chunk (f, dst, len, _T("FSYC"), 0);
+#ifdef __LIBRETRO__
+		xfree (dst);
+#endif
     for (i = 0; i < nr_units (); i++) {
     	dst = save_filesys (i, &len);
     	if (dst) {
@@ -853,30 +900,59 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
   return 1;
 }
 
+#ifdef __LIBRETRO__
+struct zfile *save_state (const TCHAR *description, uae_u64 size)
+#else
 int save_state (const TCHAR *filename, const TCHAR *description)
+#endif
 {
 	struct zfile *f;
+#ifdef __LIBRETRO__
+	int comp = 0;
+	savestate_nodialogs = 1;
+#else
   int comp = savestate_docompress;
+#endif
 
   if (!savestate_nodialogs) {
 	  state_incompatible_warn();
 	  if (!save_filesys_cando()) {
 			gui_message (_T("Filesystem active. Try again later."));
+#ifdef __LIBRETRO__
+	    return NULL;
+#else
 	    return -1;
+#endif
   	}
   }
 	new_blitter = false;
   savestate_nodialogs = 0;
   custom_prepare_savestate ();
+#ifdef __LIBRETRO__
+	f = zfile_fopen_empty (NULL, description, size);
+#else
 	f = zfile_fopen (filename, _T("w+b"), 0);
+#endif
   if (!f)
+#ifdef __LIBRETRO__
+  	return NULL;
+#else
   	return 0;
+#endif
 	int v = save_state_internal (f, description, comp, true);
-	if (v)
+#ifdef __LIBRETRO__
+  if (v)
+    write_log (_T("STATESAVE libretro serialization complete\n"));
+  savestate_state = 0;
+  zfile_fseek (f, 0, SEEK_SET);
+  return f;
+#else
+  if (v)
     write_log (_T("Save of '%s' complete\n"), filename);
   zfile_fclose (f);
   savestate_state = 0;
 	return v;
+#endif
 }
 
 bool savestate_check (void)
