@@ -16,7 +16,7 @@ else ifeq ($(PLATFORM),rpi1)
 	HAVE_DISPMANX = 1
 	USE_PICASSO96 = 1
 else ifeq ($(PLATFORM),rpi64bits)
-	CPU_FLAGS += -march=armv8.1-a -mtune=cortex-a53
+	CPU_FLAGS += -march=armv8-a -mtune=cortex-a53
 	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DCPU_AARCH64
 	LDFLAGS += -lbcm_host
 	AARCH64 = 1

@@ -95,11 +95,7 @@ static compop_func *nfcompfunctbl[65536];
 uae_u8* comp_pc_p;
 
 // gb-- Extra data for Basilisk II/JIT
-#if USE_INLINING
 #define follow_const_jumps (true)
-#else
-const int	follow_const_jumps = 0;
-#endif
 
 static uae_u32 cache_size = 0; // Size of total cache allocated for compiled blocks
 static uae_u32 current_cache_size	= 0;		// Cache grows upwards: how much has been consumed already
@@ -525,18 +521,14 @@ STATIC_INLINE void free_checksum_info_chain(checksum_info *csi)
 STATIC_INLINE blockinfo *alloc_blockinfo(void)
 {
 	blockinfo *bi = BlockInfoAllocator.acquire();
-#if USE_CHECKSUM_INFO
 	bi->csi = NULL;
-#endif
 	return bi;
 }
 
 STATIC_INLINE void free_blockinfo(blockinfo *bi)
 {
-#if USE_CHECKSUM_INFO
 	free_checksum_info_chain(bi->csi);
 	bi->csi = NULL;
-#endif
 	BlockInfoAllocator.release(bi);
 }
 
@@ -1244,6 +1236,7 @@ static void fflags_into_flags_internal(void)
 
 #if defined(CPU_AARCH64) 
 #include "compemu_midfunc_armA64.cpp"
+#include "compemu_midfunc_armA64_2.cpp"
 #elif defined(CPU_arm)
 #include "compemu_midfunc_arm.cpp"
 #include "compemu_midfunc_arm2.cpp"
@@ -1454,7 +1447,7 @@ static void freescratch(void)
   int i;
   for (i = 0; i < N_REGS; i++)
 #if defined(CPU_AARCH64) 
-  	if (live.nat[i].locked && i != 2 && i != 3 && i != 4 && i != 5) {
+  	if (live.nat[i].locked && i > 4 && i < 16) {
 #elif defined(CPU_arm)
   	if (live.nat[i].locked && i != 2 && i != 3 && i != 10 && i != 11 && i != 12) {
 #else
@@ -1788,7 +1781,7 @@ void alloc_cache(void)
 	 	compiled_code = popallspace + POPALLSPACE_SIZE;
 
   if (compiled_code) {
-		write_log("Actual translation cache size : %d KB at %p-%p", cache_size, compiled_code, compiled_code + cache_size*1024);
+		write_log("Actual translation cache size : %d KB at %p-%p\n", cache_size, compiled_code, compiled_code + cache_size*1024);
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
   	max_compile_start = compiled_code + cache_size*1024 - BYTES_PER_INST - DATA_BUFFER_SIZE;
 #else
@@ -1807,15 +1800,10 @@ static void calc_checksum(blockinfo* bi, uae_u32* c1, uae_u32* c2)
   uae_u32 k1 = 0;
   uae_u32 k2 = 0;
 
-#if USE_CHECKSUM_INFO
 	checksum_info *csi = bi->csi;
 	while (csi) {
 		uae_s32 len = csi->length;
 		uintptr tmp = (uintptr)csi->start_p;
-#else
-    uae_s32 len = bi->len;
-    uintptr tmp = (uintptr)bi->min_pcp;
-#endif
     uae_u32* pos;
 
     len += (tmp & 3);
@@ -1831,10 +1819,8 @@ static void calc_checksum(blockinfo* bi, uae_u32* c1, uae_u32* c2)
 			}
   	}
 
-#if USE_CHECKSUM_INFO
 		csi = csi->next;
 	}
-#endif
 
 	*c1 = k1;
 	*c2 = k2;
@@ -2013,6 +1999,8 @@ STATIC_INLINE void create_popalls(void)
   popall_check_checksum = get_target();
   raw_pop_preserved_regs();
   compemu_raw_jmp((uintptr)check_checksum);
+
+  flush_cpu_icache((void *)popallspace, (void *)target);
 
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
   reset_data_buffer();
@@ -2257,14 +2245,9 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 	  int r;
 	  int was_comp = 0;
 	  uae_u8 liveflags[MAXRUN + 1];
-#if USE_CHECKSUM_INFO
 	  bool trace_in_rom = isinrom((uintptr)pc_hist[0].location) != 0;
 	  uintptr max_pcp = (uintptr)pc_hist[blocklen - 1].location;
 	  uintptr min_pcp = max_pcp;
-#else
-	  uintptr max_pcp = (uintptr)pc_hist[0].location;
-	  uintptr min_pcp = max_pcp;
-#endif
 	  uae_u32 cl = cacheline(pc_hist[0].location);
 	  void* specflags = (void*)&regs.spcflags;
 	  blockinfo* bi = NULL;
@@ -2287,10 +2270,8 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 	  remove_deps(bi); /* We are about to create new code */
 	  bi->optlevel = optlev;
 	  bi->pc_p = (uae_u8*)pc_hist[0].location;
-#if USE_CHECKSUM_INFO
 	  free_checksum_info_chain(bi->csi);
 	  bi->csi = NULL;
-#endif
 
 	  liveflags[blocklen] = 0x1f; /* All flags needed afterwards */
 	  i = blocklen;
@@ -2298,7 +2279,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 	    uae_u16* currpcp = pc_hist[i].location;
 			uae_u32 op = DO_GET_OPCODE(currpcp);
 
-#if USE_CHECKSUM_INFO
   		trace_in_rom = trace_in_rom && isinrom((uintptr)currpcp);
   		if (follow_const_jumps && is_const_jump(op)) {
   			checksum_info *csi = alloc_checksum_info();
@@ -2309,25 +2289,17 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   			max_pcp = (uintptr)currpcp;
   		}
   		min_pcp = (uintptr)currpcp;
-#else
-      if ((uintptr)currpcp < min_pcp)
-  		  min_pcp = (uintptr)currpcp;
-  	  if ((uintptr)currpcp > max_pcp)
-  		  max_pcp = (uintptr)currpcp;
-#endif
 
 		  liveflags[i] = ((liveflags[i + 1] & (~prop[op].set_flags)) | prop[op].use_flags);
 		  if (prop[op].is_addx && (liveflags[i + 1] & FLAG_Z) == 0)
 		    liveflags[i] &= ~FLAG_Z;
 	  }
 
-#if USE_CHECKSUM_INFO
 	  checksum_info *csi = alloc_checksum_info();
 	  csi->start_p = (uae_u8 *)min_pcp;
 	  csi->length = max_pcp - min_pcp + LONGEST_68K_INST;
 	  csi->next = bi->csi;
 	  bi->csi = csi;
-#endif
 
   	bi->needed_flags = liveflags[0];
 
@@ -2420,12 +2392,12 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
             data_check_end(8, 64);
 #endif
-  			    compemu_raw_jz_b_oponly();
   			    branchadd = (uae_s8 *)get_target();
+  			    compemu_raw_jz_b_oponly();
   			    compemu_raw_sub_l_mi((uintptr)&countdown, scaled_cycles(totcycles));
 					  raw_pop_preserved_regs();
   			    compemu_raw_jmp((uintptr)do_nothing);
-  			    *(branchadd - 4) = (((uintptr)get_target() - (uintptr)branchadd) - 4) >> 2;
+  			    write_jmp_target((uae_u32*)branchadd, (uintptr)get_target());
   		    }
 	    	} else if(may_raise_exception) {
 #if defined(CPU_arm) && !defined(ARMV6T2) && !defined(CPU_AARCH64)
@@ -2524,7 +2496,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
 	    }
 	  }
 
-#if USE_CHECKSUM_INFO
   	remove_from_list(bi);
   	if (trace_in_rom) {
   		// No need to checksum that block trace on cache invalidation
@@ -2536,25 +2507,6 @@ void compile_block(cpu_history* pc_hist, int blocklen, int totcycles)
   		calc_checksum(bi, &(bi->c1), &(bi->c2));
   		add_to_active(bi);
   	}
-#else
-  	if (next_pc_p >= max_pcp && next_pc_p < max_pcp + LONGEST_68K_INST)
-      max_pcp = next_pc_p;
-  	else
-  	  max_pcp += LONGEST_68K_INST;
-  
-  	bi->len = max_pcp - min_pcp;
-  	bi->min_pcp = min_pcp;
-  
-  	remove_from_list(bi);
-  	if (isinrom(min_pcp) && isinrom(max_pcp)) {
-      add_to_dormant(bi); /* No need to checksum it on cache flush.
-                  				   Please don't start changing ROMs in flight! */
-  	}
-  	else {
-      calc_checksum(bi, &(bi->c1), &(bi->c2));
-      add_to_active(bi);
-  	}
-#endif
 
 	  current_cache_size += get_target() - (uae_u8 *)current_compile_p;
 

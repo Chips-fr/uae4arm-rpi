@@ -1,12 +1,10 @@
-#include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
 #include "memory.h"
 #include "newcpu.h"
-#include "cpu_prefetch.h"
 
-int movec_illg (int regno)
+static int movec_illg (int regno)
 {
   int regno2 = regno & 0x7ff;
 
@@ -68,6 +66,8 @@ int m68k_move2c (int regno, uae_u32 *regp)
 	  case 5: regs.itt1 = *regp & 0xffffe364; break;
 	  case 6: regs.dtt0 = *regp & 0xffffe364; break;
 	  case 7: regs.dtt1 = *regp & 0xffffe364; break;
+			/* 68060 only */
+		case 8: regs.buscr = *regp & 0xf0000000; break;
 
 	  case 0x800: regs.usp = *regp; break;
 	  case 0x801: regs.vbr = *regp; break;
@@ -76,9 +76,9 @@ int m68k_move2c (int regno, uae_u32 *regp)
 	  case 0x804: regs.isp = *regp; if (regs.m == 0) m68k_areg(regs, 7) = regs.isp; break;
 	  /* 68040 only */
 	  case 0x805: regs.mmusr = *regp; break;
-	  /* 68040/060 */
-    case 0x806: regs.urp = *regp & 0xfffffe00; break;
-	  case 0x807: regs.srp = *regp & 0xfffffe00; break;
+	  /* 68040 stores all bits, 68060 zeroes low 9 bits */
+    case 0x806: regs.urp = *regp; break;
+	  case 0x807: regs.srp = *regp; break;
 	  default:
 			op_illg (0x4E7B);
 			return 0;
@@ -410,6 +410,64 @@ void divbyzero_special (bool issigned, uae_s32 dst)
 	}
 }
 
+/* DIVU overflow
+ *
+ * 68000: V=1 N=1
+ * 68020: V=1 N=X
+ * 68040: V=1
+ * 68060: V=1
+ *
+ * X) N is set if original 32-bit destination value is negative.
+ *
+ */
+
+void setdivuoverflowflags(uae_u32 dividend, uae_u16 divisor)
+{
+	if (currprefs.cpu_model >= 68040) {
+		SET_VFLG(1);
+	} else if (currprefs.cpu_model >= 68020) {
+		SET_VFLG(1);
+		if ((uae_s32)dividend < 0)
+			SET_NFLG(1);
+	} else {
+		SET_VFLG(1);
+		SET_NFLG(1);
+	}
+}
+
+/*
+ * DIVS overflow
+ *
+ * 68000: V = 1 N = 1
+ * 68020: V = 1 ZN = X
+ * 68040: V = 1
+ * 68060: V = 1
+ *
+ * X) if absolute overflow(Check getDivs68kCycles for details) : Z = 0, N = 0
+ * if not absolute overflow : N is set if internal result BYTE is negative, Z is set if it is zero!
+ *
+ */
+
+void setdivsoverflowflags(uae_s32 dividend, uae_s16 divisor)
+{
+	if (currprefs.cpu_model >= 68040) {
+		SET_VFLG(1);
+	} else if (currprefs.cpu_model >= 68020) {
+		SET_VFLG(1);
+		// absolute overflow?
+		if (((uae_u32)abs(dividend) >> 16) >= (uae_u16)abs(divisor))
+			return;
+		uae_u32 aquot = (uae_u32)abs(dividend) / (uae_u16)abs(divisor);
+		if ((uae_s8)aquot == 0)
+			SET_ZFLG(1);
+		if ((uae_s8)aquot < 0)
+			SET_NFLG(1);
+	} else {
+		SET_VFLG(1);
+		SET_NFLG(1);
+	}
+}
+
 #if !defined (uae_s64)
 STATIC_INLINE int div_unsigned(uae_u32 src_hi, uae_u32 src_lo, uae_u32 div, uae_u32 *quot, uae_u32 *rem)
 {
@@ -440,7 +498,7 @@ void m68k_divl (uae_u32 opcode, uae_u32 src, uae_u16 extra)
 {
   // Done in caller
   //if (src == 0) {
-  //  Exception (5);
+  //  Exception_cpu (5);
   //  return;
   //}
 #if defined(uae_s64)
@@ -585,20 +643,25 @@ void m68k_mull (uae_u32 opcode, uae_u32 src, uae_u16 extra)
 {
 #if defined(uae_s64)
   if (extra & 0x800) {
-  	/* signed variant */
+  	/* signed */
   	uae_s64 a = (uae_s64)(uae_s32)m68k_dreg(regs, (extra >> 12) & 7);
 
   	a *= (uae_s64)(uae_s32)src;
   	SET_VFLG (0);
   	SET_CFLG (0);
-  	SET_ZFLG (a == 0);
-  	SET_NFLG (a < 0);
 		if (extra & 0x400) {
+			// 32 * 32 = 64
 	    m68k_dreg(regs, extra & 7) = (uae_u32)(a >> 32);
-		} else if ((a & UVAL64 (0xffffffff80000000)) != 0
-		  && (a & UVAL64(0xffffffff80000000)) != UVAL64(0xffffffff80000000))
-	  {
-	    SET_VFLG (1);
+    	SET_ZFLG (a == 0);
+    	SET_NFLG (a < 0);
+		} else {
+			// 32 * 32 = 32
+			uae_s32 b = (uae_s32)a;
+      if ((a & UVAL64 (0xffffffff80000000)) != 0 && (a & UVAL64(0xffffffff80000000)) != UVAL64(0xffffffff80000000)) {
+	      SET_VFLG (1);
+			}
+			SET_ZFLG(b == 0);
+			SET_NFLG(b < 0);
 	  }
   	m68k_dreg(regs, (extra >> 12) & 7) = (uae_u32)a;
   } else {
@@ -608,18 +671,25 @@ void m68k_mull (uae_u32 opcode, uae_u32 src, uae_u16 extra)
   	a *= (uae_u64)src;
 	  SET_VFLG (0);
 	  SET_CFLG (0);
-	  SET_ZFLG (a == 0);
-	  SET_NFLG (((uae_s64)a) < 0);
 		if (extra & 0x400) {
+			// 32 * 32 = 64
 	    m68k_dreg(regs, extra & 7) = (uae_u32)(a >> 32);
-		} else if ((a & UVAL64 (0xffffffff00000000)) != 0) {
-	    SET_VFLG (1);
+	    SET_ZFLG (a == 0);
+	    SET_NFLG (((uae_s64)a) < 0);
+		} else {
+			// 32 * 32 = 32
+			uae_s32 b = (uae_s32)a;
+			if ((a & UVAL64(0xffffffff00000000)) != 0) {
+	      SET_VFLG (1);
+			}
+			SET_ZFLG(b == 0);
+			SET_NFLG(b < 0);
 	  }
 	  m68k_dreg(regs, (extra >> 12) & 7) = (uae_u32)a;
   }
 #else
   if (extra & 0x800) {
-	  /* signed variant */
+	  /* signed */
 	  uae_s32 src1,src2;
 	  uae_u32 dst_lo,dst_hi;
 	  uae_u32 sign;
@@ -637,15 +707,16 @@ void m68k_mull (uae_u32 opcode, uae_u32 src, uae_u16 extra)
 	  }
   	SET_VFLG (0);
 	  SET_CFLG (0);
-	  SET_ZFLG (dst_hi == 0 && dst_lo == 0);
-	  SET_NFLG (((uae_s32)dst_hi) < 0);
-	  if (extra & 0x400)
-	    m68k_dreg(regs, extra & 7) = dst_hi;
-	  else if ((dst_hi != 0 || (dst_lo & 0x80000000) != 0)
-		  && ((dst_hi & 0xffffffff) != 0xffffffff
-		  || (dst_lo & 0x80000000) != 0x80000000))
-  	{
-	    SET_VFLG (1);
+		if (extra & 0x400) {
+			m68k_dreg(regs, extra & 7) = dst_hi;
+	    SET_ZFLG (dst_hi == 0 && dst_lo == 0);
+	    SET_NFLG (((uae_s32)dst_hi) < 0);
+		} else {
+			if ((dst_hi != 0 || (dst_lo & 0x80000000) != 0) && ((dst_hi & 0xffffffff) != 0xffffffff || (dst_lo & 0x80000000) != 0x80000000)) {
+	      SET_VFLG (1);
+			}
+			SET_ZFLG(dst_lo == 0);
+			SET_NFLG(((uae_s32)dst_lo) < 0);
   	}
   	m68k_dreg(regs, (extra >> 12) & 7) = dst_lo;
   } else {
@@ -656,12 +727,16 @@ void m68k_mull (uae_u32 opcode, uae_u32 src, uae_u16 extra)
 
   	SET_VFLG (0);
   	SET_CFLG (0);
-  	SET_ZFLG (dst_hi == 0 && dst_lo == 0);
-  	SET_NFLG (((uae_s32)dst_hi) < 0);
-  	if (extra & 0x400)
-	    m68k_dreg(regs, extra & 7) = dst_hi;
-  	else if (dst_hi != 0) {
-	    SET_VFLG (1);
+		if (extra & 0x400) {
+			m68k_dreg(regs, extra & 7) = dst_hi;
+    	SET_ZFLG (dst_hi == 0 && dst_lo == 0);
+    	SET_NFLG (((uae_s32)dst_hi) < 0);
+		} else {
+			if (dst_hi != 0) {
+	      SET_VFLG (1);
+			}
+			SET_ZFLG(dst_lo == 0);
+			SET_NFLG(((uae_s32)dst_lo) < 0);
   	}
   	m68k_dreg(regs, (extra >> 12) & 7) = dst_lo;
   }
