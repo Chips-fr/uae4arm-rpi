@@ -341,8 +341,6 @@ static void build_cpufunctbl (void)
   	}
   }
 #ifdef JIT
-	write_log(_T("JIT: &countdown =  %p\n"), &countdown);
-	write_log(_T("JIT: &build_comp = %p\n"), &build_comp);
   build_comp ();
 #endif
 

@@ -71,13 +71,12 @@
 #define REG_WORK1 R2_INDEX
 #define REG_WORK2 R3_INDEX
 #define REG_WORK3 R4_INDEX
-#define REG_WORK4 R5_INDEX
 
 #define REG_PC_TMP R1_INDEX /* Another register that is not the above */
 
 #define R_MEMSTART 27
 #define R_REGSTRUCT 28
-uae_s8 always_used[] = {2,3,4,5,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r5 are work register in emitted code, r18 special use reg
+uae_s8 always_used[] = {2,3,4,18,R_MEMSTART,R_REGSTRUCT,-1}; // r2-r4 are work register in emitted code, r18 special use reg
 
 uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1,1,1, 1,0,0,0};
 
@@ -90,36 +89,29 @@ uae_u8 call_saved[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1, 1,1,1,1, 1,1
    - r19 - r26 not in use, so no need to preserve
    - if you change need_to_preserve, modify raw_push_regs_to_preserve() and raw_pop_preserved_regs()
 */
-static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,0,1,1, 1,1,1,1, 1,1,1,1, 1,1,0,0, 0,0,0,0, 0,0,0,1, 1,0,0,0};
-/* Do we really need to preserve r6-r15? They are scratch register in AArch64. If not, 
-static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 1,1,0,0, 0,0,0,0, 0,0,0,1, 1,0,0,0};
-*/
+static const uae_u8 need_to_preserve[] = {0,0,0,0, 0,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,0, 0,0,0,0, 0,0,0,1, 1,0,0,0};
 
 #include "codegen_armA64.h"
 
 
-STATIC_INLINE void UNSIGNED8_IMM_2_REG(W4 r, IM8 v) {
-	MOV_xi16sh(r, (uae_u16) v, 0);
-}
-
 STATIC_INLINE void SIGNED8_IMM_2_REG(W4 r, IM8 v) {
 	uae_s16 v16 = (uae_s16)(uae_s8)v;
 	if (v16 & 0x8000) {
-		MVN_xi16sh(r, (uae_u16) ~v16, 0);
+		MOVN_wi(r, (uae_u16) ~v16);
 	} else {
-		MOV_xi16sh(r, (uae_u16) v16, 0);
+		MOV_wi(r, (uae_u16) v16);
 	}
 }
 
 STATIC_INLINE void UNSIGNED16_IMM_2_REG(W4 r, IM16 v) {
-  MOV_xi16sh(r, v, 0);
+  MOV_xi(r, v);
 }
 
 STATIC_INLINE void SIGNED16_IMM_2_REG(W4 r, IM16 v) {
 	if (v & 0x8000) {
-		MVN_xi16sh(r, (uae_u16) ~v, 0);
+		MOVN_wi(r, (uae_u16) ~v);
 	} else {
-		MOV_xi16sh(r, (uae_u16) v, 0);
+		MOV_wi(r, (uae_u16) v);
 	}
 }
 
@@ -128,7 +120,7 @@ STATIC_INLINE void UNSIGNED8_REG_2_REG(W4 d, RR4 s) {
 }
 
 STATIC_INLINE void SIGNED8_REG_2_REG(W4 d, RR4 s) {
-	SXTB_xx(d, s);
+	SXTB_ww(d, s);
 }
 
 STATIC_INLINE void UNSIGNED16_REG_2_REG(W4 d, RR4 s) {
@@ -136,73 +128,52 @@ STATIC_INLINE void UNSIGNED16_REG_2_REG(W4 d, RR4 s) {
 }
 
 STATIC_INLINE void SIGNED16_REG_2_REG(W4 d, RR4 s) {
-	SXTH_xx(d, s);
+	SXTH_ww(d, s);
 }
 
-#define ZERO_EXTEND_8_REG_2_REG(d,s) UNSIGNED8_REG_2_REG(d,s)
 #define ZERO_EXTEND_16_REG_2_REG(d,s) UNSIGNED16_REG_2_REG(d,s)
 #define SIGN_EXTEND_8_REG_2_REG(d,s) SIGNED8_REG_2_REG(d,s)
 #define SIGN_EXTEND_16_REG_2_REG(d,s) SIGNED16_REG_2_REG(d,s)
 
 STATIC_INLINE void LOAD_U32(int r, uae_u32 val)
 {
-  MOV_xi16sh(r, val, 0);
+  MOV_xi(r, val);
   if(val >> 16)
-    MOVK_xi16sh(r, val >> 16, 16);
+    MOVK_xish(r, val >> 16, 16);
 }
 
 STATIC_INLINE void LOAD_U64(int r, uae_u64 val)
 {
-  MOV_xi16sh(r, val, 0);
-  MOVK_xi16sh(r, val >> 16, 16);
+  MOV_xi(r, val);
+  MOVK_xish(r, val >> 16, 16);
   if(val >> 32) {
-    MOVK_xi16sh(r, val >> 32, 32);
-    MOVK_xi16sh(r, val >> 48, 48);
+    MOVK_xish(r, val >> 32, 32);
+    MOVK_xish(r, val >> 48, 48);
   }
 }
 
 
-#define NUM_PUSH_CMDS 8
-#define NUM_POP_CMDS 8
+#define NUM_PUSH_CMDS 2
+#define NUM_POP_CMDS 2
 /* NUMBER_REGS_TO_PRESERVE must be even to keep SP aligned to 16 */
-#define NUMBER_REGS_TO_PRESERVE 14
+#define NUMBER_REGS_TO_PRESERVE 2
 STATIC_INLINE void raw_push_regs_to_preserve(void) {
   SUB_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
-	STP_xxxi(6, 7, RSP_INDEX, 0 * 8);
-	STP_xxxi(8, 9, RSP_INDEX, 2 * 8);
-	STP_xxxi(10, 11, RSP_INDEX, 4 * 8);
-	STP_xxxi(12, 13, RSP_INDEX, 6 * 8);
-	STP_xxxi(14, 15, RSP_INDEX, 8 * 8);
-	STP_xxxi(16, 17, RSP_INDEX, 10 * 8);
-	STP_xxxi(27, 28, RSP_INDEX, 12 * 8);
+//	STP_xxXi(19, 20, RSP_INDEX, 0 * 8);
+//	STP_xxXi(21, 22, RSP_INDEX, 2 * 8);
+//	STP_xxXi(23, 24, RSP_INDEX, 4 * 8);
+//	STP_xxXi(25, 26, RSP_INDEX, 6 * 8);
+	STP_xxXi(27, 28, RSP_INDEX, 8 * 8);
 }
 
 STATIC_INLINE void raw_pop_preserved_regs(void) {
-	LDP_xxxi(6, 7, RSP_INDEX, 0 * 8);
-	LDP_xxxi(8, 9, RSP_INDEX, 2 * 8);
-	LDP_xxxi(10, 11, RSP_INDEX, 4 * 8);
-	LDP_xxxi(12, 13, RSP_INDEX, 6 * 8);
-	LDP_xxxi(14, 15, RSP_INDEX, 8 * 8);
-	LDP_xxxi(16, 17, RSP_INDEX, 10 * 8);
-	LDP_xxxi(27, 28, RSP_INDEX, 12 * 8);
+//	LDP_xxXi(19, 20, RSP_INDEX, 0 * 8);
+//	LDP_xxXi(21, 22, RSP_INDEX, 2 * 8);
+//	LDP_xxXi(23, 24, RSP_INDEX, 4 * 8);
+//	LDP_xxXi(25, 26, RSP_INDEX, 6 * 8);
+	LDP_xxXi(27, 28, RSP_INDEX, 8 * 8);
   ADD_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
 }
-/* If it's not required to preserve r6-r15:
-#define NUM_PUSH_CMDS 3
-#define NUM_POP_CMDS 3
-#define NUMBER_REGS_TO_PRESERVE 4 
-STATIC_INLINE void raw_push_regs_to_preserve(void) {
-  SUB_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
-	STP_xxxi(16, 17, RSP_INDEX, 0 * 8);
-	STP_xxxi(27, 28, RSP_INDEX, 2 * 8);
-}
-
-STATIC_INLINE void raw_pop_preserved_regs(void) {
-	LDP_xxxi(16, 17, RSP_INDEX, 0 * 8);
-	LDP_xxxi(27, 28, RSP_INDEX, 2 * 8);
-  ADD_xxi(RSP_INDEX, RSP_INDEX, NUMBER_REGS_TO_PRESERVE*8);
-}
-*/
 
 STATIC_INLINE void raw_flags_evicted(int r)
 {
@@ -237,7 +208,7 @@ LOWFUNC(WRITE,RMW,2,compemu_raw_inc_opcount,(IM16 op))
 {
   uintptr idx = (uintptr) &(regs.raw_cputbl_count) - (uintptr) &regs;
   LDR_xXi(REG_WORK2, R_REGSTRUCT, idx);
-  MOV_xi16sh(REG_WORK1, op, 0);
+  MOV_xi(REG_WORK1, op);
   ADD_xxxLSLi(REG_WORK2, REG_WORK2, REG_WORK1, 2);
   LDR_wXi(REG_WORK1, REG_WORK2, 0);
 
@@ -263,7 +234,7 @@ LENDFUNC(WRITE,READ,1,compemu_raw_cmp_pc,(IMPTR s))
 LOWFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 {
   LOAD_U32(REG_WORK1, offset);
-	ADD_xxx(d, s, REG_WORK1);
+	ADD_www(d, s, REG_WORK1);
 }
 LENDFUNC(NONE,NONE,3,compemu_raw_lea_l_brr,(W4 d, RR4 s, IM32 offset))
 
@@ -352,10 +323,9 @@ LOWFUNC(WRITE,RMW,2,compemu_raw_sub_l_mi,(MEMRW d, IM32 s))
   uintptr idx = d - (uintptr) & regs;
   LDR_wXi(REG_WORK2, R_REGSTRUCT, idx);
 
-  if((s & 0xfff) == 0) {
+  if((s & ~0xfff) == 0) {
     SUBS_wwi(REG_WORK2, REG_WORK2, s);
   } else {
-
     LOAD_U32(REG_WORK1, s);
 	  SUBS_www(REG_WORK2, REG_WORK2, REG_WORK1);
   }
@@ -498,7 +468,7 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
   // countdown -= scaled_cycles(totcycles);
   offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & 0xfff) == 0) {
+  if((cycles & ~0xfff) == 0) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
     LOAD_U32(REG_WORK2, cycles);
@@ -507,7 +477,7 @@ STATIC_INLINE void compemu_raw_handle_except(IM32 cycles)
 	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
 
   raw_pop_preserved_regs();
-  LDR_xPCi(REG_WORK1, 12); // <execute_exception>
+  LDR_xPCi(REG_WORK1, 8); // <execute_exception>
   BR_x(REG_WORK1);
 	emit_longlong((uintptr)execute_exception);
 	
@@ -519,14 +489,14 @@ STATIC_INLINE void compemu_raw_maybe_recompile(uintptr t)
 {
   BGE_i(NUM_POP_CMDS + 5);
   raw_pop_preserved_regs();
-  LDR_xPCi(REG_WORK1, 12); 
+  LDR_xPCi(REG_WORK1, 8); 
   BR_x(REG_WORK1);
   emit_longlong(t);
 }
 
 STATIC_INLINE void compemu_raw_jmp(uintptr t)
 {
-  LDR_xPCi(REG_WORK1, 12);
+  LDR_xPCi(REG_WORK1, 8);
   BR_x(REG_WORK1);
   emit_longlong(t);
 }
@@ -537,8 +507,8 @@ STATIC_INLINE void compemu_raw_jmp_m_indexed(uintptr base, uae_u32 r, uae_u32 m)
 	if(m)
 	  shft=1;
 
-  LDR_xPCi(REG_WORK1, 16);
-	LDR_xXwLSLi(REG_WORK1, REG_WORK1, r, shft);
+  LDR_xPCi(REG_WORK1, 12);
+	LDR_xXxLSLi(REG_WORK1, REG_WORK1, r, shft);
 	BR_x(REG_WORK1);
 	emit_longlong(base);
 }
@@ -547,7 +517,7 @@ STATIC_INLINE void compemu_raw_maybe_cachemiss(uintptr t)
 {
   BEQ_i(NUM_POP_CMDS + 5);
   raw_pop_preserved_regs();
-  LDR_xPCi(REG_WORK1, 12);
+  LDR_xPCi(REG_WORK1, 8);
   BR_x(REG_WORK1);
   emit_longlong(t);
 }
@@ -575,7 +545,7 @@ LOWFUNC(NONE,NONE,2,compemu_raw_endblock_pc_inreg,(RR4 rr_pc, IM32 cycles))
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & 0xfff) == 0) {
+  if((cycles & ~0xfff) == 0) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -584,14 +554,14 @@ LOWFUNC(NONE,NONE,2,compemu_raw_endblock_pc_inreg,(RR4 rr_pc, IM32 cycles))
 	STR_wXi(REG_WORK1, R_REGSTRUCT, offs);
 
 	BMI_i(7);
-	BFC_xii(rr_pc, 16, 48); // apply TAGMASK
-  LDR_xPCi(REG_WORK1, 16); // <cache_tags>
-	LDR_xXxLSLi(REG_WORK1, REG_WORK1, rr_pc, 2);
+  UBFIZ_xxii(rr_pc, rr_pc, 0, 16);  // apply TAGMASK
+  LDR_xPCi(REG_WORK1, 12); // <cache_tags>
+	LDR_xXxLSLi(REG_WORK1, REG_WORK1, rr_pc, 3); // cacheline holds pointer -> multiply with 8
   BR_x(REG_WORK1);
 	emit_longlong((uintptr)cache_tags);
 
   raw_pop_preserved_regs();
-  LDR_xPCi(REG_WORK1, 12); // <do_nothing>
+  LDR_xPCi(REG_WORK1, 8); // <do_nothing>
   BR_x(REG_WORK1);
 
 	emit_longlong((uintptr)do_nothing);
@@ -607,7 +577,7 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
   // countdown -= scaled_cycles(totcycles);
   uintptr offs = (uintptr)&countdown - (uintptr)&regs;
 	LDR_wXi(REG_WORK1, R_REGSTRUCT, offs);
-  if((cycles & 0xfff) == 0) {
+  if((cycles & ~0xfff) == 0) {
 	  SUBS_wwi(REG_WORK1, REG_WORK1, cycles);
 	} else {
 	  LOAD_U32(REG_WORK2, cycles);
@@ -618,11 +588,11 @@ STATIC_INLINE uae_u32* compemu_raw_endblock_pc_isconst(IM32 cycles, IMPTR v)
 	tba = (uae_u32*)get_target();
   CC_B_i(NATIVE_CC_MI^1, 0); // <target set by caller>
   
-  raw_pop_preserved_regs();
-  LDR_xPCi(REG_WORK1, 20); // <v>
+  LDR_xPCi(REG_WORK1, 16 + 4 * NUM_POP_CMDS); // <v>
   offs = (uintptr)&regs.pc_p - (uintptr)&regs;
   STR_xXi(REG_WORK1, R_REGSTRUCT, offs);
-  LDR_xPCi(REG_WORK1, 20); // <do_nothing>
+  raw_pop_preserved_regs();
+  LDR_xPCi(REG_WORK1, 16); // <do_nothing>
   BR_x(REG_WORK1);
 
 	emit_longlong(v);
@@ -635,5 +605,6 @@ LOWFUNC(NONE,READ,2,compemu_raw_tag_pc,(W4 d, MEMR s))
 {
   uintptr idx = (uintptr)(s) - (uintptr)&regs;
   LDRH_wXi(d, R_REGSTRUCT, idx);
+  SXTW_xw(d, d);
 }
 LENDFUNC(NONE,READ,2,compemu_raw_tag_pc,(W4 d, MEMR s))

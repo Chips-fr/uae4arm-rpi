@@ -105,10 +105,6 @@ static const uae_u32 PRESERVE_MASK = ((1<<R4_INDEX)|(1<<R5_INDEX)|(1<<R6_INDEX)|
 
 #include "codegen_arm.h"
 
-STATIC_INLINE void UNSIGNED8_IMM_2_REG(W4 r, IM8 v) {
-	MOV_ri8(r, (uae_u8) v);
-}
-
 STATIC_INLINE void SIGNED8_IMM_2_REG(W4 r, IM8 v) {
 	if (v & 0x80) {
 		MVN_ri8(r, (uae_u8) ~v);
@@ -152,7 +148,6 @@ STATIC_INLINE void SIGNED16_REG_2_REG(W4 d, RR4 s) {
 	SXTH_rr(d, s);
 }
 
-#define ZERO_EXTEND_8_REG_2_REG(d,s) UNSIGNED8_REG_2_REG(d,s)
 #define ZERO_EXTEND_16_REG_2_REG(d,s) UNSIGNED16_REG_2_REG(d,s)
 #define SIGN_EXTEND_8_REG_2_REG(d,s) SIGNED8_REG_2_REG(d,s)
 #define SIGN_EXTEND_16_REG_2_REG(d,s) SIGNED16_REG_2_REG(d,s)
