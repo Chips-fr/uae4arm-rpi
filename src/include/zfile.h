@@ -11,6 +11,7 @@ struct zvolume;
 typedef int (*zfile_callback)(struct zfile*, void*);
 
 extern struct zfile *zfile_fopen (const char *, const char *);
+extern struct zfile *zfile_fopen_2 (const char *, const char *);
 extern struct zfile *zfile_fopen_nozip (const char *, const char *);
 extern struct zfile *zfile_fopen_empty (const char *name, int size);
 extern struct zfile *zfile_fopen_data (const char *name, int size, uae_u8 *data);

@@ -478,7 +478,7 @@ static struct zfile *openzip (const char *pname)
     return 0;
 }
 
-static struct zfile *zfile_fopen_2 (const char *name, const char *mode)
+struct zfile *zfile_fopen_2 (const char *name, const char *mode)
 {
     struct zfile *l;
     FILE *f;
@@ -699,7 +699,7 @@ size_t zfile_fwrite (void *b, size_t l1, size_t l2, struct zfile *z)
 #if 1
 		uae_s64 off = z->seek + l1 * l2;
 		if (z->allocsize == 0) {
-			write_log (_T("zfile_fwrite(data,%s) but allocsize=0!\n"), z->name);
+			write_log ("zfile_fwrite(data,%s) but allocsize=0!\n", z->name);
 			return 0;
 		}
 		if (off > z->allocsize) {
