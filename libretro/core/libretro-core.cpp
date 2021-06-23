@@ -598,6 +598,26 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
               filesys_media_change (uci->rootdir, 1, uci);
 
 
+
+          // WHDSaves file mode
+          {
+             LOGI("[libretro-uae4arm]: Attach WHDSaves files\n");
+
+             char whdsaves_path[MAX_DPATH];
+             path_join((char*)&whdsaves_path, retro_save_directory, "WHDSaves");
+             if (!my_existsdir(whdsaves_path))
+                my_mkdir(whdsaves_path);
+             if (my_existsdir(whdsaves_path))
+             {
+                  uci = add_filesys_config(prefs, -1, "WHDSaves", "WHDSaves", whdsaves_path, 
+                    0, 0, 0, 0, 0, -128, 0, 0, 0);
+
+                  if (uci)
+                      filesys_media_change (uci->rootdir, 1, uci);
+              }
+          }
+
+
           /* Attach LHA */
 
           LOGI("[libretro-uae4arm]: Attach LHA\n");
