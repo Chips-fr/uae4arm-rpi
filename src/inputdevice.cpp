@@ -36,6 +36,7 @@
 #include "zfile.h"
 #include "cia.h"
 #include "autoconf.h"
+#include "cdtv.h"
 #include "statusline.h"
 #include "native2amiga_api.h"
 
@@ -250,6 +251,7 @@ static int default_keyboard_layout[MAX_JPORTS];
 #define KBR_DEFAULT_MAP_CD32_NP 6
 #define KBR_DEFAULT_MAP_CD32_CK 7
 #define KBR_DEFAULT_MAP_CD32_SE 8
+#define KBR_DEFAULT_MAP_CDTV 10
 static int **keyboard_default_kbmaps;
 
 static int mouse_axis[MAX_INPUT_DEVICES][MAX_INPUT_DEVICE_EVENTS];
@@ -2178,6 +2180,12 @@ static void cap_check (void)
 			if (isbutton)
 				charge = -2; // button press overrides everything
 
+			if (currprefs.cs_cdtvcd) {
+				/* CDTV P9 is not floating */
+				if (!(potgo_value & pdir) && i == 1 && charge == 0)
+					charge = 2;
+			}
+
 			// CD32 pad in 2-button mode: blue button is not floating
 			if (cd32_pad_enabled[joy] && i == 1 && charge == 0)
 				charge = 2;
@@ -2554,6 +2562,17 @@ void inputdevice_add_inputcode (int code, int state)
 
 void inputdevice_do_keyboard (int code, int state)
 {
+#ifdef CDTV
+	if (code >= 0x72 && code <= 0x77) { // CDTV keys
+		if (cdtv_front_panel (-1)) {
+			// front panel active
+			if (!state)
+				return;
+			cdtv_front_panel (code - 0x72);
+			return;
+		}
+	}
+#endif
 	if (code < 0x80) {
 		uae_u8 key = code | (state ? 0x00 : 0x80);
 		keybuf[key & 0x7f] = (key & 0x80) ? 0 : 1;
@@ -2588,6 +2607,16 @@ static bool inputdevice_handle_inputcode2 (int code, int state)
 	case AKS_HARDRESET:
 		uae_reset (1, 1);
 		break;
+#ifdef CDTV
+	case AKS_CDTV_FRONT_PANEL_STOP:
+	case AKS_CDTV_FRONT_PANEL_PLAYPAUSE:
+	case AKS_CDTV_FRONT_PANEL_PREV:
+	case AKS_CDTV_FRONT_PANEL_NEXT:
+	case AKS_CDTV_FRONT_PANEL_REW:
+	case AKS_CDTV_FRONT_PANEL_FF:
+		cdtv_front_panel (code - AKS_CDTV_FRONT_PANEL_STOP);
+	break;
+#endif
   }
 end:
 	return false;
@@ -2697,6 +2726,13 @@ static int handle_input_event (int nr, int state, int max, int autofire)
 				delta = state;
 				mouse_deltanoreset[joy][unit] = 0;
 			}
+			if (ie->data & IE_CDTV) {
+				delta = 0;
+				if (state > 0)
+					delta = JOYMOUSE_CDTV;
+				else if (state < 0)
+					delta = -JOYMOUSE_CDTV;
+			}
 
 			if (ie->data & IE_INVERT)
 				delta = -delta;
@@ -2709,7 +2745,7 @@ static int handle_input_event (int nr, int state, int max, int autofire)
 			max = 32;
 		} else if (ie->type & 32) { /* button mouse emulation vertical */
 
-			int speed = currprefs.input_joymouse_speed;
+			int speed = (ie->data & IE_CDTV) ? JOYMOUSE_CDTV : currprefs.input_joymouse_speed;
 
 			if (state && (ie->data & DIR_UP)) {
 				mouse_delta[joy][1] = -speed;
@@ -2722,7 +2758,7 @@ static int handle_input_event (int nr, int state, int max, int autofire)
 
 		} else if (ie->type & 64) { /* button mouse emulation horizontal */
 
-			int speed = currprefs.input_joymouse_speed;
+			int speed = (ie->data & IE_CDTV) ? JOYMOUSE_CDTV : currprefs.input_joymouse_speed;
 
 			if (state && (ie->data & DIR_LEFT)) {
 				mouse_delta[joy][0] = -speed;
@@ -3544,6 +3580,8 @@ static const int axistable[] = {
 	INPUTEVENT_PAR_JOY1_VERT, INPUTEVENT_PAR_JOY1_UP, INPUTEVENT_PAR_JOY1_DOWN,
 	INPUTEVENT_PAR_JOY2_HORIZ, INPUTEVENT_PAR_JOY2_LEFT, INPUTEVENT_PAR_JOY2_RIGHT,
 	INPUTEVENT_PAR_JOY2_VERT, INPUTEVENT_PAR_JOY2_UP, INPUTEVENT_PAR_JOY2_DOWN,
+	INPUTEVENT_MOUSE_CDTV_HORIZ, INPUTEVENT_MOUSE_CDTV_LEFT, INPUTEVENT_MOUSE_CDTV_RIGHT,
+	INPUTEVENT_MOUSE_CDTV_VERT, INPUTEVENT_MOUSE_CDTV_UP, INPUTEVENT_MOUSE_CDTV_DOWN,
 	-1
 };
 
@@ -3571,6 +3609,7 @@ static const int rem_port1[] = {
 	INPUTEVENT_JOY1_FIRE_BUTTON, INPUTEVENT_JOY1_2ND_BUTTON, INPUTEVENT_JOY1_3RD_BUTTON,
 	INPUTEVENT_JOY1_CD32_RED, INPUTEVENT_JOY1_CD32_BLUE, INPUTEVENT_JOY1_CD32_GREEN, INPUTEVENT_JOY1_CD32_YELLOW,
 	INPUTEVENT_JOY1_CD32_RWD, INPUTEVENT_JOY1_CD32_FFW, INPUTEVENT_JOY1_CD32_PLAY,
+	INPUTEVENT_MOUSE_CDTV_HORIZ, INPUTEVENT_MOUSE_CDTV_VERT,
 	-1
 };
 static const int rem_port2[] = {
@@ -3658,6 +3697,17 @@ static const int ip_mouse1[] = {
 static const int ip_mouse2[] = {
 	INPUTEVENT_MOUSE2_LEFT, INPUTEVENT_MOUSE2_RIGHT, INPUTEVENT_MOUSE2_UP, INPUTEVENT_MOUSE2_DOWN,
 	INPUTEVENT_JOY2_FIRE_BUTTON, INPUTEVENT_JOY2_2ND_BUTTON,
+	-1
+};
+static const int ip_mousecdtv[] =
+{
+	INPUTEVENT_MOUSE_CDTV_LEFT, INPUTEVENT_MOUSE_CDTV_RIGHT, INPUTEVENT_MOUSE_CDTV_UP, INPUTEVENT_MOUSE_CDTV_DOWN,
+	INPUTEVENT_JOY1_FIRE_BUTTON, INPUTEVENT_JOY1_2ND_BUTTON,
+	-1
+};
+static const int ip_mediacdtv[] =
+{
+	INPUTEVENT_KEY_CDTV_PLAYPAUSE, INPUTEVENT_KEY_CDTV_STOP, INPUTEVENT_KEY_CDTV_PREV, INPUTEVENT_KEY_CDTV_NEXT,
 	-1
 };
 static const int ip_analog1[] = {
@@ -4087,6 +4137,9 @@ static void setjoyinputs (struct uae_prefs *prefs, int port)
 		case JSEM_MODE_MOUSE:
 			joyinputs[port] = port ? ip_mouse2 : ip_mouse1;
 		  break;
+		case JSEM_MODE_MOUSE_CDTV:
+			joyinputs[port] = ip_mousecdtv;
+		  break;
 	}
 	//write_log (_T("joyinput %d = %p\n"), port, joyinputs[port]);
 }
@@ -4151,6 +4204,10 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 					joymodes[i] = JSEM_MODE_WHEELMOUSE;
 					joyinputs[i] = i ? ip_mouse2 : ip_mouse1;
 					break;
+					case JSEM_MODE_MOUSE_CDTV:
+					joymodes[i] = JSEM_MODE_MOUSE_CDTV;
+					joyinputs[i] = ip_mousecdtv;
+					break;
 				}
 			} else if (jsem_isjoy (i, prefs) >= 0) {
 				switch (mode)
@@ -4188,6 +4245,10 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 					case JSEM_MODE_WHEELMOUSE:
 						joymodes[i] = JSEM_MODE_WHEELMOUSE;
 						joyinputs[i] = i ? ip_mouse2 : ip_mouse1;
+						break;
+					case JSEM_MODE_MOUSE_CDTV:
+						joymodes[i] = JSEM_MODE_MOUSE_CDTV;
+						joyinputs[i] = ip_mousecdtv;
 						break;
 				}
 			} else if (prefs->jports[i].id >= 0) {
@@ -4287,6 +4348,10 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 					input_get_default_mouse (joysticks, joy, i, af, !gameports, mode == JSEM_MODE_WHEELMOUSE, true);
 					joymodes[i] = JSEM_MODE_WHEELMOUSE;
 					break;
+				case JSEM_MODE_MOUSE_CDTV:
+					joymodes[i] = JSEM_MODE_MOUSE_CDTV;
+					input_get_default_joystick (joysticks, joy, i, af, mode, !gameports, false);
+					break;
 				}
 				_tcsncpy (prefs->jports[i].idc.name, idev[IDTYPE_JOYSTICK].get_friendlyname (joy), MAX_JPORTNAME - 1);
 				_tcsncpy (prefs->jports[i].idc.configname, idev[IDTYPE_JOYSTICK].get_uniquename (joy), MAX_JPORTNAME - 1);
@@ -4383,6 +4448,9 @@ static void compatibility_copy (struct uae_prefs *prefs, bool gameports)
 				}
 			}
 		}
+	}
+	if (0 && currprefs.cs_cdtvcd) {
+		setcompakb (prefs, keyboard_default_kbmaps[KBR_DEFAULT_MAP_CDTV], ip_mediacdtv, 0, 0);
 	}
 
 #ifndef INPUTDEVICE_SIMPLE

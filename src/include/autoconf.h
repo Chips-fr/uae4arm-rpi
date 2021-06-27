@@ -186,13 +186,16 @@ struct expansionromtype
 	const TCHAR *name;
 	const TCHAR *friendlyname;
 	const TCHAR *friendlymanufacturer;
-	DEVICE_INIT init, init2;
+	DEVICE_INIT preinit, init, init2;
 	DEVICE_ADD add;
 	uae_u32 romtype;
 	uae_u32 romtype_extra;
 	uae_u32 parentromtype;
 	int zorro;
 	bool singleonly;
+	const struct expansionsubromtype *subtypes;
+	int defaultsubtype;
+	bool autoboot_jumper;
 	int deviceflags;
 	const struct expansionboardsettings *settings;
 	uae_u8 autoconfig[16];

@@ -24,12 +24,12 @@
 #define ECS_DENISE /* ECS DENISE new features */
 #define AGA /* AGA chipset emulation (ECS_DENISE must be enabled) */
 #define CD32 /* CD32 emulation */
-/* #define CDTV */ /* CDTV emulation */
+#define CDTV /* CDTV emulation */
 /* #define PARALLEL_PORT */ /* parallel port emulation */
 /* #define PARALLEL_DIRECT */ /* direct parallel port emulation */
 /* #define SERIAL_PORT */ /* serial port emulation */
 /* #define SERIAL_ENET */ /* serial port UDP transport */
-/* #define SCSIEMU */ /* uaescsi.device emulation */
+#define SCSIEMU /* uaescsi.device emulation */
 /* #define UAESERIAL */ /* uaeserial.device emulation */
 #define FPUEMU /* FPU emulation */
 /* #define FPU_UAE */

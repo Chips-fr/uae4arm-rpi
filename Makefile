@@ -93,7 +93,7 @@ LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123
 LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
 
 ifndef DEBUG
-MORE_CFLAGS += -Ofast -fomit-frame-pointer
+MORE_CFLAGS += -O3 -fomit-frame-pointer
 MORE_CFLAGS += -finline -fno-builtin
 else
 MORE_CFLAGS += -g -DDEBUG -Wl,--export-dynamic -DWITH_LOGGING
@@ -140,6 +140,7 @@ OBJS =	\
 	src/cd32_fmv.o \
 	src/cd32_fmv_genlock.o \
 	src/cdrom.o \
+	src/cdtv.o \
 	src/cfgfile.o \
 	src/cia.o \
 	src/crc32.o \
@@ -166,6 +167,7 @@ OBJS =	\
 	src/hrtmon.rom.o \
 	src/ide.o \
 	src/inputdevice.o \
+	src/isofs.o \
 	src/keybuf.o \
 	src/main.o \
 	src/memory.o \
@@ -174,6 +176,7 @@ OBJS =	\
 	src/rtc.o \
 	src/savestate.o \
 	src/scsi.o \
+	src/scsiemul.o \
 	src/statusline.o \
 	src/traps.o \
 	src/uaelib.o \

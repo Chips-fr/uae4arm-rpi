@@ -20,6 +20,7 @@
 #include "custom.h"
 #include "newcpu.h"
 #include "savestate.h"
+#include "cdtv.h"
 #include "zfile.h"
 #include "td-sdl/thread.h"
 #include "gfxboard.h"
@@ -29,6 +30,8 @@
 #include "filesys.h"
 
 #define CARD_FLAG_CAN_Z3 1
+#define CARD_FLAG_CHILD 8
+#define CARD_FLAG_UAEROM 16
 
 // More information in first revision HRM Appendix_G
 #define BOARD_PROTOAUTOCONFIG 1
@@ -169,6 +172,7 @@ struct card_data
 	uae_u32 size;
 	// parsing updated fields
 	const struct expansionromtype *ert;
+	//const struct cpuboardsubtype *cst;
 	struct autoconfig_info aci;
 };
 
@@ -221,6 +225,7 @@ static bool ks11orolder(void)
 
 /* Autoconfig address space at 0xE80000 */
 static uae_u8 expamem[65536];
+static uae_u8 expamem_write_space[65536 + 4];
 #define AUTOMATIC_AUTOCONFIG_MAX_ADDRESS 0x80
 static int expamem_autoconfig_mode;
 static addrbank*(*expamem_map)(struct autoconfig_info*);
@@ -403,6 +408,7 @@ static void call_card_init(int index)
 	aci->doinit = true;
 	aci->devnum = (cd->flags >> 16) & 255;
 	aci->ert = cd->ert;
+	//aci->cst = cd->cst;
 	aci->rc = cd->rc;
 	aci->zorro = cd->zorro;
 	memset(aci->autoconfig_raw, 0xff, sizeof aci->autoconfig_raw);
@@ -844,6 +850,9 @@ static bool expamem_init_cd32fmv (struct autoconfig_info *aci)
  */
 
 MEMORY_ARRAY_FUNCTIONS(fastmem, 0);
+MEMORY_ARRAY_FUNCTIONS(fastmem, 1);
+MEMORY_ARRAY_FUNCTIONS(fastmem, 2);
+MEMORY_ARRAY_FUNCTIONS(fastmem, 3);
 
 addrbank fastmem_bank[MAX_RAM_BOARDS] =
 {
@@ -1719,16 +1728,20 @@ static uaecptr check_boot_rom (struct uae_prefs *p, int *boot_rom_type)
 	if (p->boot_rom == 1)
 		return 0;
 	*boot_rom_type = 1;
-  ab = &get_mem_bank (RTAREA_DEFAULT);
-  if (ab) {
-  	if (valid_address (RTAREA_DEFAULT, 65536))
-	    b = RTAREA_BACKUP;
-  }
-  if (nr_directory_units (NULL))
-  	return b;
-  if (nr_directory_units (p))
-  	return b;
+	if (p->cs_cdtvcd || is_device_rom(p, ROMTYPE_CDTVSCSI, 0) >= 0)
+		b = RTAREA_BACKUP;
+	ab = &get_mem_bank(RTAREA_DEFAULT);
+	if (ab) {
+		if (valid_address(RTAREA_DEFAULT, 65536))
+			b = RTAREA_BACKUP;
+	}
+	if (nr_directory_units(NULL))
+		return b;
+	if (nr_directory_units(p))
+		return b;
 	if (p->socket_emu)
+		return b;
+	if (p->scsi == 1)
 		return b;
 	if (p->input_tablet > 0)
     return b;
@@ -2711,22 +2724,75 @@ uae_u8 *restore_expansion_info(uae_u8 *src)
 
 #endif /* SAVESTATE */
 
+static const struct expansionboardsettings cdtvsram_settings[] = {
+	{
+		_T("SRAM size\0") _T("64k\0") _T("128k\0") _T("256k\0"),
+		_T("sram\0") _T("64k\0") _T("128k\0") _T("256k\0"),
+		true
+	},
+	{
+		NULL
+	}
+};
+
 const struct expansionromtype expansionroms[] = {
 		/* built-in controllers */
 	{
 		_T("cd32fmv"), _T("CD32 FMV"), _T("Commodore"),
-		expamem_init_cd32fmv, NULL, NULL, ROMTYPE_CD32CART, 0, 0, BOARD_AUTOCONFIG_Z2, true,
-		EXPANSIONTYPE_INTERNAL
+		NULL, expamem_init_cd32fmv, NULL, NULL, ROMTYPE_CD32CART, 0, 0, BOARD_AUTOCONFIG_Z2, true,
+		NULL, 0,
+		false, EXPANSIONTYPE_INTERNAL
 	},
 	{
+		_T("cdtvdmac"), _T("CDTV DMAC"), _T("Commodore"),
+		NULL, cdtv_init, NULL, NULL, ROMTYPE_CDTVDMAC | ROMTYPE_NOT, 0, 0, BOARD_AUTOCONFIG_Z2, true,
+		NULL, 0,
+		false, EXPANSIONTYPE_INTERNAL
+	},
+	//{
+	//	_T("cdtvscsi"), _T("CDTV SCSI"), _T("Commodore"),
+	//	NULL, cdtvscsi_init, NULL, cdtv_add_scsi_unit, ROMTYPE_CDTVSCSI | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_AFTER_Z2, true,
+	//	NULL, 0,
+	//	false, EXPANSIONTYPE_INTERNAL | EXPANSIONTYPE_SCSI
+	//},
+	{
+		_T("cdtvsram"), _T("CDTV SRAM"), _T("Commodore"),
+		NULL, cdtvsram_init, NULL, NULL, ROMTYPE_CDTVSRAM | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
+		NULL, 0,
+		false, EXPANSIONTYPE_INTERNAL,
+		0, 0, 0, false, NULL,
+		false, 0, cdtvsram_settings
+	},
+	//{
+	//	_T("cdtvcr"), _T("CDTV-CR"), _T("Commodore"),
+	//	NULL, cdtvcr_init, NULL, NULL, ROMTYPE_CDTVCR | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_AFTER_Z2, true,
+	//	NULL, 0,
+	//	false, EXPANSIONTYPE_INTERNAL
+	//},
+	//{
+	//	_T("scsi_a3000"), _T("A3000 SCSI"), _T("Commodore"),
+	//	NULL, a3000scsi_init, NULL, a3000_add_scsi_unit, ROMTYPE_SCSI_A3000 | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_AFTER_Z2, true,
+	//	NULL, 0,
+	//	false, EXPANSIONTYPE_INTERNAL | EXPANSIONTYPE_SCSI
+	//},
+	//{
+	//	_T("scsi_a4000t"), _T("A4000T SCSI"), _T("Commodore"),
+	//	NULL, a4000t_scsi_init, NULL, a4000t_add_scsi_unit, ROMTYPE_SCSI_A4000T | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
+	//	NULL, 0,
+	//	false, EXPANSIONTYPE_INTERNAL | EXPANSIONTYPE_SCSI
+	//},
+	{
 		_T("ide_mb"), _T("A600/A1200/A4000 IDE"), _T("Commodore"),
-		gayle_ide_init, NULL, gayle_add_ide_unit, ROMTYPE_MB_IDE | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
-		EXPANSIONTYPE_INTERNAL | EXPANSIONTYPE_IDE
+		NULL, gayle_ide_init, NULL, gayle_add_ide_unit, ROMTYPE_MB_IDE | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
+		NULL, 0,
+		false, EXPANSIONTYPE_INTERNAL | EXPANSIONTYPE_IDE,
+		0, 0, 0, false, NULL, false, 1
 	},
 	{
 		_T("pcmcia_mb"), _T("A600/A1200 PCMCIA"), _T("Commodore"),
-		gayle_pcmcia_init, NULL, gayle_add_pcmcia_unit, ROMTYPE_MB_PCMCIA | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
-		EXPANSIONTYPE_INTERNAL
+		NULL, gayle_pcmcia_init, NULL, NULL, ROMTYPE_MB_PCMCIA | ROMTYPE_NOT, 0, 0, BOARD_NONAUTOCONFIG_BEFORE, true,
+		NULL, 0,
+		false, EXPANSIONTYPE_INTERNAL
 	},
 
 	{

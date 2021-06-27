@@ -106,8 +106,9 @@ void draw_status_line_single (uae_u8 *buf, int y, int totalwidth)
 			if(track < 0)
 			  track = 0;
 			num1 = track / 100;
-			num2 = (track - num1 * 100) / 10;
-			num3 = track % 10;
+			num1 = (track - num1 * 100) / 10;
+			num2 = track % 10;
+			num3 = 13;
 			on = 1;
 			on_rgb = 0x666;
 			off_rgb = 0x666;
@@ -127,6 +128,31 @@ void draw_status_line_single (uae_u8 *buf, int y, int totalwidth)
 				num3 = gui_data.cpu_halted % 10;
 			}
 		} else {
+			if (gui_data.cd != -1)
+			{
+			/* CD */
+			num1 = -1;
+			num2 = 10;
+			num3 = 12;
+			switch (gui_data.cd) {
+				case 1:
+					on = 0;
+					off_rgb = 0x003;
+					break;
+				case 3:
+					on = 1;
+					on_rgb = 0x00c;
+					off_rgb = 0x003;
+					break;
+				case 4:
+					on = 1;
+					on_rgb = 0x0c0;
+					off_rgb = 0x030;
+					break;
+			}
+			}
+			else
+			{
 			/* Hard disk */
 			num1 = -1;
 			num2 = 11;
@@ -147,6 +173,7 @@ void draw_status_line_single (uae_u8 *buf, int y, int totalwidth)
 					on_rgb = 0xc00;
 					off_rgb = 0x300;
 					break;
+			}
 			}
 		}
   	c = xcolors[on ? on_rgb : off_rgb];

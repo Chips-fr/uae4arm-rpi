@@ -6721,6 +6721,9 @@ uae_u8 *restore_custom_extra (uae_u8 *src)
 	currprefs.cs_cd32c2p = changed_prefs.cs_cd32c2p = RBB;
 	currprefs.cs_cd32cd = changed_prefs.cs_cd32cd = RBB;
 	currprefs.cs_cd32nvram = changed_prefs.cs_cd32nvram = RBB;
+	currprefs.cs_cdtvcd = changed_prefs.cs_cdtvcd = RBB;
+	currprefs.cs_cdtvram = changed_prefs.cs_cdtvram = RBB;
+	RB;
 
 	currprefs.cs_df0idhw = changed_prefs.cs_df0idhw = RBB;
 	currprefs.cs_ide = changed_prefs.cs_ide = RB;
@@ -6753,6 +6756,9 @@ uae_u8 *save_custom_extra (int *len, uae_u8 *dstptr)
 	SB (currprefs.cs_cd32c2p);
 	SB (currprefs.cs_cd32cd);
 	SB (currprefs.cs_cd32nvram);
+	SB (currprefs.cs_cdtvcd ? 1 : 0);
+	SB (currprefs.cs_cdtvram ? 1 : 0);
+	SB (0);
 
 	SB (currprefs.cs_df0idhw ? 1 : 0);
 	SB (currprefs.cs_ide);
@@ -6783,6 +6789,7 @@ void check_prefs_changed_custom (void)
 	currprefs.cs_cd32cd = changed_prefs.cs_cd32cd;
 	currprefs.cs_cd32c2p = changed_prefs.cs_cd32c2p;
 	currprefs.cs_cd32nvram = changed_prefs.cs_cd32nvram;
+	currprefs.cs_cdtvcd = changed_prefs.cs_cdtvcd;
 	currprefs.cs_ide = changed_prefs.cs_ide;
 	currprefs.cs_pcmcia = changed_prefs.cs_pcmcia;
 	currprefs.cs_fatgaryrev = changed_prefs.cs_fatgaryrev;

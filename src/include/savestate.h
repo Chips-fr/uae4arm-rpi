@@ -111,6 +111,14 @@ extern uae_u8 *restore_akiko (uae_u8 *src);
 extern uae_u8 *save_akiko (int *len, uae_u8*);
 extern void restore_akiko_finish (void);
 
+extern uae_u8 *restore_cdtv (uae_u8 *src);
+extern uae_u8 *save_cdtv (int *len, uae_u8*);
+extern void restore_cdtv_finish(void);
+extern void restore_cdtv_final(void);
+
+extern uae_u8 *restore_cdtv_dmac (uae_u8 *src);
+extern uae_u8 *save_cdtv_dmac (int *len, uae_u8*);
+
 extern uae_u8 *restore_filesys (uae_u8 *src);
 extern uae_u8 *save_filesys (int num, int *len);
 extern uae_u8 *restore_filesys_common (uae_u8 *src);

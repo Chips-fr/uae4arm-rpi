@@ -284,6 +284,7 @@ struct uae_prefs {
   int sound_filter;
   int sound_filter_type;
 	int sound_volume_cd;
+	bool sound_cdaudio;
 
 	bool compfpu;
   int cachesize;
@@ -313,6 +314,7 @@ struct uae_prefs {
   int collision_level;
   int leds_on_screen;
   int fast_copper;
+  int scsi;
   int floppy_speed;
   int floppy_write_length;
 	int floppy_auto_ext2;
@@ -336,10 +338,13 @@ struct uae_prefs {
 	bool cs_cd32nvram;
 	bool cs_cd32fmv;
 	int cs_cd32nvram_size;
+	bool cs_cdtvcd;
+	bool cs_cdtvram;
 	int cs_ide;
 	bool cs_pcmcia;
 	int cs_fatgaryrev;
 	int cs_ramseyrev;
+	bool cs_cdtvcr;
 	bool cs_df0idhw;
 	bool cs_ciatodbug;
 	bool cs_z3autoconfig;
@@ -349,6 +354,7 @@ struct uae_prefs {
 
   TCHAR romfile[MAX_DPATH];
   TCHAR romextfile[MAX_DPATH];
+	TCHAR romextfile2[MAX_DPATH];
 	TCHAR flashfile[MAX_DPATH];
 	TCHAR cartfile[MAX_DPATH];
 	int cart_internal;

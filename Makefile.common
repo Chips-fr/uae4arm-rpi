@@ -30,6 +30,7 @@ OBJS =	\
 	$(EMU)/cd32_fmv.o \
 	$(EMU)/cd32_fmv_genlock.o \
 	$(EMU)/cdrom.o \
+	$(EMU)/cdtv.o \
 	$(EMU)/cfgfile.o \
 	$(EMU)/cia.o \
 	$(EMU)/crc32.o \
@@ -56,6 +57,7 @@ OBJS =	\
 	$(EMU)/hrtmon.rom.o \
 	$(EMU)/ide.o \
 	$(EMU)/inputdevice.o \
+	$(EMU)/isofs.o \
 	$(EMU)/keybuf.o \
 	$(EMU)/main.o \
 	$(EMU)/memory.o \
@@ -64,6 +66,7 @@ OBJS =	\
 	$(EMU)/rtc.o \
 	$(EMU)/savestate.o \
 	$(EMU)/scsi.o \
+	$(EMU)/scsiemul.o \
 	$(EMU)/statusline.o \
 	$(EMU)/traps.o \
 	$(EMU)/uaelib.o \

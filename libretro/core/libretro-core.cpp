@@ -70,6 +70,7 @@ static size_t save_state_file_size = 0;
 #define A500_ROM        "kick34005.A500"
 #define A600_ROM        "kick40063.A600"
 #define A1200_ROM       "kick40068.A1200"
+#define CDTV_ROM        "kick34005.CDTV"
 #define CD32_ROM        "kick40060.CD32"
 #define CD32_ROM_EXT    "kick40060.CD32.ext"
 
@@ -111,7 +112,7 @@ void retro_set_environment(retro_environment_t cb)
   cb( RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports );
 
   struct retro_variable variables[] = {
-      { "uae4arm_model",          "Model; Auto|A500|A600|A1200|CD32", },
+      { "uae4arm_model",          "Model; Auto|A500|A600|A1200|CDTV|CD32", },
       { "uae4arm_fastmem",        "Fast Mem; None|1 MB|2 MB|4 MB|8 MB", },
       { "uae4arm_resolution",     "Internal resolution; 640x270|320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270", },
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
@@ -408,8 +409,16 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
       {
          if ((strcasestr(RPATH,".cue") != NULL) || (strcasestr(RPATH,".ccd") != NULL) || (strcasestr(RPATH,".iso") != NULL))
          {
-            LOGI("[libretro-uae4arm]: Auto-model -> CD32 selected\n");
-            var.value = "CD32";
+            if (strcasestr(RPATH,"cdtv") != NULL)
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> CDTV selected\n");
+               var.value = "CDTV";
+            }
+            else
+            {
+               LOGI("[libretro-uae4arm]: Auto-model -> CD32 selected\n");
+               var.value = "CD32";
+            }
          }
          else if ((strcasestr(RPATH,"aga") != NULL) || (strcasestr(RPATH,"amiga1200") != NULL))
          {
@@ -422,7 +431,7 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
             {
                if (strcasestr(RPATH,"cd32") != NULL)
                {
-                  // Some whdload has cd32 in their name...
+                  // Some whdload have cd32 in their name...
                   LOGI("[libretro-uae4arm]: Auto-model -> A1200 selected\n");
                   var.value = "A1200";
                }
@@ -765,6 +774,29 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
          //strcpy(prefs->romfile, A1200_ROM);
          path_join(prefs->romfile, retro_system_directory, A1200_ROM);
+      }
+      else if (strcmp(var.value, "CDTV") == 0)
+      {
+         //prefs->cpu_type="68000";
+         prefs->cpu_model = 68000;
+         prefs->m68k_speed = M68K_SPEED_7MHZ_CYCLES;
+         prefs->cpu_compatible = 0;
+         prefs->chipmem_size = 2 * 0x80000;
+         prefs->address_space_24 = 1;
+         prefs->chipset_mask = CSMASK_ECS_AGNUS;
+         prefs->cs_compatible = CP_CDTV ; // todo
+         prefs->cs_rtc = 1;
+         prefs->cs_cdtvcd = prefs->cs_cdtvram = 1;
+         prefs->scsi = 1;
+         prefs->cs_df0idhw = 1;
+         prefs->cs_ksmirror_e0 = 0;
+         prefs->nr_floppies=0;
+         prefs->bogomem_size = 0;
+         prefs->cdslots[0].inuse = true;
+         prefs->cdslots[0].type = 1; //SCSI_UNIT_IMAGE
+         //strcpy(prefs->romfile, A500_ROM);
+         path_join(prefs->romfile,    retro_system_directory, A500_ROM);
+         path_join(prefs->romextfile, retro_system_directory, CDTV_ROM);
       }
       else if (strcmp(var.value, "CD32") == 0)
       {
