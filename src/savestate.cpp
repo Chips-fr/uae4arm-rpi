@@ -599,6 +599,12 @@ void restore_state (const TCHAR *filename)
 		else if (!_tcscmp (name, _T("CD32")))
 			end = restore_akiko (chunk);
 #endif
+#ifdef CDTV
+		else if (!_tcscmp(name, _T("CDTV")))
+		end = restore_cdtv(chunk);
+		else if (!_tcscmp(name, _T("DMAC")))
+		end = restore_cdtv_dmac(chunk);
+#endif
 		else if (!_tcscmp (name, _T("GAYL")))
 			end = restore_gayle (chunk);
 		else if (!_tcscmp (name, _T("IDE ")))
@@ -660,6 +666,9 @@ void savestate_restore_finish (void)
 	restore_audio_finish ();
 	restore_disk_finish ();
 	restore_akiko_finish ();
+#ifdef CDTV
+	restore_cdtv_finish();
+#endif
 #ifdef PICASSO96
 	restore_p96_finish ();
 #endif
@@ -851,6 +860,14 @@ static int save_state_internal (struct zfile *f, const TCHAR *description, int c
 	dst = save_akiko (&len, NULL);
 	save_chunk (f, dst, len, _T("CD32"), 0);
 	xfree (dst);
+#endif
+#ifdef CDTV
+	dst = save_cdtv(&len, NULL);
+	save_chunk(f, dst, len, _T("CDTV"), 0);
+	xfree(dst);
+	dst = save_cdtv_dmac(&len, NULL);
+	save_chunk(f, dst, len, _T("DMAC"), 0);
+	xfree(dst);
 #endif
 #ifdef ACTION_REPLAY
 	dst = save_action_replay (&len, NULL);

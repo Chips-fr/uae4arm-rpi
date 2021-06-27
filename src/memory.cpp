@@ -651,15 +651,32 @@ static bool load_extendedkickstart (const TCHAR *romextfile, int type)
 	if (type == 0) {
 		if (currprefs.cs_cd32cd) {
 			extendedkickmem_type = EXTENDED_ROM_CD32;
-    } else if (size > 300000) {
-    	extendedkickmem_type = EXTENDED_ROM_CD32;
-    } 
-  } else {
+		} else if (currprefs.cs_cdtvcd || currprefs.cs_cdtvram) {
+			extendedkickmem_type = EXTENDED_ROM_CDTV;
+		} else if (size > 300000) {
+			uae_u8 data[2] = { 0 };
+			zfile_fseek(f, off, SEEK_SET);
+			zfile_fread(data, sizeof(data), 1, f);
+			if (data[0] == 0x11 && data[1] == 0x11) {
+				if (need_uae_boot_rom(&currprefs) != 0xf00000)
+					extendedkickmem_type = EXTENDED_ROM_CDTV;
+			} else {
+				extendedkickmem_type = EXTENDED_ROM_CD32;
+			}
+		} else if (need_uae_boot_rom (&currprefs) != 0xf00000) {
+			extendedkickmem_type = EXTENDED_ROM_CDTV;
+		}	
+	} else {
 		extendedkickmem_type = type;
 	}
 	if (extendedkickmem_type) {
     zfile_fseek (f, off, SEEK_SET);
     switch (extendedkickmem_type) {
+    case EXTENDED_ROM_CDTV:
+			extendedkickmem_bank.label = _T("rom_f0");
+			mapped_malloc (&extendedkickmem_bank);
+			extendedkickmem_bank.start = 0xf00000;
+			break;
     case EXTENDED_ROM_CD32:
 			extendedkickmem_bank.label = _T("rom_e0");
 			mapped_malloc (&extendedkickmem_bank);
@@ -852,10 +869,17 @@ static int load_kickstart (void)
   	kickmem_bank.reserved_size = size;
   	if (filesize >= ROM_SIZE_512 * 2 && !extendedkickmem_type) {
 	    extendedkickmem_bank.reserved_size = ROM_SIZE_512;
-	    extendedkickmem_type = EXTENDED_ROM_KS;
-			extendedkickmem_bank.label = _T("rom_e0");
-			extendedkickmem_bank.start = 0xe00000;
-			mapped_malloc (&extendedkickmem_bank);
+	    if (currprefs.cs_cdtvcd || currprefs.cs_cdtvram) {
+	        extendedkickmem_type = EXTENDED_ROM_CDTV;
+	        extendedkickmem_bank.reserved_size *= 2;
+	        extendedkickmem_bank.label = _T("rom_f0");
+	        extendedkickmem_bank.start = 0xf00000;
+	    } else {
+	        extendedkickmem_type = EXTENDED_ROM_KS;
+	        extendedkickmem_bank.label = _T("rom_e0");
+	        extendedkickmem_bank.start = 0xe00000;
+	    }
+	    mapped_malloc (&extendedkickmem_bank);
 	    zfile_fseek (f, extpos, SEEK_SET);
 	    read_kickstart (f, extendedkickmem_bank.baseaddr, extendedkickmem_bank.allocated_size, 0, 1);
 	    extendedkickmem_bank.mask = extendedkickmem_bank.allocated_size - 1;
@@ -1104,7 +1128,8 @@ static void restore_roms(void)
   extendedkickmem_bank.reserved_size = 0;
 	extendedkickmem2_bank.reserved_size = 0;
 	extendedkickmem_type = 0;
-  load_extendedkickstart (currprefs.romextfile, 0);
+	load_extendedkickstart (currprefs.romextfile, 0);
+	load_extendedkickstart (currprefs.romextfile2, EXTENDED_ROM_CDTV);
 	kickmem_bank.mask = ROM_SIZE_512 - 1;
 	if (!load_kickstart ()) {
     if (_tcslen (currprefs.romfile) > 0) {
@@ -1197,6 +1222,7 @@ void memory_reset (void)
 	currprefs.cs_ksmirror_e0 = changed_prefs.cs_ksmirror_e0;
 	currprefs.cs_ksmirror_a8 = changed_prefs.cs_ksmirror_a8;
 	currprefs.cs_ciaoverlay = changed_prefs.cs_ciaoverlay;
+	currprefs.cs_cdtvram = changed_prefs.cs_cdtvram;
 	currprefs.cs_ide = changed_prefs.cs_ide;
 	currprefs.cs_fatgaryrev = changed_prefs.cs_fatgaryrev;
 	currprefs.cs_ramseyrev = changed_prefs.cs_ramseyrev;
@@ -1261,7 +1287,7 @@ void memory_reset (void)
   }
 	if (currprefs.cs_rtc == 3) // A2000 clock
 		map_banks (&clock_bank, 0xD8, 4, 0);
-	if (currprefs.cs_rtc == 1 || currprefs.cs_rtc == 2)
+	if (currprefs.cs_rtc == 1 || currprefs.cs_rtc == 2 || currprefs.cs_cdtvram)
     map_banks (&clock_bank, 0xDC, 1, 0);
 	else if (currprefs.cs_ksmirror_a8 || currprefs.cs_ide > 0 || currprefs.cs_pcmcia)
 		map_banks (&clock_bank, 0xDC, 1, 0); /* none clock */
@@ -1301,6 +1327,11 @@ void memory_reset (void)
     case EXTENDED_ROM_KS:
 		  map_banks_set(&extendedkickmem_bank, 0xE0, 8, 0);
       break;
+#ifdef CDTV
+	case EXTENDED_ROM_CDTV:
+		map_banks_set(&extendedkickmem_bank, 0xF0, extendedkickmem_bank.allocated_size == 2 * ROM_SIZE_512 ? 16 : 8, 0);
+		break;
+#endif
 #ifdef CD32
 	  case EXTENDED_ROM_CD32:
 		  map_banks_set(&extendedkickmem_bank, 0xE0, 8, 0);

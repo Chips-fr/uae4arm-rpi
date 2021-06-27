@@ -655,7 +655,7 @@ void gui_led (int led, int on, int brightness)
 
 void gui_flicker_led (int led, int unitnum, int status)
 {
-  static int hd_resetcounter;
+  static int hd_resetcounter , cd_resetcounter;
 
   switch(led)
   {
@@ -674,6 +674,16 @@ void gui_flicker_led (int led, int unitnum, int status)
       }
       gui_data.hd = status;
       hd_resetcounter = 2;
+      break;
+
+    case LED_CD:
+      if (status == 0) {
+  	    cd_resetcounter--;
+  	    if (cd_resetcounter > 0)
+  	      return;
+      }
+      gui_data.cd = status;
+      cd_resetcounter = 2;
       break;
   }
 #ifdef RASPBERRY

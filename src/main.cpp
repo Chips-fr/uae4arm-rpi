@@ -661,7 +661,7 @@ void leave_program (void)
 
 static int real_main2 (int argc, TCHAR **argv)
 {
-  printf("Uae4arm v0.5 for Raspberry Pi by Chips\n");
+  printf("Uae4arm v1.0 by Chips\n");
   printf("Based on uae version: %i.%i.%i\n",UAEMAJOR,UAEMINOR,UAESUBREV);
 #ifdef GIT_VERSION
 

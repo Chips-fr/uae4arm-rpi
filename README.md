@@ -75,12 +75,14 @@ Two joysticks support. Switch automatically between mouse or second joystick whe
 
 L & R button can change DF0: current disk for multiple disk roms. Each disk should be named with "(Disk x of y)"
 
-Kickstarts supported in options configuration:
+Kickstarts supported:
 
 |System|Version|Filename|Size|MD5|
 |---|---|---|---|---|
 |A500|KS v1.3 rev 34.005|**kick34005.A500**|262 144|82a21c1890cae844b3df741f2762d48d|
 |A600|KS v3.1 rev 40.063|**kick40063.A600**|524 288|e40a5dfb3d017ba8779faba30cbd1c8e|
 |A1200|KS v3.1 rev 40.068|**kick40068.A1200**|524 288|646773759326fbac3b2311fd8c8793ee|
+|CDTV|Extended ROM v1.00|**kick34005.CDTV**|262 144|89da1838a24460e4b93f4f0c5d92d48d|
 |CD32|KS v3.1 rev 40.060|**kick40060.CD32**|524 288|5f8924d013dd57a89cf349f4cdedc6b1|
 |CD32|Extended rev 40.060|**kick40060.CD32.ext**|524 288|bb72565701b1b6faece07d68ea5da639|
+

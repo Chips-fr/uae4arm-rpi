@@ -14,11 +14,13 @@
 
 #include "traps.h"
 #include "blkdev.h"
+#include "scsidev.h"
 #include "savestate.h"
 #include "crc32.h"
 #include "td-sdl/thread.h"
 #include "execio.h"
 #include "zfile.h"
+#include "scsi.h"
 #include "fsdb.h"
 
 #define PRE_INSERT_DELAY (3 * (currprefs.ntscmode ? 60 : 50))
@@ -101,6 +103,13 @@ static struct cd_toc *gettoc (int unitnum, struct cd_toc_head *th, int block)
 	return &th->toc[th->last_track_offset];
 }
 
+int cdtracknumber(struct cd_toc_head *th, int block)
+{
+	struct cd_toc *t = gettoc(-1, th, block);
+	if (!t)
+		return -1;
+	return t->track;
+}
 int isaudiotrack (struct cd_toc_head *th, int block)
 {
 	struct cd_toc *t = gettoc (-1, th, block);
@@ -118,8 +127,16 @@ static int cdscsidevicetype[MAX_TOTAL_SCSI_DEVICES];
 static struct device_functions *devicetable[] = {
 	NULL,
 	&devicefunc_cdimage,
-  NULL,
-  NULL,
+#ifdef WITH_SCSI_IOCTL
+	&devicefunc_scsi_ioctl,
+#else
+        NULL,
+#endif
+#ifdef WITH_SCSI_SPTI
+	&devicefunc_scsi_spti,
+#else
+        NULL,
+#endif
 };
 #define NUM_DEVICE_TABLE_ENTRIES 4
 static int driver_installed[NUM_DEVICE_TABLE_ENTRIES];
@@ -146,6 +163,18 @@ static void install_driver (int flags)
 				  st->device_func = devicetable[SCSI_UNIT_IMAGE];
 				  st->scsiemu = true;
 				  break;
+				case SCSI_UNIT_IOCTL:
+				  st->device_func = devicetable[SCSI_UNIT_IOCTL];
+				  st->scsiemu = true;
+				break;
+				case SCSI_UNIT_SPTI:
+				  //if (currprefs.win32_uaescsimode == UAESCSI_CDEMU) {
+				  //	st->device_func = devicetable[SCSI_UNIT_IOCTL];
+				  //	st->scsiemu = true;
+				  //} else {
+				  //	st->device_func = devicetable[SCSI_UNIT_SPTI];
+				  //}
+				break;
 			}
 			// do not default to image mode if unit 1+ and automount
 			if (i == 0) {
@@ -206,10 +235,25 @@ void blkdev_fix_prefs (struct uae_prefs *p)
 	}
 
 	for (int i = 0; i < MAX_TOTAL_SCSI_DEVICES; i++) {
-		if (cdscsidevicetype[i] != SCSI_UNIT_DEFAULT)
+		if (cdscsidevicetype[i] != SCSI_UNIT_DEFAULT && (currprefs.scsi == 0))
 			continue;
 		if (p->cdslots[i].inuse || p->cdslots[i].name[0]) {
-			cdscsidevicetype[i] = SCSI_UNIT_IMAGE;
+			TCHAR *name = p->cdslots[i].name;
+			if (_tcslen (name) == 3 && name[1] == ':' && name[2] == '\\') {
+				//if (currprefs.scsi && (currprefs.win32_uaescsimode == UAESCSI_SPTI || currprefs.win32_uaescsimode == UAESCSI_SPTISCAN))
+				//	cdscsidevicetype[i] = SCSI_UNIT_SPTI;
+				//else
+					cdscsidevicetype[i] = SCSI_UNIT_IOCTL;
+			} else {
+				cdscsidevicetype[i] = SCSI_UNIT_IMAGE;
+			}
+		} else if (currprefs.scsi) {
+			//if (currprefs.win32_uaescsimode == UAESCSI_CDEMU)
+			//	cdscsidevicetype[i] = SCSI_UNIT_IOCTL;
+			//else
+				cdscsidevicetype[i] = SCSI_UNIT_SPTI;
+		} else {
+			cdscsidevicetype[i] = SCSI_UNIT_IOCTL;
 		}
 	}
 
@@ -328,9 +372,12 @@ static int get_standard_cd_unit2 (struct uae_prefs *p, cd_standard_unit csu)
 	int isaudio = 0;
 	if (p->cdslots[unitnum].name[0] || p->cdslots[unitnum].inuse) {
 		if (p->cdslots[unitnum].name[0]) {
-			device_func_init (SCSI_UNIT_IMAGE);
-			if (!sys_command_open_internal (unitnum, p->cdslots[unitnum].name, csu))
-				goto fallback;
+			device_func_init (SCSI_UNIT_IOCTL);
+			if (!sys_command_open_internal (unitnum, p->cdslots[unitnum].name, csu)) {
+				device_func_init (SCSI_UNIT_IMAGE);
+				if (!sys_command_open_internal (unitnum, p->cdslots[unitnum].name, csu))
+					goto fallback;
+			}
 		} else {
 			goto fallback;
 		}
@@ -519,6 +566,15 @@ static void check_changes (int unitnum)
 		if (st->wasopen) {
 			st->device_func->closedev (unitnum);
 			st->wasopen = -1;
+			if (currprefs.scsi)  {
+				scsi_do_disk_change (unitnum, 0, &pollmode);
+				if (pollmode)
+					st->imagechangetime = 8 * 50;
+				if (filesys_do_disk_change (unitnum, 0)) {
+					st->imagechangetime = st->newimagefile[0] ? 3 * 50 : 0;
+					pollmode = 0;
+				}
+			}
 		}
 		write_log (_T("CD: eject (%s) open=%d\n"), pollmode ? _T("slow") : _T("fast"), st->wasopen ? 1 : 0);
 
@@ -548,6 +604,17 @@ static void check_changes (int unitnum)
 			st->wasopen = 1;
 			write_log (_T("-> device reopened\n"));
 		}
+	}
+	if (currprefs.scsi && st->wasopen) {
+		struct device_info di;
+		st->device_func->info (unitnum, &di, 0, -1);
+		int pollmode;
+		if (gotsem) {
+			freesem (unitnum);
+			gotsem = false;
+		}
+		scsi_do_disk_change (unitnum, 1, &pollmode);
+		filesys_do_disk_change (unitnum, 1);
 	}
 	st->mediawaschanged = true;
 	if (gotsem) {
@@ -719,7 +786,7 @@ int sys_command_cd_qcode (int unitnum, uae_u8 *buf, int sector, bool all)
 };
 
 /* read table of contents */
-int sys_command_cd_toc (int unitnum, struct cd_toc_head *toc)
+int sys_command_cd_toc (int unitnum, struct cd_toc_head *th)
 {
 	int v;
 	if (failunit (unitnum))
@@ -729,14 +796,37 @@ int sys_command_cd_toc (int unitnum, struct cd_toc_head *toc)
 	if (state[unitnum].device_func->toc == NULL) {
 		uae_u8 buf[4 + 8 * 103];
 		int size = sizeof buf;
-		uae_u8 cmd [10] = { 0x43,0,2,0,0,0,0,(uae_u8)(size>>8),(uae_u8)(size&0xff),0};
-		if (do_scsi (unitnum, cmd, sizeof cmd, buf, size)) {
-			// toc parse to do
-			v = 0;
+		uae_u8 cmd [10] = { 0x43,0,0,0,0,0,0,(uae_u8)(size>>8),(uae_u8)(size&0xff),0};
+		v = do_scsi(unitnum, cmd, sizeof cmd, buf, size);
+		if (v > 0) {
+			th->first_track = buf[2];
+			th->last_track = buf[3];
+			th->tracks = th->last_track - th->first_track + 1;
+			th->firstaddress = 0;
+			th->points = th->tracks + 1;
+			int len = (buf[0] << 8) | buf[1];
+			uae_u8 *p = buf + 4;
+			if ((th->tracks + 1) * 8 > len) {
+				freesem(unitnum);
+				return 0;
+			}
+			struct cd_toc *t = &th->toc[th->first_track];
+			for (int i = th->first_track; i <= th->last_track; i++) {
+				t->adr = p[1] >> 4;
+				t->control = p[1] & 15;
+				t->point = t->track = p[2];
+				t->paddress = (p[5] << 16) | (p[6] << 8) | (p[7] << 0);
+				p += 8;
+				t++;
+			}
+			th->lastaddress = (p[5] << 16) | (p[6] << 8) | (p[7] << 0);
+			t->track = t->point = 0xaa;
+			th->first_track_offset = 0;
+			th->last_track_offset = th->last_track;
+			v = 1;
 		}
-		v = 0;
 	} else {
-		v = state[unitnum].device_func->toc (unitnum, toc);
+		v = state[unitnum].device_func->toc (unitnum, th);
 	}
 	freesem (unitnum);
 	return v;
@@ -753,6 +843,12 @@ int sys_command_cd_read (int unitnum, uae_u8 *data, int block, int size)
 	if (state[unitnum].device_func->read == NULL) {
 		uae_u8 cmd1[12] = { 0x28, 0, (uae_u8)(block >> 24), (uae_u8)(block >> 16), (uae_u8)(block >> 8), (uae_u8)(block >> 0), 0, (uae_u8)(size >> 8), (uae_u8)(size >> 0), 0, 0, 0 };
 		v = do_scsi (unitnum, cmd1, sizeof cmd1, data, size * 2048);
+#if 0
+		if (!v) {
+			uae_u8 cmd2[12] = { 0xbe, 0, block >> 24, block >> 16, block >> 8, block >> 0, size >> 16, size >> 8, size >> 0, 0x10, 0, 0 };
+			v = do_scsi (unitnum, cmd2, sizeof cmd2, data, size * 2048);
+		}
+#endif
 	} else {
 		v = state[unitnum].device_func->read (unitnum, data, block, size);
 	}
@@ -1104,7 +1200,46 @@ static int scsiemudrv (int unitnum, uae_u8 *cmd)
 	return v;
 }
 
-static int scsi_read_cd (int unitnum, uae_u8 *cmd, uae_u8 *data, struct device_info *di)
+static int scsi_read_cd_da(int unitnum, uae_u8 *cmd, uae_u8 *data, struct device_info *di)
+{
+	struct blkdevstate *st = &state[unitnum];
+	int msf = cmd[0] == 0xd9;
+	int start = msf ? msf2lsn(rl(cmd + 2) & 0x00ffffff) : rl(cmd + 2);
+	int len = rl(cmd + 6) & 0x00ffffff;
+	int sectorsize;
+	uae_u8 subcode = cmd[10];
+	switch (subcode)
+	{
+	case 0:
+		sectorsize = 2352;
+		break;
+	case 1:
+		sectorsize = 2368;
+		break;
+	case 2:
+		sectorsize = 2448;
+		break;
+	case 3:
+		sectorsize = 96;
+		break;
+	default:
+		return -1;
+	}
+	if (msf) {
+		int end = msf2lsn(len);
+		len = end - start;
+		if (len < 0)
+			return -1;
+	}
+	if (len == 0)
+		return 0;
+	int v = sys_command_cd_rawread(unitnum, data, start, len, sectorsize);
+	if (v > 0)
+		st->current_pos = start + len;
+	return v;
+}
+
+static int scsi_read_cd(int unitnum, uae_u8 *cmd, uae_u8 *data, struct device_info *di)
 {
 	struct blkdevstate *st = &state[unitnum];
 	int msf = cmd[0] == 0xb9;
@@ -1245,6 +1380,16 @@ int scsi_cd_emulate (int unitnum, uae_u8 *cmdbuf, int scsi_cmd_len,
 		}
 	}
 	break;
+	case 0xd8: // READ CD-DA
+	case 0xd9: // READ CD-DA MSF
+		if (nodisk(&di))
+			goto nodisk;
+		scsi_len = scsi_read_cd_da(unitnum, cmdbuf, scsi_data, &di);
+		if (scsi_len == -2)
+			goto notdatatrack;
+		if (scsi_len == -1)
+			goto errreq;
+		break;
 	case 0xbe: // READ CD
 	case 0xb9: // READ CD MSF
 		if (nodisk (&di))
@@ -2054,7 +2199,7 @@ uae_u8 *save_cd (int num, int *len)
 	memset(st->play_qcode, 0, SUBQ_SIZE);
 	if (!currprefs.cdslots[num].inuse || num >= MAX_TOTAL_SCSI_DEVICES)
 		return NULL;
-	if (!currprefs.cs_cd32cd)
+	if (!currprefs.cs_cd32cd && !currprefs.cs_cdtvcd && !currprefs.scsi)
 		return NULL;
 	dstbak = dst = xmalloc (uae_u8, 4 + 256 + 4 + 4);
 	save_u32 (4 | 8);

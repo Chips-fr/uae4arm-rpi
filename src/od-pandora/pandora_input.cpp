@@ -294,7 +294,7 @@ static int init_joystick (void)
   nr_joysticks = SDL_NumJoysticks ();
   if (nr_joysticks > MAX_INPUT_DEVICES)
     nr_joysticks = MAX_INPUT_DEVICES;
-  for (int cpt; cpt < nr_joysticks; cpt++)
+  for (int cpt = 0; cpt < nr_joysticks; cpt++)
   {
     Joysticktable[cpt] = SDL_JoystickOpen (cpt);
     strncpy(JoystickName[cpt],SDL_JoystickName(cpt), sizeof JoystickName[cpt] - 1);
@@ -319,7 +319,7 @@ static int init_joystick (void)
 static void close_joystick (void)
 {
 #ifndef __LIBRETRO__
-  for (int cpt; cpt < nr_joysticks; cpt++)
+  for (int cpt = 0; cpt < nr_joysticks; cpt++)
   {
 	SDL_JoystickClose (Joysticktable[cpt]);
   }

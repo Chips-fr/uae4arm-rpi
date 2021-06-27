@@ -25,6 +25,7 @@ struct fs_dirhandle
 	union {
 		struct zdirectory *zd;
 		struct my_opendir_s *od;
+		struct cd_opendir_s *isod;
 	};
 };
 struct fs_filehandle
@@ -33,6 +34,7 @@ struct fs_filehandle
 	union {
 		struct zfile *zf;
 		struct my_openfile_s *of;
+		struct cd_openfile_s *isof;
 	};
 };
 

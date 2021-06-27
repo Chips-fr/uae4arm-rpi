@@ -8,9 +8,11 @@
 #include "audio.h"
 #include "gfxboard.h"
 #include "scsi.h"
+#include "scsidev.h"
 #include "cd32_fmv.h"
 #include "akiko.h"
 #include "gayle.h"
+#include "cdtv.h"
 #include "disk.h"
 #include "cia.h"
 #include "inputdevice.h"
@@ -48,6 +50,15 @@ void devices_reset(int hardreset)
 	DISK_reset ();
 	CIA_reset ();
 	gayle_reset (0);
+#ifdef SCSIEMU
+	//scsi_reset();
+	scsidev_reset();
+	scsidev_start_threads();
+#endif
+#ifdef FILESYS
+	filesys_prepare_reset();
+	filesys_reset();
+#endif
 #ifdef JIT
   compemu_reset ();
 #endif
@@ -77,6 +88,8 @@ void devices_hsync(void)
 	cd32_fmv_hsync_handler();
 #endif
 
+  CDTV_hsync_handler();
+
   DISK_hsync ();
   if (currprefs.produce_sound)
   	audio_hsync ();
@@ -91,6 +104,7 @@ void devices_rethink(void)
 	rethink_akiko ();
 	rethink_cd32fmv();
 #endif
+	rethink_cdtv();
 	rethink_gayle ();
 	rethink_uae_int();
 }
@@ -106,10 +120,6 @@ void reset_all_systems (void)
 
 #ifdef PICASSO96
   picasso_reset ();
-#endif
-#ifdef FILESYS
-  filesys_prepare_reset ();
-  filesys_reset ();
 #endif
 	init_shm ();
   memory_reset ();
@@ -138,6 +148,7 @@ void do_leave_program (void)
 	akiko_free ();
 	cd32_fmv_free();
 #endif
+	cdtv_free();
  	gui_exit ();
 #ifdef USE_SDL
   SDL_Quit ();

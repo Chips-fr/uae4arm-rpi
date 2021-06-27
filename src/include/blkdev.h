@@ -9,6 +9,7 @@
 #define SCSI_UNIT_DEFAULT 0
 #define SCSI_UNIT_IMAGE 1
 #define SCSI_UNIT_IOCTL 2
+#define SCSI_UNIT_SPTI 3
 
 //#define device_debug write_log
 #define device_debug
@@ -216,6 +217,8 @@ extern void blkdev_cd_change (int unitnum, const TCHAR *name);
 
 extern void blkdev_entergui (void);
 extern void blkdev_exitgui (void);
+
+bool filesys_do_disk_change (int, bool);
 
 extern struct device_functions devicefunc_cdimage;
 

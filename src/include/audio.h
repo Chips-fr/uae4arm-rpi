@@ -37,6 +37,22 @@ void set_audio(void);
 int audio_activate(void);
 void audio_deactivate (void);
 
+typedef void(*CDA_CALLBACK)(int, void*);
+typedef bool(*SOUND_STREAM_CALLBACK)(int, void*);
+
+struct cd_audio_state
+{
+	uae_s16 *cda_bufptr;
+	int cda_length, cda_userdata;
+	CDA_CALLBACK cda_next_cd_audio_buffer_callback;
+	void *cb_data;
+	int cda_volume[2];
+	int cda_streamid = -1;
+};
+
+extern void audio_cda_new_buffer(struct cd_audio_state *cas, uae_s16 *buffer, int length, int userdata, CDA_CALLBACK next_cd_audio_buffer_callback, void *cb_data);
+extern void audio_cda_volume(struct cd_audio_state *cas, int left, int right);
+
 extern int sound_cd_volume[2];
 
 #define AUDIO_CHANNELS_PAULA 4

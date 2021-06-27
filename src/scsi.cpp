@@ -145,6 +145,8 @@ bool scsi_emulate_analyze (struct scsi_data *sd)
 	break;
 	case 0xbe: // READ CD
 	case 0xb9: // READ CD MSF
+	case 0xd8: // READ CD-DA
+	case 0xd9: // READ CD-DA MSF
 		if (sd->device_type != UAEDEV_CD)
 			goto nocmd;
 		tmp_len = (sd->cmd[6] << 16) | (sd->cmd[7] << 8) | sd->cmd[8];

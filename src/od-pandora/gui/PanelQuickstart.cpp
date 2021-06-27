@@ -83,10 +83,13 @@ static struct amigamodels amodels[] = {
 	     "CD32", 
 	     "CD32 with Full Motion Video cartridge",
 	     "\0" } },
+	{ 3, "CDTV", { 
+	     "CDTV",
+	     "\0" } },
 	{ -1 }
 };
 
-static const int numModels = 6;
+static const int numModels = 7;
 static int numModelConfigs = 0;
 static bool bIgnoreListChange = true;
 
@@ -124,6 +127,7 @@ static void SetControlState(int model)
       break;
     
     case 5: // CD32
+    case 6: // CDTV
       // No floppy drive available, CD available
       df0Editable = false;
       df1Visible = false;
@@ -172,6 +176,7 @@ static void AdjustPrefs(void)
       break;
     
     case 5: // CD32
+    case 6: // CDTV
       // No floppy drive available, CD available
       changed_prefs.floppyslots[0].dfxtype = DRV_NONE;
       changed_prefs.floppyslots[1].dfxtype = DRV_NONE;
@@ -242,6 +247,11 @@ static void SetModelFromConfig(void)
         quickstart_conf = 0;
       break;
       
+    case CP_CDTV:
+      quickstart_model = 6;
+      quickstart_conf = 0;
+      break;
+
     default:
       if(changed_prefs.cpu_model == 68000)
         quickstart_model = 0;
