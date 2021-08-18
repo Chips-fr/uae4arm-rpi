@@ -405,6 +405,8 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
    {
       LOGI("[libretro-uae4arm]: Got model: %s.\n", var.value);
 
+      prefs->nr_floppies=1;
+
       if (strcmp(var.value, "Auto") == 0)
       {
          if ((strcasestr(RPATH,".cue") != NULL) || (strcasestr(RPATH,".ccd") != NULL) || (strcasestr(RPATH,".iso") != NULL))
@@ -748,6 +750,8 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
 
           // Temp: Add automatically 8 MBytes of Fast...
           prefs->fastmem[0].size = 0x100000 * 8;
+          // And de-activate floppy
+          prefs->nr_floppies=0;
       }
 
       if (strcmp(var.value, "A600") == 0)

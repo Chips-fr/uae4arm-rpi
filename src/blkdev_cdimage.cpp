@@ -435,7 +435,7 @@ static void audio_unpack (struct cdunit *cdu, struct cdtoc *t)
 		sleep_millis(10);
 }
 
-
+#if 0
 static void next_cd_audio_buffer_callback(int bufnum, void *params)
 {
 	struct cdunit *cdu = (struct cdunit*)params;
@@ -453,6 +453,7 @@ static void next_cd_audio_buffer_callback(int bufnum, void *params)
 	}
 	uae_sem_post(&play_sem);
 }
+#endif
 
 static int *cdda_play_func (void *v)
 {

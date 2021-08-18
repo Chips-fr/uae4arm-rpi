@@ -233,7 +233,7 @@ endif
 
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -O0 -g
+	CFLAGS += -O0 -g -DWITH_LOGGING
 else
 	CFLAGS += -O3 -fomit-frame-pointer -finline -fno-builtin
 endif
@@ -245,7 +245,7 @@ ifneq ($(AARCH64), 1)
 endif
 
 DEFS += -DROM_PATH_PREFIX=\"./\" -DDATA_PREFIX=\"./data/\" -DSAVE_PREFIX=\"./saves/\"
-DEFS += -DGP2X -DPANDORA -DRASPBERRY -DWITH_INGAME_WARNING
+DEFS += -DPANDORA -DRASPBERRY -DWITH_INGAME_WARNING
 
 ifeq ($(USE_PICASSO96), 1)
 	DEFS += -DPICASSO96
@@ -257,7 +257,7 @@ endif
 
 DEFINES += -D__LIBRETRO__ $(DEFS) $(MORE_CFLAGS)
 #-std=gnu99 
-CFLAGS += $(DEFINES) -DRETRO=1 -DINLINE="inline" $(CPU_FLAGS) -fexceptions -fpermissive
+CFLAGS += $(DEFINES) -DINLINE="inline" $(CPU_FLAGS) -fexceptions -fpermissive
 
 include Makefile.common
 

@@ -55,10 +55,6 @@ void devices_reset(int hardreset)
 	scsidev_reset();
 	scsidev_start_threads();
 #endif
-#ifdef FILESYS
-	filesys_prepare_reset();
-	filesys_reset();
-#endif
 #ifdef JIT
   compemu_reset ();
 #endif
@@ -120,6 +116,10 @@ void reset_all_systems (void)
 
 #ifdef PICASSO96
   picasso_reset ();
+#endif
+#ifdef FILESYS
+	filesys_prepare_reset();
+	filesys_reset();
 #endif
 	init_shm ();
   memory_reset ();

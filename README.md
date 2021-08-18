@@ -20,7 +20,7 @@ How to compile for raspberry:
       sudo apt-get install libmpeg2-4-dev
       sudo apt-get install autoconf
 
-   Then for Raspberry Pi 2 & 3:  
+   Then for Raspberry Pi 2, 3 & 4:
 
       make
 

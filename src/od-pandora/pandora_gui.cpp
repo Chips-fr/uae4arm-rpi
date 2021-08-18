@@ -618,31 +618,43 @@ void gui_led (int led, int on, int brightness)
    
    ioctl(0, KDGETLED, &kbd_led_status);
    
-   // Handle floppy led status
-   if (led == LED_DF0 || led == LED_DF1 || led == LED_DF2 || led == LED_DF3)
-   { 
-     if (currprefs.kbd_led_num == led || currprefs.kbd_led_num == LED_DFs)
-     {  
-        if (on) kbd_led_status |= LED_NUM; else kbd_led_status &= ~LED_NUM;
-     }
-     if (currprefs.kbd_led_scr == led || currprefs.kbd_led_scr == LED_DFs)
-     {  
-        if (on) kbd_led_status |= LED_SCR; else kbd_led_status &= ~LED_SCR;
-     }
-   }
+	// Handle floppy led status
+	if (led == LED_DF0 || led == LED_DF1 || led == LED_DF2 || led == LED_DF3)
+	{ 
+		if (currprefs.kbd_led_num == led)
+		{  
+			if (on) 
+			  kbd_led_status |= LED_NUM;
+			else 
+			  kbd_led_status &= ~LED_NUM;
+		}
+		if (currprefs.kbd_led_scr == led)
+		{  
+			if (on) 
+			  kbd_led_status |= LED_SCR;
+			else 
+			  kbd_led_status &= ~LED_SCR;
+		}
+	}
    
-   // Handle power, hd/cd led status
-   if (led == LED_POWER || led == LED_HD || led == LED_CD)
-   { 
-     if (currprefs.kbd_led_num == led)
-     {   
-         if (on) kbd_led_status |= LED_NUM; else kbd_led_status &= ~LED_NUM;
-     }
-     if (currprefs.kbd_led_scr == led)
-     {   
-         if (on) kbd_led_status |= LED_SCR; else kbd_led_status &= ~LED_SCR;
-     }
-   }
+	// Handle power, hd/cd led status
+	if (led == LED_POWER || led == LED_HD || led == LED_CD)
+	{ 
+		if (currprefs.kbd_led_num == led)
+		{   
+			if (on) 
+			  kbd_led_status |= LED_NUM;
+			else 
+			  kbd_led_status &= ~LED_NUM;
+		}
+		if (currprefs.kbd_led_scr == led)
+		{   
+			if (on) 
+			  kbd_led_status |= LED_SCR;
+			else 
+			  kbd_led_status &= ~LED_SCR;
+		}
+	}
   
   // Handle all LEDs off
   if (led == LED_ALL) {
