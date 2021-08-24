@@ -762,7 +762,13 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->m68k_speed = M68K_SPEED_7MHZ_CYCLES;
          prefs->cpu_compatible = 0;
          prefs->address_space_24 = 1;
+         prefs->waiting_blits = 1;
          prefs->chipset_mask = CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         prefs->cs_compatible = CP_A600;
+         prefs->cs_ksmirror_a8 = 1;
+         prefs->cs_ciaoverlay = 0;
+         prefs->cs_ide = IDE_A600A1200;
+         prefs->cs_pcmcia = 1;
          //strcpy(prefs->romfile, A600_ROM);
          path_join(prefs->romfile, retro_system_directory, A600_ROM);
       }
@@ -775,7 +781,15 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->m68k_speed = M68K_SPEED_14MHZ_CYCLES;
          prefs->cpu_compatible = 0;
          prefs->address_space_24 = 1;
+         prefs->waiting_blits = 1;
          prefs->chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         prefs->sound_filter_type = 1;
+         prefs->cs_compatible = CP_A1200;
+         prefs->cs_ksmirror_a8 = 1;
+         prefs->cs_ciaoverlay = 0;
+         prefs->cs_rtc = 1;
+         prefs->cs_ide = IDE_A600A1200;
+         prefs->cs_pcmcia = 1;
          //strcpy(prefs->romfile, A1200_ROM);
          path_join(prefs->romfile, retro_system_directory, A1200_ROM);
       }
@@ -787,8 +801,9 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->cpu_compatible = 0;
          prefs->chipmem_size = 2 * 0x80000;
          prefs->address_space_24 = 1;
+         prefs->waiting_blits = 1;
          prefs->chipset_mask = CSMASK_ECS_AGNUS;
-         prefs->cs_compatible = CP_CDTV ; // todo
+         prefs->cs_compatible = CP_CDTV;
          prefs->cs_rtc = 1;
          prefs->cs_cdtvcd = prefs->cs_cdtvram = 1;
          prefs->scsi = 1;
@@ -815,7 +830,12 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->m68k_speed = M68K_SPEED_14MHZ_CYCLES;
          prefs->cpu_compatible = 0;
          prefs->address_space_24 = 1;
+         prefs->waiting_blits = 1;
          prefs->chipset_mask = CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS;
+         prefs->cs_compatible = CP_CD32;
+         prefs->cs_ksmirror_a8 = 1;
+         prefs->cs_ciaoverlay = 0;
+         prefs->sound_filter_type = 1;
          //strcpy(prefs->romfile, CD32_ROM);
          path_join(prefs->romfile,    retro_system_directory, CD32_ROM);
          path_join(prefs->romextfile, retro_system_directory, CD32_ROM_EXT);
@@ -824,7 +844,6 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->cdslots[0].inuse = true;
          prefs->cdslots[0].type = SCSI_UNIT_IMAGE;
          prefs->cs_cd32c2p = prefs->cs_cd32cd = prefs->cs_cd32nvram = true;
-         prefs->cs_compatible = CP_CD32;
          prefs->nr_floppies=0;
          prefs->bogomem_size = 0;
          prefs->jports[1].mode = JSEM_MODE_JOYSTICK_CD32;
@@ -838,7 +857,11 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
          prefs->cpu_compatible = 0;
          prefs->chipmem_size = 2 * 0x80000;
          prefs->address_space_24 = 1;
+         prefs->waiting_blits = 1;
          prefs->chipset_mask = CSMASK_ECS_AGNUS;
+         prefs->cs_compatible = CP_A500;
+         if (prefs->bogomem_size || prefs->chipmem_size > 0x80000 || prefs->fastmem[0].size)
+                  prefs->cs_rtc = 1;
          //strcpy(prefs->romfile, A500_ROM);
          path_join(prefs->romfile, retro_system_directory, A500_ROM);
       }
