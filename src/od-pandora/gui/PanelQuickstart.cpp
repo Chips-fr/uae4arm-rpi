@@ -159,7 +159,7 @@ static void AdjustPrefs(void)
 {
   int old_cs = changed_prefs.cs_compatible;
   
-  if (quickstart_model > 0)
+  //if (quickstart_model > 0)
     built_in_prefs (&changed_prefs, quickstart_model, quickstart_conf, 0, 0);
   switch(quickstart_model) {
     case 0: // A500
@@ -185,8 +185,8 @@ static void AdjustPrefs(void)
       break;
   }
   
-  if(emulating && old_cs != changed_prefs.cs_compatible)
-    uae_restart(-1, NULL);
+  //if(emulating && old_cs != changed_prefs.cs_compatible)
+  //  uae_restart(-1, NULL);
 }
 
 
@@ -768,7 +768,10 @@ void InitPanelQuickstart(const struct _ConfigCategory& category)
   cboConfig->setSelected(quickstart_conf);
   SetControlState(quickstart_model);
   
-  SetModelFromConfig();
+  //SetModelFromConfig();
+  // Only change the current prefs if we're not already emulating
+  if (!emulating)
+    AdjustPrefs();
   
   RefreshPanelQuickstart();
 }

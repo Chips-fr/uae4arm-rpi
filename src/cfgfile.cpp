@@ -4682,6 +4682,8 @@ static void buildin_default_prefs (struct uae_prefs *p)
 	p->collision_level = 2;
 	if (p->produce_sound < 1)
 		p->produce_sound = 1;
+	p->scsi = 0;
+	p->cachesize = 0;
 	p->socket_emu = 0;
 	p->sound_volume_cd = 0;
 
