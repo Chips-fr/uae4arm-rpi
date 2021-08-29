@@ -4786,7 +4786,8 @@ static int bip_a4000 (struct uae_prefs *p, int config, int compa, int romcheck)
 	roms[1] = 31;
 	roms[2] = 13;
 	roms[3] = 12;
-	roms[4] = -1;
+	roms[4] = 66;
+	roms[5] = -1;
 
 	p->bogomem_size = 0;
 	p->chipmem_size = 0x200000;
@@ -4902,13 +4903,14 @@ static int bip_cd32 (struct uae_prefs *p, int config, int compa, int romcheck)
 
 static int bip_a1200 (struct uae_prefs *p, int config, int compa, int romcheck)
 {
-	int roms[4];
+	int roms[5];
 
 	buildin_default_prefs_68020 (p);
 	roms[0] = 11;
 	roms[1] = 15;
 	roms[2] = 31;
-	roms[3] = -1;
+	roms[3] = 66;
+	roms[4] = -1;
 
 	p->cs_rtc = 0;
 	p->cs_compatible = CP_A1200;
@@ -4932,12 +4934,14 @@ static int bip_a1200 (struct uae_prefs *p, int config, int compa, int romcheck)
 
 static int bip_a600 (struct uae_prefs *p, int config, int compa, int romcheck)
 {
-	int roms[4];
+	int roms[6];
 
 	roms[0] = 10;
 	roms[1] = 9;
 	roms[2] = 8;
-	roms[3] = -1;
+	roms[3] = 14;
+	roms[4] = 66;
+	roms[5] = -1;
 	set_68000_compa (p, compa);
 	p->cs_compatible = CP_A600;
 	built_in_chipset_prefs (p);
@@ -4955,10 +4959,11 @@ static int bip_a600 (struct uae_prefs *p, int config, int compa, int romcheck)
 
 static int bip_a500p (struct uae_prefs *p, int config, int compa, int romcheck)
 {
-  int roms[2];
+  int roms[3];
 
 	roms[0] = 7;
-  roms[1] = -1;
+	roms[1] = 66;
+	roms[2] = -1;
 	set_68000_compa (p, compa);
 	p->cs_compatible = CP_A500P;
 	built_in_chipset_prefs (p);

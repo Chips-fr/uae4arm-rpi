@@ -39,8 +39,7 @@ void free_AmigaMem(void)
 {
   if(regs.natmem_offset != 0)
   {
-//#ifdef RASPBERRY
-#if 0
+#ifdef RASPBERRY
     munmap(regs.natmem_offset, natmem_size + BARRIER);
 #else
     free(regs.natmem_offset);
@@ -73,8 +72,7 @@ void alloc_AmigaMem(void)
   // First attempt: allocate 16 MB for all memory in 24-bit area 
   // and additional mem for Z3 and RTG at correct offset
   natmem_size = 16 * 1024 * 1024;
-#if 0
-//#ifdef RASPBERRY
+#ifdef RASPBERRY
   // address returned by valloc() too high for later mmap() calls. Use mmap() also for first area.
   regs.natmem_offset = (uae_u8*) mmap((void *)0x20000000, natmem_size + BARRIER,
     PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
