@@ -277,7 +277,7 @@ bool CreateFilesysHardfile(void)
   txtSize->setText("100");
 
   CreateFilesysHardfileLoop();
-  ExitCreateFilesysHardfile();
+  //ExitCreateFilesysHardfile();
   
   if(dialogResult)
   {
@@ -289,7 +289,6 @@ bool CreateFilesysHardfile(void)
       size = 2048;    
     int bp = tweakbootpri(atoi(txtBootPri->getText().c_str()), 1, 0);
     extractPath((char *) txtPath->getText().c_str(), currentDir);
-    
     FILE *newFile = fopen(txtPath->getText().c_str(), "wb");
     if(!newFile)
     {
@@ -323,6 +322,6 @@ bool CreateFilesysHardfile(void)
       hardfile_media_change (hfd, &ci, true, false);
     }
   }
-
+  ExitCreateFilesysHardfile();
   return dialogResult;
 }
