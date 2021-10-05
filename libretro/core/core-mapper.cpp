@@ -11,20 +11,13 @@
 
 //FIXME
 unsigned char uae4all_keystate[320];
-int lastmx=0, lastmy=0, newmousecounters=0;
+int lastmx=0, lastmy=0;
 int buttonstate[3]={0,0,0};
 extern void changedisk( bool );
 
-//CORE VAR
-#ifdef _WIN32
-char slash = '\\';
-#else
-char slash = '/';
-#endif
 extern const char *retro_save_directory;
 extern const char *retro_system_directory;
 extern const char *retro_content_directory;
-char RETRO_DIR[512];
 
 //TIME
 #ifdef __CELLOS_LV2__
@@ -37,7 +30,6 @@ char RETRO_DIR[512];
 #include <time.h>
 #endif
 
-extern void Screen_SetFullUpdate(int scr);
 extern void virtual_kdb(char *buffer,int vx,int vy);
 extern int check_vkey2(int x,int y);
 
@@ -72,16 +64,15 @@ int touch=-1; // gui mouse btn
 //JOY
 int al[2][2];//left analog1
 int ar[2][2];//right analog1
-unsigned char MXjoy[2]; // joy
+
 
 //MOUSE
 extern int pushi;  // gui mouse btn
 int gmx,gmy; //gui mouse
 int mouse_wu=0,mouse_wd=0;
 //KEYBOARD
-char Key_Sate[512];
-char Key_Sate2[512];
-static char old_Key_Sate[512];
+char Key_State[512];
+static char old_Key_State[512];
 
 static int mbt[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
@@ -100,13 +91,6 @@ void retro_set_input_state(retro_input_state_t cb)
 void retro_set_input_poll(retro_input_poll_t cb)
 {
    input_poll_cb = cb;
-}
-
-void goto_main_thd(){
-   co_switch(mainThread);
-}
-void goto_emu_thd(){
-   co_switch(emuThread);
 }
 
 
@@ -162,20 +146,6 @@ int STATUTON=-1;
 #define RETRO_DEVICE_AMIGA_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 0)
 #define RETRO_DEVICE_AMIGA_JOYSTICK RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
 
-void enter_gui(void)
-{
-	pauseg=0;
-}
-
-void pause_select(void)
-{
-   if(pauseg==1 && firstps==0)
-   {
-      firstps=1;
-      enter_gui();
-      firstps=0;
-   }
-}
 
 void texture_uninit(void)
 {
@@ -188,7 +158,7 @@ void texture_init(void)
    initmfont();
 
    memset(Retro_Screen, 0, sizeof(Retro_Screen));
-   memset(old_Key_Sate ,0, sizeof(old_Key_Sate));
+   memset(old_Key_State ,0, sizeof(old_Key_State));
 
    memset(uae4all_keystate ,0, sizeof(uae4all_keystate));
 
@@ -392,7 +362,6 @@ void retro_virtualkb(void)
          {
             //VKBD show/hide 			
             oldi=-1;
-            Screen_SetFullUpdate(0);
             SHOWKEY=-SHOWKEY;
          }
          else if(i==-5)
@@ -452,21 +421,17 @@ void retro_virtualkb(void)
     }
 }
 
-void Screen_SetFullUpdate(int scr)
-{
-   if(scr==0 ||scr>1)memset(Retro_Screen, 0, sizeof(Retro_Screen));
-}
 
 void Process_key()
 {
 	int i;
 
 	for(i=0;i<320;i++)
-        	Key_Sate[i]=input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0,i) ? 0x80: 0;
+        	Key_State[i]=input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0,i) ? 0x80: 0;
    
-	if(memcmp( Key_Sate,old_Key_Sate , sizeof(Key_Sate) ) )
+	if(memcmp( Key_State,old_Key_State , sizeof(Key_State) ) )
 	 	for(i=0;i<320;i++)
-			if(Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
+			if(Key_State[i] && Key_State[i]!=old_Key_State[i]  )
         	{	
 				if(i==RETROK_F12){					
 					continue;
@@ -475,7 +440,7 @@ void Process_key()
 				retro_key_down(i);
 	
         	}	
-        	else if ( !Key_Sate[i] && Key_Sate[i]!=old_Key_Sate[i]  )
+        	else if ( !Key_State[i] && Key_State[i]!=old_Key_State[i]  )
         	{
 				if(i==RETROK_F12){
 					continue;
@@ -486,7 +451,7 @@ void Process_key()
 	
         	}	
 
-	memcpy(old_Key_Sate,Key_Sate , sizeof(Key_Sate) );
+	memcpy(old_Key_State,Key_State , sizeof(Key_State) );
 
 }
 
@@ -501,8 +466,7 @@ STR VKBD ON/OFF
 A   FIRE1/VKBD KEY
 B   FIRE2
 */
-extern int lastmx, lastmy, newmousecounters;
-extern int buttonstate[3];
+
 
 int Retro_PollEvent()
 {
@@ -512,8 +476,6 @@ int Retro_PollEvent()
    static char vbt[16]={0x10,0x00,0x00,0x00,0x01,0x02,0x04,0x08,0x20,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
    int i;
-   MXjoy[0]=0;
-   MXjoy[1]=0;
    input_poll_cb();
 
    int mouse_l;
@@ -557,30 +519,6 @@ int Retro_PollEvent()
          setjoybuttonstate (0, 5, b7);
       }
 
-      /*
-      setjoystickstate (0, 1, up ? -32767 : 0, 32767);
-      setjoystickstate (0, 1, down ? 32767 : 0, 32767);
-      setjoystickstate (0, 0, left ? -32767 : 0, 32767);
-      setjoystickstate (0, 0, right ? 32767 : 0, 32767);
-      */
-
-/*      
-      // second joystick.
-      for(i=RETRO_DEVICE_ID_JOYPAD_B;i<=RETRO_DEVICE_ID_JOYPAD_A;i++)
-      {
-         if( input_state_cb(1, RETRO_DEVICE_JOYPAD, 0, i))
-	 {
-            MXjoy[1] |= vbt[i]; // Joy press
-	 }
-
-         if ((0 != MXjoy[1]) && (0 == second_joystick_enable))
-         {
-            LOGI("Switch to joystick mode for Port 0.\n");
-            MXjoy[1] = 0;
-            second_joystick_enable = 1;
-         }
-      }
-*/
 
       if(second_joystick_enable)
       {
@@ -615,13 +553,6 @@ int Retro_PollEvent()
             setjoybuttonstate (1, 4, b6);
             setjoybuttonstate (1, 5, b7);
          }
-
-         /*
-         setjoystickstate (1, 1, up ? -32767 : 0, 32767);
-         setjoystickstate (1, 1, down ? 32767 : 0, 32767);
-         setjoystickstate (1, 0, left ? -32767 : 0, 32767);
-         setjoystickstate (1, 0, right ? 32767 : 0, 32767);
-         */
       }
       else
       {
@@ -794,7 +725,7 @@ int Retro_PollEvent()
 
    lastmx +=rmouse_x;
    lastmy +=rmouse_y;
-   newmousecounters=1;
+
    if(pauseg==0) buttonstate[0] = mmbL;
    if(pauseg==0) buttonstate[2] = mmbR;
 

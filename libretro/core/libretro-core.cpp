@@ -1,3 +1,8 @@
+/* 
+ * Uae4all libretro core implementation
+ * (c) Chips 2021
+ */
+
 #include "libretro.h"
 #include "libretro-core.h"
 
@@ -39,7 +44,6 @@ unsigned amiga_devices[ 2 ];
 
 extern int SHIFTON,pauseg,SND;
 extern char RPATH[512];
-extern char RETRO_DIR[512];
 extern int SHOWKEY;
 
 #include "cmdline.cpp"
@@ -916,8 +920,7 @@ static void retro_wrap_emulator()
 
 void Emu_init(){
 
-   memset(Key_Sate,0,512);
-   memset(Key_Sate2,0,512);
+   memset(Key_State,0,512);
 
    if(!emuThread && !mainThread)
    {
@@ -979,12 +982,7 @@ void retro_init(void)
       retro_save_directory=retro_system_directory;
    }
 
-   if(retro_system_directory==NULL)
-      sprintf(RETRO_DIR, "%s\0", ".");
-   else
-      sprintf(RETRO_DIR, "%s\0", retro_system_directory);
-
-   sprintf(retro_system_data_directory, "%s/data\0",RETRO_DIR);
+   sprintf(retro_system_data_directory, "%s/data\0",retro_system_directory);
 
    LOGI("Retro SYSTEM_DIRECTORY %s\n", retro_system_directory );
    LOGI("Retro SAVE_DIRECTORY %s\n",   retro_save_directory   );
@@ -1116,7 +1114,7 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 }
 
 
-void retro_audiocb(signed short int *sound_buffer,int sndbufsize){
+void retro_audiocb(signed short *sound_buffer,int sndbufsize){
 
     if(pauseg==0)
         audio_batch_cb(sound_buffer, sndbufsize);

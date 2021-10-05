@@ -96,7 +96,7 @@ int max_uae_height;
 
 extern cothread_t mainThread;
 extern cothread_t emuThread;
-extern char RETRO_DIR[512];
+extern const char *retro_system_directory;
 #endif
 
 extern "C" int main( int argc, char *argv[] );
@@ -924,11 +924,10 @@ int main (int argc, char *argv[])
 	getcwd(start_path_data, MAX_DPATH);
 
 #ifdef __LIBRETRO__
-//FIXME use sysdir path
 #if defined(ANDROID) || defined(__ANDROID__)
 sprintf(start_path_data,"/mnt/sdcard/uae4arm\0");
 #else
-sprintf(start_path_data,"%s/uae4arm\0",RETRO_DIR);
+sprintf(start_path_data,"%s/uae4arm\0",retro_system_directory);
 #endif
 LOGI("spd(%s)\n",start_path_data);
 #endif

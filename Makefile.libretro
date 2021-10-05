@@ -3,17 +3,6 @@ PLATFLAGS :=
 
 ifeq ($(platform),)
 platform = unix
-ifeq ($(shell uname -a),)
-	platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-	platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	platform = osx
-else ifneq ($(findstring win,$(shell uname -a)),)
-	platform = win
-else ifneq ($(findstring arm,$(shell uname -a)),)
-	PLATFLAGS +=  -DARM  -marm
-endif
 endif
 
 TARGET_NAME := uae4arm
@@ -235,20 +224,8 @@ CAPS = capsimg.so
 capsimg.so: capsimg
 	(cd capsimg ; ./bootstrap ; ./configure --host=arm ; $(MAKE) ; cp capsimg.so ../ )
 
-ifeq ($(platform), wii)
-$(TARGET): $(OBJECTS) 
-	$(AR) rcs $@ $(OBJECTS) 
-else ifeq ($(platform), ps3)
-$(TARGET): $(OBJECTS) 
-	$(AR) rcs $@ $(OBJECTS) 
-
-else ifeq ($(platform), win)
-$(TARGET): $(OBJECTS)
-	$(CC) $(fpic) $(SHARED) $(INCDIRS) -o $@ $(OBJECTS) $(LDFLAGS)
-else
 $(TARGET): $(OBJECTS) $(CAPS)
 	$(CXX) $(fpic) $(SHARED) $(INCDIRS) -o $@ $(OBJECTS) $(LDFLAGS)
-endif
 
 $(EMU)/od-pandora/neon_helper.o: $(EMU)/od-pandora/neon_helper.s
 	$(CXX) $(ASFLAGS) -Wall -o $(EMU)/od-pandora/neon_helper.o -c $(EMU)/od-pandora/neon_helper.s

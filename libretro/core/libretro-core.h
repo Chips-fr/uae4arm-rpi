@@ -40,8 +40,7 @@ extern cothread_t emuThread;
 
 extern bool isCD32;
 
-extern char Key_Sate[512];
-extern char Key_Sate2[512];
+extern char Key_State[512];
 
 extern int pauseg; 
 

@@ -176,12 +176,12 @@ void finish_sound_buffer (void)
 	dbg("sound.c : finish_sound_buffer");
 #endif
 
-	extern void retro_audiocb(signed short int *sound_buffer,int sndbufsize);
+	extern void retro_audiocb(signed short *sound_buffer,int sndbufsize);
 
         // In order to mix with cd audio and synchrously send to retroarch...
         sound_copy_produced_block(0,(unsigned char *)sndbuffer[wrcnt%SOUND_BUFFERS_COUNT],SNDBUFFER_LEN/2);
 
-	retro_audiocb(sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
+	retro_audiocb((short int*) sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
 	wrcnt++;
 	sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
 	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound buffer write cnt %d buf %d\n", wrcnt, wrcnt%SOUND_BUFFERS_COUNT);

@@ -354,7 +354,7 @@ bool render_screen (bool immediate)
 }
 
 
-extern DISK_GUI_change (void);
+extern void DISK_GUI_change (void);
 
 void show_screen (int mode)
 {
@@ -627,8 +627,8 @@ static int save_thumb(char *path)
 	  SDL_FreeSurface(current_screenshot);
 	  current_screenshot = NULL;
 	}
-	return ret;
 #endif
+	return ret;
 }
 
 
