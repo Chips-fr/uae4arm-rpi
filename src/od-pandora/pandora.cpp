@@ -498,7 +498,7 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
 	char *ptr;
 #ifdef RP9_SUPPORT
 	ptr = strstr((char *)filename, ".rp9");
-  if(ptr > 0)
+  if(ptr)
   {
     // Load rp9 config
     result = rp9_parse_file(p, filename);
@@ -509,7 +509,7 @@ int target_cfgfile_load (struct uae_prefs *p, const char *filename, int type, in
 #endif
 	{
   	ptr = strstr((char *)filename, ".uae");
-    if(ptr > 0)
+    if(ptr)
     {
       int type = CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST;
       result = cfgfile_load(p, filename, &type, 0, 1);
@@ -555,7 +555,7 @@ int check_configfile(char *file)
   
   strncpy(tmp, file, MAX_PATH);
 	char *ptr = strstr(tmp, ".uae");
-	if(ptr > 0)
+	if(ptr)
   {
     *(ptr + 1) = '\0';
     strncat(tmp, "conf", MAX_PATH);
