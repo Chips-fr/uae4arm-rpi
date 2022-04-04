@@ -56,6 +56,8 @@ extern void Emu_uninit();
 extern void input_gui(void);
 extern void retro_virtualkb(void);
 
+extern void flush_audio(void);
+
 const char *retro_save_directory;
 const char *retro_system_directory;
 const char *retro_content_directory;
@@ -65,6 +67,7 @@ static retro_video_refresh_t video_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 static retro_environment_t environ_cb;
+
 
 struct zfile *retro_deserialize_file = NULL;
 static size_t save_state_file_size = 0;
@@ -1114,8 +1117,8 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 }
 
 
-void retro_audiocb(signed short *sound_buffer,int sndbufsize){
-
+void retro_audiocb(signed short *sound_buffer,int sndbufsize)
+{
     if(pauseg==0)
         audio_batch_cb(sound_buffer, sndbufsize);
 }
@@ -1180,6 +1183,8 @@ void retro_run(void)
    if(pauseg==0)
       if(SHOWKEY)
          retro_virtualkb();
+
+   flush_audio();
 
    video_cb(Retro_Screen,retrow,retroh * 1 << (currprefs.gfx_vresolution),retrow<<PIXEL_BYTES);
 

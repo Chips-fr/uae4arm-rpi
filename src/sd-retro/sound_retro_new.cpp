@@ -1,6 +1,6 @@
  /* 
-  * Sdl sound.c implementation
-  * (c) 2015
+  * libretro sound.c implementation
+  * (c) 2021 Chips
   */
 
 #include <sys/types.h>
@@ -18,11 +18,7 @@
 #include "memory.h"
 #include "audio.h"
 #include "gensound.h"
-#if defined(__LIBRETRO__)
 #include "sd-retro/sound.h"
-#else
-#include "sd-pandora/sound.h"
-#endif
 #include "custom.h"
 
 #ifdef ANDROIDSDL
@@ -31,14 +27,13 @@
 
 extern unsigned long next_sample_evtime;
 
-int produce_sound=0;
-int changed_produce_sound=0;
-
 uae_u16 sndbuffer[SOUND_BUFFERS_COUNT][(SNDBUFFER_LEN+32)*DEFAULT_SOUND_CHANNELS];
 unsigned n_callback_sndbuff, n_render_sndbuff;
 uae_u16 *sndbufpt = sndbuffer[0];
 uae_u16 *render_sndbuff = sndbuffer[0];
 uae_u16 *finish_sndbuff = sndbuffer[0] + SNDBUFFER_LEN*2;
+static int rdcnt = 0;
+static int wrcnt = 0;
 
 uae_u16 cdaudio_buffer[CDAUDIO_BUFFERS][(CDAUDIO_BUFFER_LEN + 32) * 2];
 uae_u16 *cdbufpt = cdaudio_buffer[0];
@@ -86,41 +81,31 @@ bool cdaudio_catchup(void) { }
 void sound_volume (int dir) { }
 #else 
 
-
-static int have_sound = 0;
-
 void update_sound (float clk)
 {
   float evtime;
   
   evtime = clk * CYCLE_UNIT / (float)currprefs.sound_freq;
-	scaled_sample_evtime = (int)evtime;
+  scaled_sample_evtime = (int)evtime;
 }
-
-static int s_oldrate = 0, s_oldbits = 0, s_oldstereo = 0;
 
 
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 
-static int rdcnt = 0;
 
-static int wrcnt = 0;
-
-
-static void sound_copy_produced_block(void *ud, unsigned char *stream, int len)
+static void sound_copy_produced_block(void)
 {
 
-	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound callback cnt %d buf %d\n", cnt, cnt%SOUND_BUFFERS_COUNT);
-	if(currprefs.sound_stereo)
-	{
-		if(cdaudio_active && currprefs.sound_freq == 44100 && cdrdcnt < cdwrcnt)
-		{
-			for(int i=0; i<SNDBUFFER_LEN * 2 ; ++i)
-				sndbuffer[rdcnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
-                        cdrdcnt++;
-		}
-	}
-        rdcnt++;
+  if(currprefs.sound_stereo)
+  {
+    if(cdaudio_active && currprefs.sound_freq == 44100 && cdrdcnt < cdwrcnt)
+    {
+      for(int i=0; i<SNDBUFFER_LEN * 2 ; ++i)
+        sndbuffer[rdcnt % SOUND_BUFFERS_COUNT][i] += cdaudio_buffer[cdrdcnt & (CDAUDIO_BUFFERS - 1)][i];
+      cdrdcnt++;
+    }
+  }
+  //rdcnt++;
 }
 
 static void init_soundbuffer_usage(void)
@@ -128,7 +113,6 @@ static void init_soundbuffer_usage(void)
   sndbufpt = sndbuffer[0];
   render_sndbuff = sndbuffer[0];
   finish_sndbuff = sndbuffer[0] + SNDBUFFER_LEN * 2;
-  //output_cnt = 0;
   rdcnt = 0;
   wrcnt = 0;
   
@@ -139,93 +123,83 @@ static void init_soundbuffer_usage(void)
   cdwrcnt = 0;
 }
 
-
-
-static int pandora_start_sound(int rate, int bits, int stereo)
-{
-	int frag = 0, buffers, ret;
-	unsigned int bsize;
-
-	printf("starting sound thread..rate:%d bits:%d stereo:%d\n",rate,bits,stereo);
-
-	// if no settings change, we don't need to do anything
-	if (rate == s_oldrate && s_oldbits == bits && s_oldstereo == stereo)
-	    return 0;
-
-	init_soundbuffer_usage();
-
-	s_oldrate = rate; 
-	s_oldbits = bits; 
-	s_oldstereo = stereo;
-
-	return 0;
-}
-
-
 // this is meant to be called only once on exit
 void pandora_stop_sound(void)
 {
 
 }
 
-//static int wrcnt = 0;
+extern void retro_audiocb(signed short *sound_buffer,int sndbufsize);
+
+
 void finish_sound_buffer (void)
 {
 
 #ifdef DEBUG_SOUND
-	dbg("sound.c : finish_sound_buffer");
+  dbg("sound.c : finish_sound_buffer");
 #endif
+  // In order to mix with cd audio and synchrously send to retroarch...
+  sound_copy_produced_block();
 
-	extern void retro_audiocb(signed short *sound_buffer,int sndbufsize);
-
-        // In order to mix with cd audio and synchrously send to retroarch...
-        sound_copy_produced_block(0,(unsigned char *)sndbuffer[wrcnt%SOUND_BUFFERS_COUNT],SNDBUFFER_LEN/2);
-
-	retro_audiocb((short int*) sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
-	wrcnt++;
-	sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
-	//__android_log_print(ANDROID_LOG_INFO, "UAE4ALL2","Sound buffer write cnt %d buf %d\n", wrcnt, wrcnt%SOUND_BUFFERS_COUNT);
+  retro_audiocb((short int*) sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], SNDBUFFER_LEN);
+  //wrcnt++;
+  sndbufpt = render_sndbuff = sndbuffer[wrcnt%SOUND_BUFFERS_COUNT];
 
 
-	if(currprefs.sound_stereo)
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN * 2;
-	else
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
+  if(currprefs.sound_stereo)
+    finish_sndbuff = sndbufpt + SNDBUFFER_LEN * 2;
+  else
+    finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
 
 #ifdef DEBUG_SOUND
-	dbg(" sound.c : ! finish_sound_buffer");
+  dbg(" sound.c : ! finish_sound_buffer");
 #endif
 }
 
+void flush_audio(void)
+{
+
+  // Flush audio buffer in order to render all audio samples for a given frame. It's better for some frontend
+
+  // cdaudio buffer is handled asynchronously so we can't flush in case of cda...
+  if(cdaudio_active)
+    return;
+
+  retro_audiocb((short int*) sndbuffer[wrcnt%SOUND_BUFFERS_COUNT], (sndbufpt - render_sndbuff)/2);
+
+  init_soundbuffer_usage();
+}
+
+
 void pause_sound_buffer (void)
 {
-	reset_sound ();
+  reset_sound ();
 }
 
 void restart_sound_buffer(void)
 {
-	sndbufpt = render_sndbuff = sndbuffer[wrcnt % SOUND_BUFFERS_COUNT];
-	if(currprefs.sound_stereo)
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN * 2;
-	else
-	  finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
+  sndbufpt = render_sndbuff = sndbuffer[wrcnt % SOUND_BUFFERS_COUNT];
+  if(currprefs.sound_stereo)
+    finish_sndbuff = sndbufpt + SNDBUFFER_LEN * 2;
+  else
+    finish_sndbuff = sndbufpt + SNDBUFFER_LEN;
 
-	cdbufpt = render_cdbuff = cdaudio_buffer[cdwrcnt & (CDAUDIO_BUFFERS - 1)];
-	finish_cdbuff = cdbufpt + CDAUDIO_BUFFER_LEN * 2;  
+  cdbufpt = render_cdbuff = cdaudio_buffer[cdwrcnt & (CDAUDIO_BUFFERS - 1)];
+  finish_cdbuff = cdbufpt + CDAUDIO_BUFFER_LEN * 2;  
 }
+
 void finish_cdaudio_buffer (void)
 {
-	cdwrcnt++;
-	cdbufpt = render_cdbuff = cdaudio_buffer[cdwrcnt & (CDAUDIO_BUFFERS - 1)];
+  cdwrcnt++;
+  cdbufpt = render_cdbuff = cdaudio_buffer[cdwrcnt & (CDAUDIO_BUFFERS - 1)];
   finish_cdbuff = cdbufpt + CDAUDIO_BUFFER_LEN * 2;
   audio_activate();
 }
 
 bool cdaudio_catchup(void)
 {
-  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 30) && (quit_program == 0)) {
+  while((cdwrcnt > cdrdcnt + CDAUDIO_BUFFERS - 30) && (quit_program == 0))
     sleep_millis(10);
-  }
   return 1;
 }
 
@@ -234,141 +208,64 @@ bool cdaudio_catchup(void)
 int setup_sound (void)
 {
 #ifdef DEBUG_SOUND
-    dbg("sound.c : setup_sound");
+  dbg("sound.c : setup_sound");
 #endif
 
-     // Android does not like opening sound device several times
-     if (pandora_start_sound(currprefs.sound_freq, 16, currprefs.sound_stereo) != 0)
-        return 0;
+  init_soundbuffer_usage();
 
-     sound_available = 1;
+  sound_available = 1;
 
 #ifdef DEBUG_SOUND
-    dbg(" sound.c : ! setup_sound");
+  dbg(" sound.c : ! setup_sound");
 #endif
-    return 1;
+  return 1;
 }
-/*
-void update_sound (int freq)
-{
-  sound_default_evtime(freq);
-}
-*/
 
-static int open_sound (void)
-{
-#ifdef DEBUG_SOUND
-    dbg("sound.c : open_sound");
-#endif
-
-	// Android does not like opening sound device several times
-    if (pandora_start_sound(currprefs.sound_freq, 16, currprefs.sound_stereo) != 0)
-	    return 0;
-   // init_sound_table16 ();
-
-    have_sound = 1;
-    sound_available = 1;
-
-    if(currprefs.sound_stereo)
-      sample_handler = sample16s_handler;
-    else
-      sample_handler = sample16_handler;
- 
-
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! open_sound");
-#endif
-    return 1;
-}
 
 void close_sound (void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : close_sound");
-#endif
-    if (!have_sound)
-	return;
-
-    // testing shows that reopenning sound device is not a good idea (causes random sound driver crashes)
-    // we will close it on real exit instead
-
-    have_sound = 0;
-
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! close_sound");
-#endif
 }
 
 int init_sound (void)
 {
 #ifdef DEBUG_SOUND
-    dbg("sound.c : init_sound");
+  dbg("sound.c : init_sound");
 #endif
 
-    have_sound=open_sound();
+  init_soundbuffer_usage();
+  // init_sound_table16 ();
+
+  sound_available = 1;
+
+  if(currprefs.sound_stereo)
+    sample_handler = sample16s_handler;
+  else
+    sample_handler = sample16_handler;
 
 #ifdef DEBUG_SOUND
-    dbg(" sound.c : ! init_sound");
+  dbg(" sound.c : ! init_sound");
 #endif
-    return have_sound;
+  return 1;
 }
 
 void pause_sound (void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : pause_sound");
-#endif
-
-	//SDL_PauseAudio (1);
-    /* nothing to do */
-
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! pause_sound");
-#endif
 }
 
 void resume_sound (void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : resume_sound");
-#endif
-
-	//SDL_PauseAudio (0);
-    /* nothing to do */
-
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! resume_sound");
-#endif
 }
 
 void uae4all_init_sound(void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : uae4all_init_sound");
-#endif
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! uae4all_init_sound");
-#endif
 }
 
 void uae4all_pause_music(void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : pause_music");
-#endif
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! pause_music");
-#endif
 }
 
 void uae4all_resume_music(void)
 {
-#ifdef DEBUG_SOUND
-    dbg("sound.c : resume_music");
-#endif
-#ifdef DEBUG_SOUND
-    dbg(" sound.c : ! resume_music");
-#endif
 }
 
 void uae4all_play_click(void)
@@ -377,10 +274,6 @@ void uae4all_play_click(void)
 
 void reset_sound (void)
 {
-  if (!have_sound)
-  	return;
-
-
   init_soundbuffer_usage();
 
   clear_sound_buffers();
