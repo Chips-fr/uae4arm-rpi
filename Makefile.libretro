@@ -45,7 +45,7 @@ else ifneq (,$(findstring rpi4,$(platform)))
 		USE_PICASSO96 = 1
 	endif
 
-	CFLAGS += $(PLATFORM_DEFINES)
+	CFLAGS += -DFASTCOPPER_OFF $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
 	CC = gcc
 	CXX = g++ 

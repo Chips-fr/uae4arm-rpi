@@ -121,12 +121,16 @@ void retro_set_environment(retro_environment_t cb)
   struct retro_variable variables[] = {
       { "uae4arm_model",          "Model; Auto|A500|A600|A1200|CDTV|CD32", },
       { "uae4arm_fastmem",        "Fast Mem; None|1 MB|2 MB|4 MB|8 MB", },
-      { "uae4arm_resolution",     "Internal resolution; 640x270|320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270", },
+      { "uae4arm_resolution",     "Internal resolution; 768x270|320x240|320x256|320x262|640x240|640x256|640x262|640x270|768x270", },
       { "uae4arm_leds_on_screen", "Leds on screen; on|off", },
       { "uae4arm_floppy_speed",   "Floppy speed; 100|200|400|800", },
       { "uae4arm_linedoubling",   "Line doubling (de-interlace); off|on", },
       { "uae4arm_whdloadmode",    "whdload mode; files|hdfs", },
+#ifdef FASTCOPPER_OFF
       { "uae4arm_fastcopper",     "fast copper; off|on", },
+#else
+      { "uae4arm_fastcopper",     "fast copper; on|off", },
+#endif
       { NULL, NULL },
    };
 
