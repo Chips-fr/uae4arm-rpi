@@ -403,7 +403,7 @@ int loadconfig_old(struct uae_prefs *p, const char *orgpath)
   
   strcpy(path, orgpath);
 	char *ptr = strstr(path, ".uae");
-	if(ptr > 0)
+	if(ptr != 0)
   {
     *(ptr + 1) = '\0';
     strcat(path, "conf");

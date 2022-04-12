@@ -358,7 +358,7 @@ int target_cfgfile_load (struct uae_prefs *p, char *filename, int type, int isde
   discard_prefs(p, type);
   
 	char *ptr = strstr(filename, ".uae");
-  if(ptr > 0)
+  if(ptr != 0)
   {
     int type = CONFIG_TYPE_HARDWARE | CONFIG_TYPE_HOST;
     result = cfgfile_load(p, filename, &type, 0);
@@ -404,7 +404,7 @@ int check_configfile(char *file)
   
   strcpy(tmp, file);
 	char *ptr = strstr(tmp, ".uae");
-	if(ptr > 0)
+	if(ptr != 0)
   {
     *(ptr + 1) = '\0';
     strcat(tmp, "conf");
