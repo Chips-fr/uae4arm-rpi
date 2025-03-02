@@ -257,6 +257,9 @@ void update_prefs_retrocfg(struct uae_prefs * prefs)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       LOGI("[libretro-uae4arm]: Got model: %s.\n", var.value);
+
+      prefs->nr_floppies=1;
+
       if (strcmp(var.value, "Auto") == 0)
       {
          if ((strcasestr(RPATH,"aga") != NULL) || (strcasestr(RPATH,"a1200") != NULL))
