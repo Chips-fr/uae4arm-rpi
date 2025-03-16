@@ -1879,7 +1879,7 @@ static void draw_status_line (int line)
   }
   buf = xlinebuffer;
 
-	x+=100 - (TD_WIDTH*(currprefs.nr_floppies-1)) - TD_WIDTH;
+  x+=100 - (TD_WIDTH*(currprefs.nr_floppies-1)) - ((nr_units() == 0) ?  0 : TD_WIDTH);
 #ifdef PICASSO96
   if(picasso_on)
 #ifdef RASPBERRY
@@ -1899,8 +1899,8 @@ static void draw_status_line (int line)
 			on = gui_data.drive_motor[led-1];
 			on_rgb = 0x0c0;
 			off_rgb = 0x030;
-      if (gui_data.drive_writing[led-1])
-		    on_rgb = 0xc00;
+			if (gui_data.drive_writing[led-1])
+				on_rgb = 0xc00;
 		} else if (led < -1) {
 			/* Idle time */
 			track = idletime_percent;
@@ -1910,7 +1910,7 @@ static void draw_status_line (int line)
 		} else if (led < 0) {
 			/* Power */
 			//track = gui_data.fps;
-			track = -2;
+			track = -1;
 			on = gui_data.powerled;
 			on_rgb = 0xc00;
 			off_rgb = 0x300;
@@ -1935,6 +1935,10 @@ static void draw_status_line (int line)
 					break;
 			}
 		}
+
+	if ((nr_units() == 0) && (track == -2))
+		continue;
+
 	c = xcolors[on ? on_rgb : off_rgb];
 
 	for (j = 0; j < TD_LED_WIDTH; j++) 
@@ -1952,8 +1956,8 @@ static void draw_status_line (int line)
 	      write_tdnumber (buf, x + offs, y - TD_PADY, (track / 10) % 10);
 	      write_tdnumber (buf, x + offs + TD_NUM_WIDTH, y - TD_PADY, track % 10);
 	    }
-		  else if (nr_units() > 0) {
-    		int offs = (TD_LED_WIDTH - 2 * TD_NUM_WIDTH) / 2;
+		  else if ((nr_units() > 0) && (track == -2)) {
+			  int offs = (TD_LED_WIDTH - 2 * TD_NUM_WIDTH) / 2;
 			  write_tdletter(buf, x + offs, y - TD_PADY, 'H');
 			  write_tdletter(buf, x + offs + TD_NUM_WIDTH, y - TD_PADY, 'D');
 	    }
