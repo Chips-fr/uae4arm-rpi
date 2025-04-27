@@ -13,139 +13,139 @@ INCFLAGS += -I$(CORE_DIR)/libretro/libco \
 	-I$(CORE_DIR)/libretro \
 	-I$(CORE_DIR) 
 
-OBJS =	\
-	$(EMU)/audio.o \
-	$(EMU)/aros.rom.o \
-	$(EMU)/autoconf.o \
-	$(EMU)/blitfunc.o \
-	$(EMU)/blittable.o \
-	$(EMU)/blitter.o \
-	$(EMU)/cfgfile.o \
-	$(EMU)/cia.o \
-	$(EMU)/crc32.o \
-	$(EMU)/custom.o \
-	$(EMU)/disk.o \
-	$(EMU)/drawing.o \
-	$(EMU)/ersatz.o \
-	$(EMU)/expansion.o \
-	$(EMU)/filesys.o \
-	$(EMU)/fpp.o \
-	$(EMU)/fsdb.o \
-	$(EMU)/fsdb_unix.o \
-	$(EMU)/fsusage.o \
-	$(EMU)/gfxutil.o \
-	$(EMU)/hardfile.o \
-	$(EMU)/inputdevice.o \
-	$(EMU)/keybuf.o \
-	$(EMU)/main.o \
-	$(EMU)/memory.o \
-	$(EMU)/missing.o \
-	$(EMU)/native2amiga.o \
-	$(EMU)/savestate.o \
-	$(EMU)/traps.o \
-	$(EMU)/uaelib.o \
-	$(EMU)/uaeresource.o \
-	$(EMU)/zfile.o \
-	$(EMU)/zfile_archive.o \
-	$(EMU)/archivers/7z/7zAlloc.o \
-	$(EMU)/archivers/7z/7zBuffer.o \
-	$(EMU)/archivers/7z/7zCrc.o \
-	$(EMU)/archivers/7z/7zDecode.o \
-	$(EMU)/archivers/7z/7zExtract.o \
-	$(EMU)/archivers/7z/7zHeader.o \
-	$(EMU)/archivers/7z/7zIn.o \
-	$(EMU)/archivers/7z/7zItem.o \
-	$(EMU)/archivers/7z/7zMethodID.o \
-	$(EMU)/archivers/7z/LzmaDecode.o \
-	$(EMU)/archivers/dms/crc_csum.o \
-	$(EMU)/archivers/dms/getbits.o \
-	$(EMU)/archivers/dms/maketbl.o \
-	$(EMU)/archivers/dms/pfile.o \
-	$(EMU)/archivers/dms/tables.o \
-	$(EMU)/archivers/dms/u_deep.o \
-	$(EMU)/archivers/dms/u_heavy.o \
-	$(EMU)/archivers/dms/u_init.o \
-	$(EMU)/archivers/dms/u_medium.o \
-	$(EMU)/archivers/dms/u_quick.o \
-	$(EMU)/archivers/dms/u_rle.o \
-	$(EMU)/archivers/lha/crcio.o \
-	$(EMU)/archivers/lha/dhuf.o \
-	$(EMU)/archivers/lha/header.o \
-	$(EMU)/archivers/lha/huf.o \
-	$(EMU)/archivers/lha/larc.o \
-	$(EMU)/archivers/lha/lhamaketbl.o \
-	$(EMU)/archivers/lha/lharc.o \
-	$(EMU)/archivers/lha/shuf.o \
-	$(EMU)/archivers/lha/slide.o \
-	$(EMU)/archivers/lha/uae_lha.o \
-	$(EMU)/archivers/lha/util.o \
-	$(EMU)/archivers/lzx/unlzx.o \
-	$(EMU)/archivers/wrp/warp.o \
-	$(EMU)/archivers/zip/unzip.o \
-	$(LIBRETRO)/osdep/support.o 
+SOURCES_CXX =	\
+	$(EMU)/audio.cpp \
+	$(EMU)/aros.rom.cpp \
+	$(EMU)/autoconf.cpp \
+	$(EMU)/blitfunc.cpp \
+	$(EMU)/blittable.cpp \
+	$(EMU)/blitter.cpp \
+	$(EMU)/cfgfile.cpp \
+	$(EMU)/cia.cpp \
+	$(EMU)/crc32.cpp \
+	$(EMU)/custom.cpp \
+	$(EMU)/disk.cpp \
+	$(EMU)/drawing.cpp \
+	$(EMU)/ersatz.cpp \
+	$(EMU)/expansion.cpp \
+	$(EMU)/filesys.cpp \
+	$(EMU)/fpp.cpp \
+	$(EMU)/fsdb.cpp \
+	$(EMU)/fsdb_unix.cpp \
+	$(EMU)/fsusage.cpp \
+	$(EMU)/gfxutil.cpp \
+	$(EMU)/hardfile.cpp \
+	$(EMU)/inputdevice.cpp \
+	$(EMU)/keybuf.cpp \
+	$(EMU)/main.cpp \
+	$(EMU)/memory.cpp \
+	$(EMU)/missing.cpp \
+	$(EMU)/native2amiga.cpp \
+	$(EMU)/savestate.cpp \
+	$(EMU)/traps.cpp \
+	$(EMU)/uaelib.cpp \
+	$(EMU)/uaeresource.cpp \
+	$(EMU)/zfile.cpp \
+	$(EMU)/zfile_archive.cpp \
+	$(EMU)/archivers/7z/7zAlloc.cpp \
+	$(EMU)/archivers/7z/7zBuffer.cpp \
+	$(EMU)/archivers/7z/7zCrc.cpp \
+	$(EMU)/archivers/7z/7zDecode.cpp \
+	$(EMU)/archivers/7z/7zExtract.cpp \
+	$(EMU)/archivers/7z/7zHeader.cpp \
+	$(EMU)/archivers/7z/7zIn.cpp \
+	$(EMU)/archivers/7z/7zItem.cpp \
+	$(EMU)/archivers/7z/7zMethodID.cpp \
+	$(EMU)/archivers/7z/LzmaDecode.cpp \
+	$(EMU)/archivers/dms/crc_csum.cpp \
+	$(EMU)/archivers/dms/getbits.cpp \
+	$(EMU)/archivers/dms/maketbl.cpp \
+	$(EMU)/archivers/dms/pfile.cpp \
+	$(EMU)/archivers/dms/tables.cpp \
+	$(EMU)/archivers/dms/u_deep.cpp \
+	$(EMU)/archivers/dms/u_heavy.cpp \
+	$(EMU)/archivers/dms/u_init.cpp \
+	$(EMU)/archivers/dms/u_medium.cpp \
+	$(EMU)/archivers/dms/u_quick.cpp \
+	$(EMU)/archivers/dms/u_rle.cpp \
+	$(EMU)/archivers/lha/crcio.cpp \
+	$(EMU)/archivers/lha/dhuf.cpp \
+	$(EMU)/archivers/lha/header.cpp \
+	$(EMU)/archivers/lha/huf.cpp \
+	$(EMU)/archivers/lha/larc.cpp \
+	$(EMU)/archivers/lha/lhamaketbl.cpp \
+	$(EMU)/archivers/lha/lharc.cpp \
+	$(EMU)/archivers/lha/shuf.cpp \
+	$(EMU)/archivers/lha/slide.cpp \
+	$(EMU)/archivers/lha/uae_lha.cpp \
+	$(EMU)/archivers/lha/util.cpp \
+	$(EMU)/archivers/lzx/unlzx.cpp \
+	$(EMU)/archivers/wrp/warp.cpp \
+	$(EMU)/archivers/zip/unzip.cpp \
+	$(LIBRETRO)/osdep/support.cpp 
 
 USE_PICASSO96 := 1
 
 ifeq ($(USE_PICASSO96), 1)
-	OBJS += $(LIBRETRO)/osdep/picasso96.o
+	SOURCES_CXX += $(LIBRETRO)/osdep/picasso96.cpp
 endif
 ifeq ($(HAVE_NEON), 1)
-	OBJS +=  $(LIBRETRO)/osdep/neon_helper.o
+	SOURCES_CXX +=  $(LIBRETRO)/osdep/neon_helper.cpp
 endif
 
 ifdef USE_XFD
-OBJS += $(EMU)/cpu_small.o \
-	$(EMU)/cpuemu_small.o \
-	$(EMU)/cpustbl_small.o \
-	$(EMU)/archivers/xfd/xfd.o
+SOURCES_CXX += $(EMU)/cpu_small.cpp \
+	$(EMU)/cpuemu_small.cpp \
+	$(EMU)/cpustbl_small.cpp \
+	$(EMU)/archivers/xfd/xfd.cpp
 endif
 
-OBJS += $(EMU)/newcpu.o
-OBJS += $(EMU)/readcpu.o
-OBJS += $(EMU)/cpudefs.o
-OBJS += $(EMU)/cpustbl.o
-OBJS += $(EMU)/cpuemu_0.o
-OBJS += $(EMU)/cpuemu_4.o
-OBJS += $(EMU)/cpuemu_11.o
-OBJS += $(EMU)/jit/compemu.o
-OBJS += $(EMU)/jit/compemu_fpp.o
-OBJS += $(EMU)/jit/compstbl.o
+SOURCES_CXX += $(EMU)/newcpu.cpp
+SOURCES_CXX += $(EMU)/readcpu.cpp
+SOURCES_CXX += $(EMU)/cpudefs.cpp
+SOURCES_CXX += $(EMU)/cpustbl.cpp
+SOURCES_CXX += $(EMU)/cpuemu_0.cpp
+SOURCES_CXX += $(EMU)/cpuemu_4.cpp
+SOURCES_CXX += $(EMU)/cpuemu_11.cpp
+SOURCES_CXX += $(EMU)/jit/compemu.cpp
+SOURCES_CXX += $(EMU)/jit/compemu_fpp.cpp
+SOURCES_CXX += $(EMU)/jit/compstbl.cpp
 
-OBJS += $(EMU)/jit/compemu_support.o \
-	$(LIBRETRO)/osdep/fsdb_host.o \
-	$(LIBRETRO)/osdep/joystick.o \
-	$(LIBRETRO)/osdep/keyboard.o \
-	$(LIBRETRO)/osdep/inputmode.o \
-	$(LIBRETRO)/osdep/writelog.o \
-	$(LIBRETRO)/osdep/pandora.o \
-	$(LIBRETRO)/osdep/pandora_filesys.o \
-	$(LIBRETRO)/osdep/retro_gfx.o \
-	$(LIBRETRO)/osdep/pandora_mem.o \
-	$(LIBRETRO)/osdep/sigsegv_handler.o \
-	$(LIBRETRO)/osdep/menu/menu_config.o \
-	$(LIBRETRO)/osdep/thread.o \
-	$(LIBRETRO)/osdep/sound_retro_new.o 
+SOURCES_CXX += $(EMU)/jit/compemu_support.cpp \
+	$(LIBRETRO)/osdep/fsdb_host.cpp \
+	$(LIBRETRO)/osdep/joystick.cpp \
+	$(LIBRETRO)/osdep/keyboard.cpp \
+	$(LIBRETRO)/osdep/inputmode.cpp \
+	$(LIBRETRO)/osdep/writelog.cpp \
+	$(LIBRETRO)/osdep/pandora.cpp \
+	$(LIBRETRO)/osdep/pandora_filesys.cpp \
+	$(LIBRETRO)/osdep/retro_gfx.cpp \
+	$(LIBRETRO)/osdep/pandora_mem.cpp \
+	$(LIBRETRO)/osdep/sigsegv_handler.cpp \
+	$(LIBRETRO)/osdep/menu/menu_config.cpp \
+	$(LIBRETRO)/osdep/thread.cpp \
+	$(LIBRETRO)/osdep/sound_retro_new.cpp 
 
-OBJS += \
-	$(CORE_DIR)/libretro/core/libretro-core.o \
-	$(CORE_DIR)/libretro/core/core-mapper.o \
-	$(CORE_DIR)/libretro/core/graph.o \
-	$(CORE_DIR)/libretro/core/vkbd.o 
+SOURCES_CXX += \
+	$(CORE_DIR)/libretro/core/libretro-core.cpp \
+	$(CORE_DIR)/libretro/core/core-mapper.cpp \
+	$(CORE_DIR)/libretro/core/graph.cpp \
+	$(CORE_DIR)/libretro/core/vkbd.cpp 
 
 SOURCES_C += 	 $(LIBRETRO)/libco/libco.c 
 
-SOURCES_C += $(DEPS_DIR)/zlib/adler32.o \
-	$(DEPS_DIR)/zlib/compress.o \
-	$(DEPS_DIR)/zlib/crc32.o \
-	$(DEPS_DIR)/zlib/deflate.o \
-	$(DEPS_DIR)/zlib/gzclose.o \
-	$(DEPS_DIR)/zlib/gzlib.o \
-	$(DEPS_DIR)/zlib/gzread.o \
-	$(DEPS_DIR)/zlib/gzwrite.o \
-	$(DEPS_DIR)/zlib/inffast.o \
-	$(DEPS_DIR)/zlib/inflate.o \
-	$(DEPS_DIR)/zlib/inftrees.o \
-	$(DEPS_DIR)/zlib/trees.o \
-	$(DEPS_DIR)/zlib/uncompr.o \
-	$(DEPS_DIR)/zlib/zutil.o
+SOURCES_C += $(DEPS_DIR)/zlib/adler32.c \
+	$(DEPS_DIR)/zlib/compress.c \
+	$(DEPS_DIR)/zlib/crc32.c \
+	$(DEPS_DIR)/zlib/deflate.c \
+	$(DEPS_DIR)/zlib/gzclose.c \
+	$(DEPS_DIR)/zlib/gzlib.c \
+	$(DEPS_DIR)/zlib/gzread.c \
+	$(DEPS_DIR)/zlib/gzwrite.c \
+	$(DEPS_DIR)/zlib/inffast.c \
+	$(DEPS_DIR)/zlib/inflate.c \
+	$(DEPS_DIR)/zlib/inftrees.c \
+	$(DEPS_DIR)/zlib/trees.c \
+	$(DEPS_DIR)/zlib/uncompr.c \
+	$(DEPS_DIR)/zlib/zutil.c
 
