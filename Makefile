@@ -213,6 +213,19 @@ endif
 	LDFLAGS := -lm
 endif
 
+# webOS
+ifneq (,$(or $(findstring webos,$(CROSS_COMPILE)),$(findstring starfish,$(CROSS_COMPILE))))
+	CPU_FLAGS += -D__arm__
+	ifneq (,$(findstring aarch64,$(CROSS_COMPILE)))
+		AARCH64 = 1
+		MORE_CFLAGS += -DCPU_AARCH64
+	else
+		MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
+		HAVE_NEON = 1
+		USE_PICASSO96 = 1
+	endif
+	LDFLAGS := -lz -lpthread -ldl
+endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
