@@ -32,7 +32,7 @@ extern SDL_Surface *prSDLScreen;
  * Some code to put status information on the screen.
  */
 
-static const char *numbers = { /* ugly  0123456789CHD%+-PNK */
+static const char *td_numbers = { /* ugly  0123456789CHD%+-PNK */
 	"+++++++--++++-+++++++++++++++++-++++++++++++++++++++++++++++++++++++++++++++-++++++-++++----++---+--------------+++++++++++++++++++++"
 	"+xxxxx+--+xx+-+xxxxx++xxxxx++x+-+x++xxxxx++xxxxx++xxxxx++xxxxx++xxxxx++xxxx+-+x++x+-+xxx++-+xx+-+x---+----------+xxxxx++x+++x++x++x++"
 	"+x+++x+--++x+-+++++x++++++x++x+++x++x++++++x++++++++++x++x+++x++x+++x++x++++-+x++x+-+x++x+--+x++x+--+x+----+++--+x---x++xx++x++x+x+++"
@@ -53,7 +53,7 @@ static void write_tdnumber (uae_u8 *buf, int x, int y, int num, uae_u32 c1, uae_
   int j;
   const char *numptr;
 
-  numptr = numbers + num * TD_NUM_WIDTH + NUMBERS_NUM * TD_NUM_WIDTH * y;
+  numptr = td_numbers + num * TD_NUM_WIDTH + NUMBERS_NUM * TD_NUM_WIDTH * y;
   for (j = 0; j < TD_NUM_WIDTH; j++) {
   	if (*numptr == 'x')
       putpixel (buf, x + j, c1);
