@@ -116,7 +116,7 @@ void signal_open(void)
 
 	// get x11 display/window for GL
 	SDL_VideoDriverName(vid_drv_name, sizeof(vid_drv_name));
-	#ifdef SDL_VIDEO_DRIVER_X11
+#ifdef SDL_VIDEO_DRIVER_X11
 	if (strcmp(vid_drv_name, "x11") == 0) {
 	  SDL_VERSION(&wminfo.version);
 	  if (SDL_GetWMInfo(&wminfo)> 0) {
@@ -125,9 +125,9 @@ void signal_open(void)
 	  } else
 	  printf("Error getting SDL info\n");
 	}
-	#else
+#else
 	  (void)wminfo;
-	#endif
+#endif
 	if (gl_init(display, window, &gl_quirks, TEXTURE_WIDTH, TEXTURE_HEIGHT)== 0) {
 	} else
 	printf("Error: Can't init gl subsystem.\n");

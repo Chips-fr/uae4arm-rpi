@@ -193,12 +193,15 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	//glViewport(0, 0, 512, 512);
+
+#ifndef SHADER_SUPPORT
 	glLoadIdentity();
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
-
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnableClientState(GL_VERTEX_ARRAY);
+#endif
+
 
 	if (gl_have_error("init"))
 		goto out;

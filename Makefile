@@ -1,55 +1,72 @@
 ifeq ($(PLATFORM),)
-	PLATFORM = rpi2
+	PLATFORM = rpi2-gles1
 endif
 
-ifeq ($(PLATFORM),rpi2)
+#
+# Configure the target ( either a rapsberry pi one or a generic arm 32 or 64 bits)
+#
+
+ifneq ($(findstring rpi2,$(PLATFORM)),)
 	CPU_FLAGS += -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6T2 -DARM_HAS_DIV -DARMV6_ASSEMBLY -marm
-	LDFLAGS += -lbcm_host
 	HAVE_NEON = 1
-	HAVE_DISPMANX = 1
-	USE_PICASSO96 = 1
-else ifeq ($(PLATFORM),rpi1)
+else ifneq ($(findstring rpi1,$(PLATFORM)),)
 	CPU_FLAGS += -mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard
 	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DARMV6_ASSEMBLY -marm
-	LDFLAGS += -lbcm_host
-	HAVE_DISPMANX = 1
-	USE_PICASSO96 = 1
-else ifeq ($(PLATFORM),rpi64bits)
+else ifneq ($(findstring rpi64bits,$(PLATFORM)),)
 	CPU_FLAGS += -march=armv8-a -mtune=cortex-a53
 	MORE_CFLAGS += -DRASPBERRY -DCAPSLOCK_DEBIAN_WORKAROUND -DCPU_AARCH64
-	LDFLAGS += -lbcm_host
 	AARCH64 = 1
-	#HAVE_DISPMANX = 1
-	#HAVE_SDL_DISPLAY = 1
-	HAVE_GLES_DISPLAY = 1
-	USE_PICASSO96 = 1
-	LDFLAGS +=  -L/usr/lib/aarch64-linux-gnu/
-else ifeq ($(PLATFORM),generic-sdl)
-	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
-	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
-	endif
+else ifneq ($(findstring arm32,$(PLATFORM)),)
 	MORE_CFLAGS += -DARMV6T2 -DARMV6_ASSEMBLY -marm
-	HAVE_SDL_DISPLAY = 1
-else ifeq ($(PLATFORM),gles)
 	# Autodetect Rpi
 	ifneq ($(findstring raspberrypi,$(shell uname -a)),)
-	LDFLAGS += -lbcm_host
-	CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
+		LDFLAGS += -lbcm_host
+		CPU_FLAGS= -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
 	endif
-	# Uncomment below line to activate shader support. It's very slown on Allwinner.
+	# Enable neon optimization if present in PLATFORM
+	ifneq ($(findstring neon,$(PLATFORM)),)
+		HAVE_NEON = 1
+	endif
+else ifneq ($(findstring arm64,$(PLATFORM)),)
+	AARCH64 = 1
+	MORE_CFLAGS += -DCPU_AARCH64
+else
+$(error No target selected.)
+endif
+
+#
+# choose the display backend
+#
+
+ifneq ($(findstring dispmanx,$(PLATFORM)),)
+	HAVE_DISPMANX = 1
+else ifneq ($(findstring sdl,$(PLATFORM)),)
+	HAVE_SDL_DISPLAY = 1
+else ifneq ($(findstring gles1,$(PLATFORM)),)
+	# Uncomment below line to activate shader support. It's very slow on Allwinner.
 	#MORE_CFLAGS += -DSHADER_SUPPORT
 	# Uncomment below line to activate threading. This is buggy on Allwinner.
 	#MORE_CFLAGS += -DUSE_RENDER_THREAD
-	MORE_CFLAGS += -DARMV6T2 -DARMV6_ASSEMBLY -marm
 	HAVE_GLES_DISPLAY = 1
-	HAVE_NEON = 1
+else ifneq ($(findstring gles2,$(PLATFORM)),)
+	MORE_CFLAGS += -DSHADER_SUPPORT
+	HAVE_GLES_DISPLAY = 1
+else
+$(error No display backend selected.)
+endif
+
+#
+# check is picasso96 is activated
+#
+
+ifneq ($(findstring picasso96,$(PLATFORM)),)
 	USE_PICASSO96 = 1
 endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
-   MORE_CFLAGS += -DGIT_VERSION=$(GIT_VERSION)
+	MORE_CFLAGS += -DGIT_VERSION=$(GIT_VERSION)
 endif
 
 NAME   = uae4arm
@@ -64,13 +81,10 @@ all: $(PROG)
 #DEBUG=1
 #TRACER=1
 
-PANDORA=1
-#GEN_PROFILE=1
-#USE_PROFILE=1
 
-SDL_CFLAGS = `sdl-config --cflags`
+SDL_CFLAGS  = `sdl-config --cflags`
+XML2_CFLAGS = `xml2-config --cflags`
 
-DEFS += `xml2-config --cflags`
 DEFS += -DCPU_arm -DPANDORA -DRP9_SUPPORT -DWITH_MPEG2 -DWITH_INGAME_WARNING -DUSE_SDL
 
 ifeq ($(USE_PICASSO96), 1)
@@ -81,13 +95,18 @@ ifeq ($(HAVE_NEON), 1)
 	DEFS += -DUSE_ARMNEON
 endif
 
+# Special include directory and library for legacy raspbian
+ifneq (,$(wildcard /opt/vc/lib))
 MORE_CFLAGS += -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
+LDFLAGS     += -L/opt/vc/lib
+LDFLAGS     += -lbcm_host
+endif
 
 MORE_CFLAGS += -Isrc -Isrc/od-pandora  -Isrc/threaddep -Isrc/menu -Isrc/include -Isrc/archivers -Isrc/od-pandora
 MORE_CFLAGS += -fexceptions -fpermissive -std=gnu++11
 
 LDFLAGS += -lSDL -lpthread -lm -lz -lSDL_image -lpng -lrt -lxml2 -lFLAC -lmpg123 -ldl -lmpeg2convert -lmpeg2
-LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan -L/opt/vc/lib 
+LDFLAGS += -lSDL_ttf -lguichan_sdl -lguichan
 
 ifndef DEBUG
 MORE_CFLAGS += -O3 -fomit-frame-pointer -finline
@@ -105,20 +124,15 @@ endif
 
 ASFLAGS += $(CPU_FLAGS)
 
-CXXFLAGS += $(SDL_CFLAGS) $(CPU_FLAGS) $(DEFS) $(MORE_CFLAGS)
-
-ifdef GEN_PROFILE
-MORE_CFLAGS += -fprofile-generate=/media/MAINSD/pandora/test -fprofile-arcs -fvpt
-endif
-ifdef USE_PROFILE
-MORE_CFLAGS += -fprofile-use -fbranch-probabilities -fvpt
-endif
-
+CXXFLAGS += $(SDL_CFLAGS) $(XML2_CFLAGS) $(CPU_FLAGS) $(DEFS) $(MORE_CFLAGS)
 
 CAPS = capsimg.so
 
+# For cross compilation define GNU_TARGET_NAME
+GNU_TARGET_NAME ?=
+target_configure = $(if $(GNU_TARGET_NAME),--host=$(GNU_TARGET_NAME),)
 capsimg.so: capsimg
-	(cd capsimg ; ./bootstrap ; ./configure ; $(MAKE) ; cp capsimg.so ../ )
+	(cd capsimg ; ./bootstrap ; CC=$(CC) CXX=$(CXX) ./configure $(target_configure); $(MAKE) ; cp capsimg.so ../ )
 
 OBJS =	\
 	src/akiko.o \
@@ -267,8 +281,10 @@ OBJS =	\
 	src/od-pandora/gui/PanelInput.o \
 	src/od-pandora/gui/PanelMisc.o \
 	src/od-pandora/gui/PanelSavestate.o \
+	src/od-pandora/gui/sdltruetypefont.o \
 	src/od-pandora/gui/main_window.o \
 	src/od-pandora/gui/Navigation.o
+
 
 ifeq ($(HAVE_DISPMANX), 1)
 OBJS += src/od-rasp/rasp_gfx.o
@@ -283,7 +299,6 @@ OBJS += src/od-gles/gl.o
 OBJS += src/od-gles/shader_stuff.o
 OBJS += src/od-gles/gl_platform.o
 OBJS += src/od-gles/gles_gfx.o
-MORE_CFLAGS += -I/opt/vc/include/
 MORE_CFLAGS += -DHAVE_GLES
 LDFLAGS +=  -ldl
 ifneq (,$(wildcard /opt/vc/lib/libbrcmGLESv2.so))
@@ -292,11 +307,6 @@ else
 LDFLAGS += -L/usr/lib/arm-linux-gnueabihf/mali-egl
 LDFLAGS += -lEGL -lGLESv2 -lGLESv1_CM
 endif
-endif
-
-
-ifdef PANDORA
-OBJS += src/od-pandora/gui/sdltruetypefont.o
 endif
 
 ifeq ($(USE_PICASSO96), 1)
