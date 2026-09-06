@@ -91,6 +91,7 @@ Compilation prerequisites:
 
 |Optional feature string|Description|
 |---|---|
+|picasso96|Enable Picasso 96 support|
 |neon|Enable NEON optimizations (unix target only)|
 |aarch64| Compile for a 64-bit target |
 

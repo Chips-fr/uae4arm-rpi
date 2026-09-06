@@ -22,7 +22,6 @@ ifneq (,$(findstring unix,$(platform)))
 		CFLAGS += $(PLATFORM_DEFINES)
 		MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 		HAVE_NEON = 1
-		USE_PICASSO96 = 1
 		CPU_FLAGS +=  -marm
 	endif
 	ifneq (,$(findstring aarch64,$(platform)))
@@ -42,7 +41,6 @@ else ifneq (,$(findstring rpi4,$(platform)))
 		CPU_FLAGS += -marm -mfpu=neon-fp-armv8 -mfloat-abi=hard
 		MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 		HAVE_NEON = 1
-		USE_PICASSO96 = 1
 	endif
 
 	CFLAGS += -DFASTCOPPER_OFF $(PLATFORM_DEFINES)
@@ -63,7 +61,6 @@ else ifneq (,$(findstring rpi3,$(platform)))
 		CPU_FLAGS += -marm -mfpu=neon-fp-armv8 -mfloat-abi=hard
 		MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 		HAVE_NEON = 1
-		USE_PICASSO96 = 1
 	endif
 
 	CFLAGS += $(PLATFORM_DEFINES)
@@ -71,7 +68,7 @@ else ifneq (,$(findstring rpi3,$(platform)))
 	CC = gcc
 	CXX = g++ 
 	LDFLAGS += -lz -lpthread -lFLAC -lmpg123 -ldl
-else ifeq ($(platform), rpi2)
+else ifneq (,$(findstring rpi2,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic = -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
@@ -79,7 +76,6 @@ else ifeq ($(platform), rpi2)
 	MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 
 	HAVE_NEON = 1
-	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
 	CC = gcc
@@ -87,14 +83,14 @@ else ifeq ($(platform), rpi2)
 	LDFLAGS += -lz -lpthread -lFLAC -lmpg123 -ldl
 
 	# use for raspberry pi
-else ifeq ($(platform), rpi1) 
+else ifneq (,$(findstring rpi1,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	CPU_FLAGS += -mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard
 	fpic := -fPIC
 	LDFLAGS := -lz -lpthread
 	PLATFLAGS +=  -DARM  -marm
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T
-else ifeq ($(platform), crosspi)
+else ifneq (,$(findstring crosspi,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic = -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined -L ../usr/lib -static-libstdc++ -static-libgcc
@@ -103,7 +99,6 @@ else ifeq ($(platform), crosspi)
 
 	PLATFORM_DEFINES += -I ../usr/include
 	HAVE_NEON = 1
-	USE_PICASSO96 = 1
 	CFLAGS += $(PLATFORM_DEFINES)
 	CXXFLAGS += $(PLATFORM_DEFINES)
 	CC = arm-linux-gnueabihf-gcc
@@ -115,13 +110,12 @@ else ifeq ($(platform), crosspi)
 
 # (armv7 a7, hard point, neon based) ### 
 # NESC, SNESC, C64 mini 
-else ifeq ($(platform), classic_armv7_a7)
+else ifneq (,$(findstring classic_armv7_a7,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 	HAVE_NEON = 1
-	USE_PICASSO96 = 1
 	CPU_FLAGS += -DARM -Ofast \
 	-flto=4 -fwhole-program -fuse-linker-plugin \
 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
@@ -143,13 +137,12 @@ else ifeq ($(platform), classic_armv7_a7)
 	endif
 # (armv8 a35, hard point, neon based) ###
 # PS Classic
-else ifeq ($(platform), classic_armv8_a35)
+else ifneq (,$(findstring classic_armv8_a35,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED :=-shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 	MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 	HAVE_NEON = 1
-	USE_PICASSO96 = 1
 	CPU_FLAGS += -DARM -Ofast \
 	-flto=4 -fwhole-program -fuse-linker-plugin \
 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
@@ -169,7 +162,7 @@ else ifeq ($(platform), classic_armv8_a35)
 			LDFLAGS += -static-libgcc -static-libstdc++
 		endif
 	endif
-else ifeq ($(platform), android)
+else ifneq (,$(findstring android,$(platform)))
 	CC = arm-linux-androideabi-gcc
 	CXX =arm-linux-androideabi-g++
 	AR = @arm-linux-androideabi-ar
@@ -190,10 +183,19 @@ ifneq (,$(or $(findstring webos,$(CROSS_COMPILE)),$(findstring starfish,$(CROSS_
 	else
 		MORE_CFLAGS += -DARMV6T2 -DARM_HAS_DIV
 		HAVE_NEON = 1
-		USE_PICASSO96 = 1
 	endif
 	LDFLAGS := -lz -lpthread -ldl
 endif
+
+#
+# check is picasso96 is activated
+#
+
+ifneq ($(findstring picasso96,$(platform)),)
+	USE_PICASSO96 = 1
+endif
+
+
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
