@@ -9,4 +9,8 @@ extern int shader_stuff_reload_shaders();
 extern int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f, GLuint texture_name);
 extern int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_width, int out_height);
 
+#ifdef GLES2_VBO_OPTIM
+extern int shader_stuff_bind_vbos(GLuint vbo_vertex, GLuint vbo_texcoord);
+#endif
+
 #endif

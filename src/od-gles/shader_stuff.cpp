@@ -351,7 +351,7 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
    userData->samplerLoc = glGetUniformLocation ( userData->programObject, "s_texture" );
 
 #ifdef SHADER_SUPPORT
-   // Get the sampler location
+   // Get the custom shader uniform locations (only if custom shaders are enabled)
    userData->frameCountLoc = glGetUniformLocation ( userData->programObject, "u_framecount" );
    printf("frameCountLoc = %d\n", userData->frameCountLoc);
    userData->emulatorFrameSizeLoc = glGetUniformLocation ( userData->programObject, "u_emulator_frame_size" );
@@ -362,12 +362,14 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
    // Load the texture
    userData->textureId = texture_name;
 
-   // Load the vertex position
+#ifndef GLES2_VBO_OPTIM
+   // Load the vertex position (only without VBO optimization)
    glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
                            GL_FALSE, 3 * sizeof(GLfloat), vertex_coords_3f );
-   // Load the texture coordinate
+   // Load the texture coordinate (only without VBO optimization)
    glVertexAttribPointer ( userData->texCoordLoc, 2, GL_FLOAT,
                            GL_FALSE, 2 * sizeof(GLfloat), texture_coords_2f );
+#endif
 
    glEnableVertexAttribArray ( userData->positionLoc );
    glEnableVertexAttribArray ( userData->texCoordLoc );
@@ -384,6 +386,29 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
    return GL_TRUE;
 }
 
+#ifdef GLES2_VBO_OPTIM
+// Bind VBOs and set up vertex attributes
+int shader_stuff_bind_vbos(GLuint vbo_vertex, GLuint vbo_texcoord)
+{
+	STATE_T *p_state = &shader_stuff_state;
+   UserData *userData = p_state->user_data;
+
+   // Bind vertex coordinate VBO
+   glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
+   glVertexAttribPointer(userData->positionLoc, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+   
+   // Bind texture coordinate VBO
+   glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
+   glVertexAttribPointer(userData->texCoordLoc, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+   
+   glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind
+   
+   gl_have_error("shader_stuff_bind_vbos");
+   
+   return GL_TRUE;
+}
+#endif
+
 // call this for every frame
 // todo: merge all this "stuff" properly to gl.cpp
 int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_width, int out_height)
@@ -392,7 +417,7 @@ int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_wi
    UserData *userData = p_state->user_data;
 
    glUseProgram ( userData->programObject );
-
+   
 #ifdef SHADER_SUPPORT
    glUniform1f ( userData->frameCountLoc, (GLfloat)(framecount) );
    glUniform2f ( userData->emulatorFrameSizeLoc, (GLfloat)(emu_width), (GLfloat)(emu_height));
@@ -400,4 +425,3 @@ int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_wi
 #endif
    return 0;
 }
-

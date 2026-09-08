@@ -72,6 +72,11 @@ int texture_id = 0;
 void *texture_mem = NULL;
 void *texture_mem2 = NULL;
 
+#ifdef GLES2_VBO_OPTIM
+static GLuint vbo_vertex = 0;
+static GLuint vbo_texcoord = 0;
+#endif
+
 int gl_init(void *display, void *window, int *quirks, int texture_width, int texture_height)
 {
     EGLConfig ecfg = NULL;
@@ -215,6 +220,25 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 	shader_stuff_result = shader_stuff_init();
 	shader_stuff_result = shader_stuff_reload_shaders();
 	shader_stuff_result = shader_stuff_set_data(vertex_coords, texture_coords, texture_name);
+	
+#ifdef GLES2_VBO_OPTIM
+	// Create VBO for vertex coordinates (static - never changes)
+	glGenBuffers(1, &vbo_vertex);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_coords), vertex_coords, GL_STATIC_DRAW);
+	if (gl_have_error("glBufferData vertex")) goto out;
+	printf("VBO vertex created successfully\n");
+	
+	// Create VBO for texture coordinates (dynamic - changes on resolution change)
+	glGenBuffers(1, &vbo_texcoord);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texture_coords), texture_coords, GL_DYNAMIC_DRAW);
+	if (gl_have_error("glBufferData texcoord")) goto out;
+	printf("VBO texcoord created successfully\n");
+	
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind
+#endif
+	
 #endif
 
 out:
@@ -243,6 +267,14 @@ int gl_flip(const void *fb, int w, int h)
 			texture_coords[3*2 + 1] = f_h;
 			old_w = w;
 			old_h = h;
+			
+#ifdef GLES2_VBO_OPTIM
+			// Update texture coordinate VBO only when resolution changes
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(texture_coords), texture_coords);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			printf("Resolution changed: %d x %d - VBO texcoord updated\n", w, h);
+#endif
 		} 
 /*
 // This code makes the amiga screen spinning (wtf ?)
@@ -283,6 +315,12 @@ int gl_flip(const void *fb, int w, int h)
 	} // if (fb != NULL)
 #ifdef HAVE_GLES2
 	shader_stuff_frame(framecount, w, h, 800, 480); // TODO! hard-coded output size
+	
+#ifdef GLES2_VBO_OPTIM
+	// Bind and use VBOs for drawing
+	shader_stuff_bind_vbos(vbo_vertex, vbo_texcoord);
+#endif
+	
 	if (gl_have_error("use program")) return -1;
 #else
 	glVertexPointer(3, GL_FLOAT, 0, vertex_coords);
@@ -306,6 +344,20 @@ int gl_flip(const void *fb, int w, int h)
 void gl_finish(void)
 {
 	eglMakeCurrent(edpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+#ifdef GLES2_VBO_OPTIM
+	// Clean up VBOs
+	if (vbo_vertex != 0) {
+		glDeleteBuffers(1, &vbo_vertex);
+		vbo_vertex = 0;
+	}
+	if (vbo_texcoord != 0) {
+		glDeleteBuffers(1, &vbo_texcoord);
+		vbo_texcoord = 0;
+	}
+	printf("VBOs cleaned up\n");
+#endif
+
 	eglDestroyContext(edpy, ectxt);
 	ectxt = EGL_NO_CONTEXT;
 	eglDestroySurface(edpy, esfc);

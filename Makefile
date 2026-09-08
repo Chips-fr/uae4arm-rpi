@@ -50,6 +50,9 @@ else ifneq ($(findstring gles1,$(PLATFORM)),)
 else ifneq ($(findstring gles2,$(PLATFORM)),)
 	HAVE_GLES_DISPLAY = 1
 	MORE_CFLAGS += -DHAVE_GLES2
+	# Uncomment below line to enable VBO optimization for geometry data uploads
+	MORE_CFLAGS += -DGLES2_VBO_OPTIM
+	# Uncomment below line to enable custom shader support (slower, optional)
 	#MORE_CFLAGS += -DSHADER_SUPPORT
 else
 $(error No display backend selected.)
