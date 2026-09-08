@@ -21,10 +21,12 @@ typedef struct
    // Sampler location
    GLint samplerLoc;
 
+#ifdef SHADER_SUPPORT
    // Other locations
    GLint frameCountLoc;
    GLint emulatorFrameSizeLoc;
    GLint outputFrameSizeLoc;
+#endif
 
    // Texture handle
    GLuint textureId;
@@ -110,16 +112,9 @@ static GLchar default_fShaderStr[] =
       "precision mediump float;\n"
       "varying vec2 v_texCoord;\n"
       "uniform sampler2D s_texture;\n"
-      "uniform float u_framecount;\n"
-      "uniform vec2 u_emulator_frame_size;\n"
-      "uniform vec2 u_output_frame_size;\n"
       "void main()\n"
       "{\n"
-//      "  gl_FragColor = texture2D( s_texture, v_texCoord );\n"
-      "  gl_FragColor = texture2D( s_texture, v_texCoord )\n"
-//      "		* (cos(gl_FragCoord.y * 3.14159) * 0.5 + 0.5); \n"
-//      "		* (cos(v_texCoord.y * 3.14159 * 262.0 * 2.0 * 2.0) * 0.45 + 0.55); \n"
-      "		* (cos(gl_FragCoord.y * 3.1415926) * 0.35 + 0.65); \n"
+      "  gl_FragColor = texture2D( s_texture, v_texCoord );\n"
       "}\n";
 
 
@@ -233,7 +228,7 @@ GLuint LoadShader(GLenum type, const GLchar *shaderSrc)
 GLuint LoadProgram ( const GLchar *vertShaderSrc, const GLchar *fragShaderSrc )
 {
    GLuint vertexShader;
-   GLuint fragmentShader;
+   GLuint fragmentShader = 0;
    GLuint programObject;
    GLint linked;
 
@@ -242,7 +237,10 @@ GLuint LoadProgram ( const GLchar *vertShaderSrc, const GLchar *fragShaderSrc )
    if ( vertexShader == 0 )
       return 0;
 
+#ifdef SHADER_SUPPORT
    fragmentShader = LoadShader ( GL_FRAGMENT_SHADER, fragShaderSrc );
+#endif
+
    // if it didn't compile, let's try the default shader
    if ((fragmentShader == 0) && (fshader_source != default_fShaderStr)) {
 	   fshader_source = default_fShaderStr;
@@ -300,7 +298,7 @@ static STATE_T shader_stuff_state;
 
 int shader_stuff_init()
 {
-	STATE_T *p_state = &shader_stuff_state;
+   STATE_T *p_state = &shader_stuff_state;
    p_state->user_data = (UserData *)malloc(sizeof(UserData));
    p_state->user_data->programObject=0;
    return GL_TRUE;
@@ -311,7 +309,7 @@ int shader_stuff_init()
 //
 int shader_stuff_reload_shaders()
 {
-	STATE_T *p_state = &shader_stuff_state;
+   STATE_T *p_state = &shader_stuff_state;
    UserData *userData = p_state->user_data;
 
 // ----- these lines could be moved to a separate "delete program" routine
@@ -352,12 +350,14 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
    // Get the sampler location
    userData->samplerLoc = glGetUniformLocation ( userData->programObject, "s_texture" );
 
+#ifdef SHADER_SUPPORT
    // Get the sampler location
    userData->frameCountLoc = glGetUniformLocation ( userData->programObject, "u_framecount" );
    printf("frameCountLoc = %d\n", userData->frameCountLoc);
    userData->emulatorFrameSizeLoc = glGetUniformLocation ( userData->programObject, "u_emulator_frame_size" );
    printf("emulatorFrameSizeLoc = %d\n", userData->emulatorFrameSizeLoc);
    userData->outputFrameSizeLoc = glGetUniformLocation ( userData->programObject, "u_output_frame_size" );
+#endif
 
    // Load the texture
    userData->textureId = texture_name;
@@ -388,116 +388,16 @@ int shader_stuff_set_data(GLfloat *vertex_coords_3f, GLfloat *texture_coords_2f,
 // todo: merge all this "stuff" properly to gl.cpp
 int shader_stuff_frame(int framecount, int emu_width, int emu_height, int out_width, int out_height)
 {
-	STATE_T *p_state = &shader_stuff_state;
+   STATE_T *p_state = &shader_stuff_state;
    UserData *userData = p_state->user_data;
 
    glUseProgram ( userData->programObject );
-   
+
+#ifdef SHADER_SUPPORT
    glUniform1f ( userData->frameCountLoc, (GLfloat)(framecount) );
-   glUniform2f( userData->emulatorFrameSizeLoc, (GLfloat)(emu_width), (GLfloat)(emu_height));
+   glUniform2f ( userData->emulatorFrameSizeLoc, (GLfloat)(emu_width), (GLfloat)(emu_height));
    glUniform2f ( userData->outputFrameSizeLoc, (GLfloat)(out_width), (GLfloat)(out_height));
+#endif
    return 0;
 }
 
-
-/*
-
-// for checking if file has changed
-#include <sys/types.h>
-#include <sys/stat.h>
-
-
-void showlog(GLint shader)
-{
-   char log[1024];
-
-   glGetShaderInfoLog(shader,sizeof log,NULL,log);
-   printf("%d:shader:\n%s\n", shader, log);
-}
-
-static void showprogramlog(GLint shader)
-{
-   char log[1024];
-   glGetProgramInfoLog(shader,sizeof log,NULL,log);
-   printf("%d:program:\n%s\n", shader, log);
-}
-
-static char fshader_file_name[10000];
-static time_t fshader_file_date=0;
-
-void set_fshader_file_name(char *shaderdir)
-{
-    strcpy(fshader_file_name,shaderdir);
-    if(shaderdir[strlen(shaderdir)-1]!='/')
-        strcat(fshader_file_name,"/");
-    strcat(fshader_file_name,"fshader.glsl");
-}
-
-static int init_shader()
-{
-    FILE *f;
-    int len;
-    static GLchar *fsource=NULL,*vsource=
-           "attribute vec2 vertex;"
-           "void main(void) {"
-           " gl_Position = vec4(vertex.x,vertex.y,0.0,1.0);"
-           "}";
-
-    f=fopen(fshader_file_name,"rb");
-    if(f==NULL)
-    {
-        printf("Fragment shader won't open\n");
-        return -1;
-    }
-    fseek(f,0,SEEK_END);
-    len=ftell(f);
-    if(fsource!=NULL)
-        free(fsource);
-    fsource=malloc(len+1);
-    fseek(f,0,SEEK_SET);
-    fread(fsource,1,len,f);
-    fclose(f);
-    fsource[len]=0; // Need to terminate!
-
-    fshader_file_date = get_file_date(fshader_file_name);
-
-    vshader=glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vshader,1,(const GLchar **)&vsource,0);
-    glCompileShader(vshader);
-    showlog(vshader);
-
-    fshader=glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fshader,1,(const GLchar **)&fsource,0);
-    glCompileShader(fshader);
-    showlog(fshader);
-
-    program=glCreateProgram();
-    glAttachShader(program,vshader);
-    glAttachShader(program,fshader);
-    glLinkProgram(program);
-
-    return 0;
-}
-
-void delete_shader()
-{
-    glDetachShader(program, fshader);
-    glDetachShader(program, vshader);
-    glDeleteShader(fshader);
-    glDeleteShader(vshader);
-    glUseProgram(0);
-    glDeleteProgram(program);
-    glUseProgram(0);
-}
-
-void koelli_reload_shader()
-{
-    delete_shader();
-    init_shader();
-}
-* 
-int koelli_fshader_file_changed(void)
-{
-    return (get_file_date(fshader_file_name) != fshader_file_date);
-}
-*/

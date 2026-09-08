@@ -91,7 +91,7 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
    
    static const EGLint context_attributes[] = 
    {
-#ifdef SHADER_SUPPORT
+#ifdef HAVE_GLES2
       EGL_CONTEXT_CLIENT_VERSION, 2,
 #else
       EGL_CONTEXT_CLIENT_VERSION, 1,
@@ -159,7 +159,7 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 
 	eglMakeCurrent(edpy, esfc, esfc, ectxt);
 
-#ifndef SHADER_SUPPORT
+#ifndef HAVE_GLES2
 	glEnable(GL_TEXTURE_2D); // for old fixed-function pipeline
 #endif
 	//if (gl_have_error("glEnable(GL_TEXTURE_2D)")) goto out;
@@ -194,7 +194,7 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 
 	//glViewport(0, 0, 512, 512);
 
-#ifndef SHADER_SUPPORT
+#ifndef HAVE_GLES2
 	glLoadIdentity();
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
@@ -211,7 +211,7 @@ int gl_init(void *display, void *window, int *quirks, int texture_width, int tex
 	retval = 0;
 
 	int shader_stuff_result;
-#ifdef SHADER_SUPPORT
+#ifdef HAVE_GLES2
 	shader_stuff_result = shader_stuff_init();
 	shader_stuff_result = shader_stuff_reload_shaders();
 	shader_stuff_result = shader_stuff_set_data(vertex_coords, texture_coords, texture_name);
@@ -228,21 +228,7 @@ int gl_flip(const void *fb, int w, int h)
 {
 	static int old_w, old_h;
 
-#ifdef SHADER_SUPPORT
-	if (framecount % 60 == 0)
-	{
-//		printf("gl_flip() w: %d, h: %d\n", w, h);
-	}
-	
-	if (framecount % 30 == 0)
-	{
-		if (shader_stuff_shader_needs_reload()) {
-			 shader_stuff_reload_shaders();
-			 // shader_stuff_set_data(vertex_coords, texture_coords, texture_name);
-			
-		 }
-	}
-#endif
+
 
 	framecount++;
 	float floattime = (framecount * 0.04f);
@@ -295,7 +281,7 @@ int gl_flip(const void *fb, int w, int h)
 		if (gl_have_error("glTexSubImage2D"))
 			return -1;
 	} // if (fb != NULL)
-#ifdef SHADER_SUPPORT
+#ifdef HAVE_GLES2
 	shader_stuff_frame(framecount, w, h, 800, 480); // TODO! hard-coded output size
 	if (gl_have_error("use program")) return -1;
 #else

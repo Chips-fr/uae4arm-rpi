@@ -44,14 +44,13 @@ ifneq ($(findstring dispmanx,$(PLATFORM)),)
 else ifneq ($(findstring sdl,$(PLATFORM)),)
 	HAVE_SDL_DISPLAY = 1
 else ifneq ($(findstring gles1,$(PLATFORM)),)
-	# Uncomment below line to activate shader support. It's very slow on Allwinner.
-	#MORE_CFLAGS += -DSHADER_SUPPORT
 	# Uncomment below line to activate threading. This is buggy on Allwinner.
 	#MORE_CFLAGS += -DUSE_RENDER_THREAD
 	HAVE_GLES_DISPLAY = 1
 else ifneq ($(findstring gles2,$(PLATFORM)),)
-	MORE_CFLAGS += -DSHADER_SUPPORT
 	HAVE_GLES_DISPLAY = 1
+	MORE_CFLAGS += -DHAVE_GLES2
+	#MORE_CFLAGS += -DSHADER_SUPPORT
 else
 $(error No display backend selected.)
 endif
